@@ -1,0 +1,32 @@
+services:
+  api:
+    build: .
+    container_name: sty-server
+    ports:
+      - "8080:8080"
+    volumes:
+      - .:/app
+      - ~/.m2:/root/.m2
+    x-develop:
+      watch:
+        - path: ./src
+          action: sync
+        - path: ./pom.xml
+          action: rebuild
+    depends_on:
+      - db
+
+  db:
+    image: postgres:16-alpine
+    container_name: sty-db
+    environment:
+      POSTGRES_DB: stockfy
+      POSTGRES_USER: stockfy_user
+      POSTGRES_PASSWORD: senha123
+    ports:
+      - "5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+
+volumes:
+  db-data:
