@@ -1,45 +1,23 @@
-package br.com.threadstech.stockfy.modules.product;
+package br.com.threadstech.stockfy.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import java.util.Objects;
+
+import br.com.threadstech.stockfy.enums.ProductType;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 
-/**
- * Representa um produto do sistema Stockfy.
- *
- * <p>Cada produto possui informações de identificação, estoque, preço, custo, lucro, descontos e
- * tipo de produto.
- *
- * <p>Os campos desta entidade são mapeados para a tabela "products" no banco de dados.
- *
- * <p>Exemplo de uso:
- *
- * <pre>{@code
- * Product product = new Product();
- * product.setName("Arroz");
- * product.setBarCode("1234567890123");
- * product.setStock(new BigDecimal("100.000"));
- * product.setPrice(new BigDecimal("12.50"));
- * product.setCost(new BigDecimal("8.00"));
- * product.setProfit(new BigDecimal("4.50"));
- * product.setDiscount(new BigDecimal("0.00"));
- * product.setDiscountPercentage(new BigDecimal("0.00"));
- * product.setType(ProductType.UNIT);
- * }</pre>
- *
- * @author threadstech
- * @see ProductType
- */
 @Entity
 @Getter
 @Setter
@@ -77,6 +55,7 @@ public class Product {
   @Column(name = "discount_percentage", nullable = false, precision = 5, scale = 2)
   private BigDecimal discountPercentage;
 
+  @Enumerated(EnumType.STRING)
   @Column(name = "type", nullable = false, length = 20)
   private ProductType type;
 
@@ -85,8 +64,8 @@ public class Product {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    Product stock = (Product) o;
-    return Objects.equals(id, stock.id);
+    Product product = (Product) o;
+    return Objects.equals(id, product.id);
   }
 
   @Override
