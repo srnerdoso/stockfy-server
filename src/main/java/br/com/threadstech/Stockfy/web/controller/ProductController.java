@@ -33,5 +33,4 @@ public class ProductController {
   public ResponseEntity<ProductResponseDto> findByBarCode(@PathVariable String barCode) {
     return ResponseEntity.ok(ProductMapper.toDto(productService.findByBarCode(barCode)));
   }
-
 }

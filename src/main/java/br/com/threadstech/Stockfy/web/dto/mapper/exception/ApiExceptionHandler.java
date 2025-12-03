@@ -19,7 +19,7 @@ public class ApiExceptionHandler {
   public ResponseEntity<ErrorMessage> entityNotFoundException(MethodArgumentNotValidException ex,
       HttpServletRequest request,
       BindingResult result) {
-        log.error("Entity not found - {}", ex);
+    log.error("Entity not found - {}", ex);
     return ResponseEntity.status(HttpStatus.NOT_FOUND)
         .body(new ErrorMessage(request, HttpStatus.NOT_FOUND, ex.getMessage(), result));
   }

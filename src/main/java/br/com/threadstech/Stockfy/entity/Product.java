@@ -59,6 +59,9 @@ public class Product {
   @Column(name = "type", nullable = false, length = 20)
   private ProductType type;
 
+  @Column(name = "available", nullable = false)
+  boolean available = true;
+
   @Override
   public boolean equals(Object o) {
     if (o == null || getClass() != o.getClass()) {
