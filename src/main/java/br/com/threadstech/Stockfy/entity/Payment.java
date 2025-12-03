@@ -2,14 +2,16 @@ package br.com.threadstech.stockfy.entity;
 
 import br.com.threadstech.stockfy.enums.PaymentStatus;
 import jakarta.persistence.*;
+
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.List;
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 @Entity
 @Getter
@@ -18,7 +20,6 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @AllArgsConstructor
 @Table(name = "payments")
 @ToString
-@EntityListeners(AuditingEntityListener.class)
 public class Payment {
 
   @Id
@@ -29,7 +30,7 @@ public class Payment {
   @Embedded
   @Enumerated(EnumType.STRING)
   @Column(name = "payment_method", nullable = false, length = 20)
-  private PaymentProduct paymentMethod;
+  private Cart paymentMethod;
 
   @Enumerated(EnumType.STRING)
   @Column(name = "payment_status", nullable = false, length = 20)
@@ -38,6 +39,10 @@ public class Payment {
   @Column(name = "payment_date")
   private Instant paymentDate;
 
-  @Column(name = "payment_value", nullable = false, precision = 10, scale = 2)
-  private BigDecimal paymentValue;
+  @ElementCollection
+  @CollectionTable(name = "payment_products", joinColumns = @JoinColumn(name = "payment_id"))
+  private List<Cart> carts;
+
+  @Column(name = "total", precision = 10, scale = 2)
+  private BigDecimal total;
 }

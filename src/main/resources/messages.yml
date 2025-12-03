@@ -5,8 +5,8 @@ NotBlank:
 
 Size:
   productDto:
-    barCode: "O código de barras deve ter entre 7 e 20 caracteres."
-    name: "O nome do produto deve ter entre 1 e 255 caracteres."
+    barCode: "O código de barras deve ter entre {1} e {2} caracteres."
+    name: "O nome do produto deve ter entre {1} e {2} caracteres."
 
 Positive:
   productDto:
@@ -27,3 +27,6 @@ NotNull:
 ProductType:
   productDto:
     type: "O tipo do produto é inválido."
+
+UniqueFieldViolationException:
+  product: "Produto já cadastrado."

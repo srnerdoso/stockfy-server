@@ -1,5 +1,9 @@
 package br.com.threadstech.stockfy.web.controller;
 
+import jakarta.annotation.Nonnull;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
+import lombok.NonNull;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -16,6 +20,8 @@ import br.com.threadstech.stockfy.web.dto.ProductResponseDto;
 import br.com.threadstech.stockfy.web.dto.mapper.ProductMapper;
 import lombok.RequiredArgsConstructor;
 
+import java.util.Locale;
+
 @RestController
 @RequestMapping(ApiPaths.PRODUCT)
 @RequiredArgsConstructor
@@ -24,13 +30,13 @@ public class ProductController {
   private final ProductService productService;
 
   @PostMapping
-  public ResponseEntity<Void> save(@RequestBody ProductDto product) {
+  public ResponseEntity<@NonNull Void> save(@Valid @RequestBody ProductDto product) {
     productService.save(ProductMapper.toProduct(product));
     return ResponseEntity.status(HttpStatus.CREATED).build();
   }
 
   @GetMapping("/{barCode}")
-  public ResponseEntity<ProductResponseDto> findByBarCode(@PathVariable String barCode) {
+  public ResponseEntity<@NonNull ProductResponseDto> findByBarCode(@PathVariable String barCode) {
     return ResponseEntity.ok(ProductMapper.toDto(productService.findByBarCode(barCode)));
   }
 }
