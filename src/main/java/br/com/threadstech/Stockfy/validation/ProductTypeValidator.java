@@ -1,10 +1,10 @@
 package br.com.threadstech.stockfy.validation;
 
-import java.util.Arrays;
-
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
+import java.util.Arrays;
 
+// TODO: Melhorar o método de validação. Usar valueOf
 public class ProductTypeValidator implements ConstraintValidator<ProductType, String> {
   @Override
   public void initialize(ProductType constraintAnnotation) {

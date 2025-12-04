@@ -8,7 +8,6 @@ import br.com.threadstech.stockfy.web.dto.groups.Create;
 import br.com.threadstech.stockfy.web.dto.groups.Update;
 import br.com.threadstech.stockfy.web.dto.mapper.ProductMapper;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -24,7 +23,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@Slf4j
 @RestController
 @RequestMapping(ApiPaths.PRODUCT)
 @RequiredArgsConstructor

@@ -1,5 +1,6 @@
 package br.com.threadstech.stockfy.entity;
 
+import br.com.threadstech.stockfy.enums.PaymentMethod;
 import br.com.threadstech.stockfy.enums.PaymentStatus;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
@@ -14,9 +15,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
-import java.time.Instant;
-import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -30,7 +30,7 @@ import lombok.ToString;
 @AllArgsConstructor
 @Table(name = "payments")
 @ToString
-public class Payment {
+public class Payment extends AuditListener {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -40,18 +40,15 @@ public class Payment {
   @Embedded
   @Enumerated(EnumType.STRING)
   @Column(name = "payment_method", nullable = false, length = 20)
-  private Cart paymentMethod;
+  private PaymentMethod paymentMethod;
 
   @Enumerated(EnumType.STRING)
   @Column(name = "payment_status", nullable = false, length = 20)
-  private PaymentStatus paymentStatus;
-
-  @Column(name = "payment_date")
-  private Instant paymentDate;
+  private PaymentStatus paymentStatus = PaymentStatus.PENDING;
 
   @ElementCollection
-  @CollectionTable(name = "payment_products", joinColumns = @JoinColumn(name = "payment_id"))
-  private List<Cart> carts;
+  @CollectionTable(name = "cart", joinColumns = @JoinColumn(name = "payment_id"))
+  private Set<Cart> cart;
 
   @Column(name = "total", precision = 10, scale = 2)
   private BigDecimal total;
