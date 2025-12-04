@@ -6,6 +6,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import java.util.Objects;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -49,4 +50,18 @@ public class Address {
 
   @Column(name = "country", nullable = false, length = 100)
   private String country;
+
+  @Override
+  public boolean equals(Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    Address address = (Address) o;
+    return Objects.equals(id, address.id);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(id);
+  }
 }

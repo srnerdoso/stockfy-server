@@ -1,5 +1,6 @@
 package br.com.threadstech.stockfy.web.dto.mapper.exception;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.HashMap;
 import java.util.Map;
@@ -17,17 +18,23 @@ import org.springframework.validation.FieldError;
 @ToString
 public class ErrorMessage {
 
-  public ErrorMessage() {}
-
   private String message;
   private String method;
   private String path;
   private int status;
   private String statusText;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   private Map<String, String> errors;
 
+  public ErrorMessage() {}
+
   public ErrorMessage(
-      HttpServletRequest request, BindingResult result, HttpStatus status, String message, MessageSource messageSource) {
+      HttpServletRequest request,
+      BindingResult result,
+      HttpStatus status,
+      String message,
+      MessageSource messageSource) {
     this.message = message;
     this.method = request.getMethod();
     this.path = request.getRequestURI();
@@ -46,6 +53,15 @@ public class ErrorMessage {
     this.statusText = status.getReasonPhrase();
     this.errors = new HashMap<>();
     addErrors(result);
+  }
+
+  public ErrorMessage(HttpServletRequest request, HttpStatus status, String message) {
+    this.message = message;
+    this.method = request.getMethod();
+    this.path = request.getRequestURI();
+    this.status = status.value();
+    this.statusText = status.getReasonPhrase();
+    this.errors = new HashMap<>();
   }
 
   private void addErrors(BindingResult result) {

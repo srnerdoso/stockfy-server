@@ -1,5 +1,6 @@
 package br.com.threadstech.stockfy.entity;
 
+import br.com.threadstech.stockfy.enums.ProductType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -10,28 +11,36 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import java.util.Objects;
-
-import br.com.threadstech.stockfy.enums.ProductType;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
 
 @Entity
 @Getter
 @Setter
+@ToString
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "products")
-@ToString
+@SQLDelete(
+    sql =
+        """
+    UPDATE products SET deleted = true,
+      bar_code = CONCAT(bar_code, '_deleted_', id)
+    WHERE id = ?
+    """)
+@SQLRestriction("deleted = false")
 public class Product {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Column(nullable = false)
   private Long id;
 
-  @Column(name = "bar_code", unique = true, nullable = false, length = 20)
+  @Column(name = "bar_code", unique = true, nullable = false, length = 30)
   private String barCode;
 
   @Column(name = "name", nullable = false, length = 255)
@@ -59,8 +68,8 @@ public class Product {
   @Column(name = "type", nullable = false, length = 20)
   private ProductType type;
 
-  @Column(name = "available", nullable = false)
-  boolean available = true;
+  @Column(name = "deleted", nullable = false)
+  boolean deleted = false;
 
   @Override
   public boolean equals(Object o) {

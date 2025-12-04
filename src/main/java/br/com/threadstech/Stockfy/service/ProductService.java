@@ -1,15 +1,18 @@
 package br.com.threadstech.stockfy.service;
 
-import br.com.threadstech.stockfy.exception.UniqueFieldViolationException;
+import br.com.threadstech.stockfy.entity.Product;
+import br.com.threadstech.stockfy.exception.EntityNotFoundException;
+import br.com.threadstech.stockfy.exception.ProductUniqueViolationException;
+import br.com.threadstech.stockfy.repository.ProductRepository;
+import br.com.threadstech.stockfy.web.dto.ProductDto;
+import br.com.threadstech.stockfy.web.dto.mapper.ProductMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.MessageSource;
-import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-
-import br.com.threadstech.stockfy.entity.Product;
-import br.com.threadstech.stockfy.exception.EntityNotFoundException;
-import br.com.threadstech.stockfy.repository.ProductRepository;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
@@ -19,21 +22,53 @@ public class ProductService {
   private final MessageSource messageSource;
   private final ProductRepository productRepository;
 
-  public Product save(Product product) {
+  @Transactional
+  public void save(Product product) {
+    log.info("Saving product: {}", product.getName());
     try {
-      return productRepository.save(product);
+      productRepository.save(product);
     } catch (org.springframework.dao.DataIntegrityViolationException ex) {
-      throw new UniqueFieldViolationException(
-          messageSource.getMessage(
-              "UniqueFieldViolationException.product",
-              null,
-              LocaleContextHolder.getLocale()));
+      throw new ProductUniqueViolationException(product.getBarCode());
     }
   }
 
+  @Transactional(readOnly = true)
   public Product findByBarCode(String barCode) {
+    log.info("Finding product by bar code: {}", barCode);
     return productRepository
         .findByBarCode(barCode)
-        .orElseThrow(() -> new EntityNotFoundException("Product not found"));
+        .orElseThrow(() -> new EntityNotFoundException(barCode));
+  }
+
+  @Transactional(readOnly = true)
+  public Page<Product> findAllByName(String name, Pageable pageable) {
+    log.info("Finding product by name: {}", name);
+    return productRepository.findAllByName(name, pageable);
+  }
+
+  @Transactional(readOnly = true)
+  public Product findById(Long id) {
+    log.info("Finding product by id: {}", id);
+    return productRepository
+        .findById(id)
+        .orElseThrow(() -> new EntityNotFoundException(id.toString()));
+  }
+
+  @Transactional
+  public void updateById(Long id, ProductDto productDto) {
+    log.info("Updating product by id: {}...", id);
+    Product product = findById(id);
+    Product updatedProduct = ProductMapper.updateProductByDto(productDto, product);
+    log.info("Updated product successfully: {}", updatedProduct.toString());
+  }
+
+  public void deleteById(Long id) {
+    log.info("Deleting product by id: {}...", id);
+    productRepository.deleteById(id);
+    log.info("Deleted product successfully!");
+  }
+
+  public Page<Product> findAll(Pageable pageable) {
+    return productRepository.findAll(pageable);
   }
 }

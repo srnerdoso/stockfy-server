@@ -1,12 +1,22 @@
 package br.com.threadstech.stockfy.entity;
 
 import br.com.threadstech.stockfy.enums.PaymentStatus;
-import jakarta.persistence.*;
-
+import jakarta.persistence.CollectionTable;
+import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Embedded;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
-
+import java.util.Objects;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -45,4 +55,18 @@ public class Payment {
 
   @Column(name = "total", precision = 10, scale = 2)
   private BigDecimal total;
+
+  @Override
+  public boolean equals(Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    Payment payment = (Payment) o;
+    return Objects.equals(id, payment.id);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(id);
+  }
 }

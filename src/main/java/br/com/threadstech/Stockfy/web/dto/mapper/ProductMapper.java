@@ -1,21 +1,35 @@
 package br.com.threadstech.stockfy.web.dto.mapper;
 
-import org.modelmapper.ModelMapper;
-
 import br.com.threadstech.stockfy.entity.Product;
 import br.com.threadstech.stockfy.web.dto.ProductDto;
 import br.com.threadstech.stockfy.web.dto.ProductResponseDto;
+import org.modelmapper.ModelMapper;
+import org.springframework.data.domain.Page;
 
 public class ProductMapper {
 
-  private ProductMapper() {
+  private static final ModelMapper mapper;
+
+  static {
+    mapper = new ModelMapper();
+    mapper.getConfiguration().setSkipNullEnabled(true);
   }
 
   public static Product toProduct(ProductDto dto) {
-    return new ModelMapper().map(dto, Product.class);
+    return mapper.map(dto, Product.class);
   }
 
   public static ProductResponseDto toDto(Product product) {
-    return new ModelMapper().map(product, ProductResponseDto.class);
+    return mapper.map(product, ProductResponseDto.class);
+  }
+
+  public static Product updateProductByDto(ProductDto dto, Product oldProduct) {
+    Product newProduct = toProduct(dto);
+    mapper.map(newProduct, oldProduct);
+    return oldProduct;
+  }
+
+  public static Page<ProductResponseDto> toPageDto(Page<Product> all) {
+    return all.map(ProductMapper::toDto);
   }
 }

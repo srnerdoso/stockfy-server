@@ -9,6 +9,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.time.Instant;
+import java.util.Objects;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -58,4 +59,18 @@ public class Customer extends AuditListener {
   @ManyToOne
   @JoinColumn(name = "address_id")
   private Address address;
+
+  @Override
+  public boolean equals(Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    Customer customer = (Customer) o;
+    return Objects.equals(id, customer.id);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(id);
+  }
 }
