@@ -15,6 +15,9 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 
+// TODO: Corrigir design do dto. Usar 2 DTOs separados (Create e Update) e remover groups deste dto
+// TODO: Adicionar anotações de validação que estão faltando. Analisar a entidade e ver quais campos
+// são obrigatórios
 @Getter
 @Setter
 @NoArgsConstructor

@@ -9,11 +9,11 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 @Documented
-@Constraint(validatedBy = ProductTypeValidator.class)
-@Target({ ElementType.FIELD })
+@Constraint(validatedBy = PaymentMethodValidator.class)
+@Target({ElementType.FIELD})
 @Retention(RetentionPolicy.RUNTIME)
-public @interface ProductType {
-  String message() default "Invalid product type";
+public @interface PaymentMethod {
+  String message() default "Invalid payment method";
 
   Class<?>[] groups() default {};
 

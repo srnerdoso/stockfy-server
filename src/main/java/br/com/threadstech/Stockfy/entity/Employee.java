@@ -11,15 +11,11 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
-import java.time.Instant;
 import java.util.Objects;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import lombok.ToString;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
 
 @Entity
 @Getter
@@ -27,7 +23,6 @@ import org.springframework.data.annotation.LastModifiedDate;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "addresses")
-@ToString
 public class Employee extends AuditListener {
 
   @Id
@@ -56,14 +51,6 @@ public class Employee extends AuditListener {
   @JoinColumn(name = "address_id")
   private Address address;
 
-  @CreatedDate
-  @Column(name = "created_at", nullable = false)
-  private Instant createdAt;
-
-  @LastModifiedDate
-  @Column(name = "updated_at", nullable = false)
-  private Instant updatedAt;
-
   @Override
   public boolean equals(Object o) {
     if (o == null || getClass() != o.getClass()) {
@@ -76,5 +63,10 @@ public class Employee extends AuditListener {
   @Override
   public int hashCode() {
     return Objects.hashCode(id);
+  }
+
+  @Override
+  public String toString() {
+    return "Employee{" + "id=" + id + '}';
   }
 }

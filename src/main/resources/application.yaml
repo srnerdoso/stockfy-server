@@ -9,5 +9,9 @@ spring:
 
   messages:
     basename:
-    - messages
+      - messages
     encoding: UTF-8
+
+# Environment variables
+payment-service:
+  refund-max-days: ${REFUND_MAX_DAYS}
