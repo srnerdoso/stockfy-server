@@ -2,6 +2,7 @@ package br.com.threadstech.stockfy.web.dto.mapper.exception;
 
 import br.com.threadstech.stockfy.exception.EntityNotFoundException;
 import br.com.threadstech.stockfy.exception.ProductUniqueViolationException;
+import br.com.threadstech.stockfy.exception.UnavailableFromRefundException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.Locale;
 import lombok.RequiredArgsConstructor;
@@ -47,5 +48,15 @@ public class ApiExceptionHandler {
         messageSource.getMessage("exception.productUniqueViolationException", params, locale);
     return ResponseEntity.status(HttpStatus.CONFLICT)
         .body(new ErrorMessage(request, HttpStatus.CONFLICT, message));
+  }
+
+  @ExceptionHandler(UnavailableFromRefundException.class)
+  public ResponseEntity<ErrorMessage> unavailableFromRefundException(
+      UnavailableFromRefundException ex, HttpServletRequest request) {
+    var params = new Object[] {ex.getRefoundId()};
+    String message =
+        messageSource.getMessage("exception.unavailableFromRefundException", params, locale);
+    return ResponseEntity.unprocessableContent()
+        .body(new ErrorMessage(request, HttpStatus.UNPROCESSABLE_CONTENT, message));
   }
 }

@@ -1,0 +1,3 @@
+# Environment variables
+refund:
+  max-days: 7

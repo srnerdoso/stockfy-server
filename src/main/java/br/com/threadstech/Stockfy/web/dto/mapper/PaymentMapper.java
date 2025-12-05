@@ -11,22 +11,20 @@ import br.com.threadstech.stockfy.web.dto.CartCreateDto;
 import br.com.threadstech.stockfy.web.dto.PaymentCreateDto;
 import br.com.threadstech.stockfy.web.dto.mapper.anotations.IgnoreAuditFields;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.mapstruct.InjectionStrategy;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
-import org.mapstruct.MappingConstants;
 import org.mapstruct.Named;
 import org.mapstruct.ReportingPolicy;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @Mapper(
-    componentModel = MappingConstants.ComponentModel.SPRING,
+    componentModel = "spring",
     unmappedSourcePolicy = ReportingPolicy.ERROR,
-    injectionStrategy = InjectionStrategy.FIELD,
+    injectionStrategy = InjectionStrategy.CONSTRUCTOR,
     uses = {PaymentService.class, ProductService.class, CustomerService.class})
 public abstract class PaymentMapper {
 

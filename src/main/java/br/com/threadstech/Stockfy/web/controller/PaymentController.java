@@ -15,10 +15,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @Slf4j
 @RestController
@@ -29,12 +26,18 @@ public class PaymentController {
   private final PaymentService paymentService;
   private final PaymentMapper paymentMapper;
 
-  @PostMapping
-  public ResponseEntity<Void> save(@Valid @RequestBody PaymentCreateDto paymentDto) {
+  @PostMapping("/pay")
+  public ResponseEntity<Void> pay(@Valid @RequestBody PaymentCreateDto paymentDto) {
     log.info(
         "PaymentController - Converting PaymentCreateDto to Payment and saving: {}",
         paymentDto.toString());
     paymentService.save(paymentMapper.toPayment(paymentDto));
     return ResponseEntity.status(HttpStatus.CREATED).build();
+  }
+
+  @PostMapping("/{id}/refund")
+  public ResponseEntity<Void> refund(@PathVariable Long id) {
+    paymentService.refund(id);
+    return ResponseEntity.noContent().build();
   }
 }
