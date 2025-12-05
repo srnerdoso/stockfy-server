@@ -17,7 +17,6 @@ import lombok.ToString;
 @ToString
 public class CartCreateDto {
 
-  // TODO: No mapper este campo deve ser skipped
   @NotNull(message = "{NotNull.cartDto.productId}")
   @Positive(message = "{Positive.cartDto.productId}")
   private Long productId;
