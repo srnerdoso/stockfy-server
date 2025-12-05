@@ -6,6 +6,7 @@ import br.com.threadstech.stockfy.web.dto.ProductResponseDto;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 
+// TODO: Trocar para MapStruct para manter padrão no projeto e melhorar performance
 public class ProductMapper {
 
   private static final ModelMapper mapper;

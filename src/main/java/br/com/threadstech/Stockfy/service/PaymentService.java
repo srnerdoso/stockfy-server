@@ -1,14 +1,18 @@
 package br.com.threadstech.stockfy.service;
 
 import br.com.threadstech.stockfy.entity.Cart;
+import br.com.threadstech.stockfy.entity.Customer;
 import br.com.threadstech.stockfy.entity.Payment;
 import br.com.threadstech.stockfy.entity.Product;
+import br.com.threadstech.stockfy.enums.PaymentStatus;
+import br.com.threadstech.stockfy.repository.CustomerRepository;
 import br.com.threadstech.stockfy.repository.PaymentRepository;
 import br.com.threadstech.stockfy.repository.ProductRepository;
 import br.com.threadstech.stockfy.web.dto.CartCreateDto;
 import java.math.BigDecimal;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,6 +36,7 @@ public class PaymentService {
       product.setStock(productStock.subtract(quantity));
     }
     paymentRepository.save(payment);
+    log.info("Payment successfully: {}", payment);
   }
 
   @Transactional(readOnly = true)

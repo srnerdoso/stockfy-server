@@ -1,66 +1,69 @@
 package br.com.threadstech.stockfy.web.dto.mapper;
 
 import br.com.threadstech.stockfy.entity.Cart;
+import br.com.threadstech.stockfy.entity.Customer;
 import br.com.threadstech.stockfy.entity.Payment;
 import br.com.threadstech.stockfy.entity.Product;
+import br.com.threadstech.stockfy.service.CustomerService;
+import br.com.threadstech.stockfy.service.PaymentService;
+import br.com.threadstech.stockfy.service.ProductService;
 import br.com.threadstech.stockfy.web.dto.CartCreateDto;
 import br.com.threadstech.stockfy.web.dto.PaymentCreateDto;
-
+import br.com.threadstech.stockfy.web.dto.mapper.anotations.IgnoreAuditFields;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.mapstruct.InjectionStrategy;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.mapstruct.MappingConstants;
+import org.mapstruct.Named;
+import org.mapstruct.ReportingPolicy;
+import org.springframework.beans.factory.annotation.Autowired;
 
-import lombok.extern.slf4j.Slf4j;
-import org.modelmapper.Converter;
-import org.modelmapper.ModelMapper;
-import org.modelmapper.PropertyMap;
+@Mapper(
+    componentModel = MappingConstants.ComponentModel.SPRING,
+    unmappedSourcePolicy = ReportingPolicy.ERROR,
+    injectionStrategy = InjectionStrategy.FIELD,
+    uses = {PaymentService.class, ProductService.class, CustomerService.class})
+public abstract class PaymentMapper {
 
-@Slf4j
-public class PaymentMapper {
+  @Autowired private PaymentService paymentService;
+  @Autowired private ProductService productService;
+  @Autowired private CustomerService customerService;
 
-  private static final ModelMapper mapper;
+  @IgnoreAuditFields
+  @Mapping(target = "id", ignore = true)
+  @Mapping(target = "customer", source = "customerId", qualifiedByName = "customerById")
+  public abstract Payment toPayment(PaymentCreateDto paymentCreateDto);
 
-  static {
-    mapper = new ModelMapper();
-    mapper.getConfiguration().setSkipNullEnabled(true);
+  @Mapping(target = "product", source = "productId", qualifiedByName = "productById")
+  public abstract Cart toCart(CartCreateDto cartCreateDto);
+
+  @Named("customerById")
+  public Customer customerById(Long customerId) {
+    return customerId != null ? customerService.findById(customerId) : null;
   }
 
-  public static Payment toPayment(PaymentCreateDto paymentDto, Set<Product> products) {
-    Converter<Set<CartCreateDto>, Set<Cart>> cartConverter =
-        ctx -> toCartsSet(ctx.getSource(), products);
-    mapper
-        .typeMap(PaymentCreateDto.class, Payment.class)
-        .addMappings(m -> m.using(cartConverter).map(PaymentCreateDto::getCart, Payment::setCart));
-    return mapper.map(paymentDto, Payment.class);
+  @Named("productById")
+  public Product productById(Long productId) {
+    return productService.findById(productId);
   }
 
-  private static Cart toCart(CartCreateDto cartDto, Product product) {
-    var mapper = new ModelMapper();
-    var props =
-        new PropertyMap<CartCreateDto, Cart>() {
-          @Override
-          protected void configure() {
-            map().setProduct(product);
-          }
-        };
-    mapper.addMappings(props);
-    return mapper.map(cartDto, Cart.class);
-  }
-
-  private static Set<Cart> toCartsSet(Set<CartCreateDto> cart, Set<Product> products) {
+  @Named("cartsFromDtos")
+  public Set<Cart> cartsFromDtos(Set<CartCreateDto> cartDtos) {
     Map<Long, Product> productMap =
-        products.stream().collect(Collectors.toMap(Product::getId, Function.identity()));
+        paymentService.getProductsFromCarts(cartDtos).stream()
+            .collect(Collectors.toMap(Product::getId, Function.identity()));
 
-    return cart.stream()
+    return cartDtos.stream()
         .map(
-            cartDto -> {
-              Product product = productMap.get(cartDto.getProductId());
-              // TODO: Tratar exception
-              if (product == null) {
-                throw new IllegalArgumentException("Product not found: " + cartDto.getProductId());
-              }
-              return toCart(cartDto, product);
+            dto -> {
+              Cart cart = new Cart();
+              cart.setProduct(productMap.get(dto.getProductId()));
+              return cart;
             })
         .collect(Collectors.toSet());
   }
