@@ -2,11 +2,12 @@ package br.com.threadstech.stockfy.web.controller;
 
 import br.com.threadstech.stockfy.api.ApiPaths;
 import br.com.threadstech.stockfy.service.ProductService;
-import br.com.threadstech.stockfy.web.dto.ProductDto;
+import br.com.threadstech.stockfy.web.dto.ProductCreateDto;
 import br.com.threadstech.stockfy.web.dto.ProductResponseDto;
-import br.com.threadstech.stockfy.web.dto.groups.Create;
+import br.com.threadstech.stockfy.web.dto.ProductUpdateDto;
 import br.com.threadstech.stockfy.web.dto.groups.Update;
 import br.com.threadstech.stockfy.web.dto.mapper.ProductMapper;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -29,33 +30,34 @@ import org.springframework.web.bind.annotation.RestController;
 public class ProductController {
 
   private final ProductService productService;
+  private final ProductMapper productMapper;
 
   @PostMapping
-  public ResponseEntity<Void> save(@Validated(Create.class) @RequestBody ProductDto product) {
-    productService.save(ProductMapper.toProduct(product));
+  public ResponseEntity<Void> save(@Valid @RequestBody ProductCreateDto product) {
+    productService.save(productMapper.toProduct(product));
     return ResponseEntity.status(HttpStatus.CREATED).build();
   }
 
   @GetMapping
   public ResponseEntity<Page<ProductResponseDto>> findAll(@PageableDefault Pageable pageable) {
-    return ResponseEntity.ok(ProductMapper.toPageDto(productService.findAll(pageable)));
+    return ResponseEntity.ok(productMapper.toPageDto(productService.findAll(pageable)));
   }
 
   @GetMapping("/{barCode}/barcode")
   public ResponseEntity<ProductResponseDto> findByBarCode(@PathVariable String barCode) {
-    return ResponseEntity.ok(ProductMapper.toDto(productService.findByBarCode(barCode)));
+    return ResponseEntity.ok(productMapper.toDto(productService.findByBarCode(barCode)));
   }
 
   @GetMapping("/{name}/name")
   public ResponseEntity<Page<ProductResponseDto>> findAllByName(
       @PathVariable String name, @PageableDefault Pageable pageable) {
-    return ResponseEntity.ok(ProductMapper.toPageDto(productService.findAllByName(name, pageable)));
+    return ResponseEntity.ok(productMapper.toPageDto(productService.findAllByName(name, pageable)));
   }
 
   @PatchMapping("/{id}/id")
   public ResponseEntity<Void> updateProductById(
-      @PathVariable Long id, @Validated(Update.class) @RequestBody ProductDto productDto) {
-    productService.updateById(id, productDto);
+      @PathVariable Long id, @Valid @RequestBody ProductUpdateDto productDto) {
+    productService.updateById(id, productDto, productMapper);
     return ResponseEntity.noContent().build();
   }
 

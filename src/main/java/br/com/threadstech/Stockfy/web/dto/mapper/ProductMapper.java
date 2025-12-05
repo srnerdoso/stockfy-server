@@ -1,36 +1,31 @@
 package br.com.threadstech.stockfy.web.dto.mapper;
 
 import br.com.threadstech.stockfy.entity.Product;
-import br.com.threadstech.stockfy.web.dto.ProductDto;
+import br.com.threadstech.stockfy.web.dto.ProductCreateDto;
 import br.com.threadstech.stockfy.web.dto.ProductResponseDto;
-import org.modelmapper.ModelMapper;
+import br.com.threadstech.stockfy.web.dto.ProductUpdateDto;
+import org.mapstruct.BeanMapping;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
+import org.mapstruct.ReportingPolicy;
 import org.springframework.data.domain.Page;
 
-// TODO: Trocar para MapStruct para manter padrão no projeto e melhorar performance
-public class ProductMapper {
+@Mapper
+public interface ProductMapper {
 
-  private static final ModelMapper mapper;
+  @Mapping(target = "id", ignore = true)
+  @Mapping(target = "deleted", ignore = true)
+  Product toProduct(ProductCreateDto productDto);
 
-  static {
-    mapper = new ModelMapper();
-    mapper.getConfiguration().setSkipNullEnabled(true);
-  }
+  @Mapping(target = "id", ignore = true)
+  @Mapping(target = "deleted", ignore = true)
+  void updateProduct(ProductUpdateDto productUpdateDto, @MappingTarget Product product);
 
-  public static Product toProduct(ProductDto dto) {
-    return mapper.map(dto, Product.class);
-  }
+  @BeanMapping(unmappedSourcePolicy = ReportingPolicy.IGNORE)
+  ProductResponseDto toDto(Product product);
 
-  public static ProductResponseDto toDto(Product product) {
-    return mapper.map(product, ProductResponseDto.class);
-  }
-
-  public static Product updateProductByDto(ProductDto dto, Product oldProduct) {
-    Product newProduct = toProduct(dto);
-    mapper.map(newProduct, oldProduct);
-    return oldProduct;
-  }
-
-  public static Page<ProductResponseDto> toPageDto(Page<Product> all) {
-    return all.map(ProductMapper::toDto);
+  default Page<ProductResponseDto> toPageDto(Page<Product> productPage) {
+    return productPage.map(this::toDto);
   }
 }

@@ -22,8 +22,6 @@ import org.mapstruct.ReportingPolicy;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @Mapper(
-    componentModel = "spring",
-    unmappedSourcePolicy = ReportingPolicy.ERROR,
     injectionStrategy = InjectionStrategy.CONSTRUCTOR,
     uses = {PaymentService.class, ProductService.class, CustomerService.class})
 public abstract class PaymentMapper {

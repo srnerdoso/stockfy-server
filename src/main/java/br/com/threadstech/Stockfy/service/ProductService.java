@@ -4,7 +4,8 @@ import br.com.threadstech.stockfy.entity.Product;
 import br.com.threadstech.stockfy.exception.EntityNotFoundException;
 import br.com.threadstech.stockfy.exception.ProductUniqueViolationException;
 import br.com.threadstech.stockfy.repository.ProductRepository;
-import br.com.threadstech.stockfy.web.dto.ProductDto;
+import br.com.threadstech.stockfy.web.dto.ProductCreateDto;
+import br.com.threadstech.stockfy.web.dto.ProductUpdateDto;
 import br.com.threadstech.stockfy.web.dto.mapper.ProductMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -55,11 +56,18 @@ public class ProductService {
   }
 
   @Transactional
-  public void updateById(Long id, ProductDto productDto) {
-    log.info("Updating product by id: {}...", id);
+  public void updateById(Long id, ProductUpdateDto productDto, ProductMapper productMapper) {
+    log.info(
+        """
+        Updating product by id:
+          id={};
+          dto={}
+        """,
+        id,
+        productDto.toString());
     Product product = findById(id);
-    Product updatedProduct = ProductMapper.updateProductByDto(productDto, product);
-    log.info("Updated product successfully: {}", updatedProduct.toString());
+    productMapper.updateProduct(productDto, product);
+    log.info("Product id={} updated successfully.", id);
   }
 
   public void deleteById(Long id) {
