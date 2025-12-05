@@ -1,21 +1,17 @@
 spring:
   application:
     name: Stockfy
-
-  devtools:
-    remote:
-      secret: 123
-
-  docker:
-    compose:
-      lifecycle-management: start-and-stop
-      readiness:
-        tcp:
-          connect-timeout: 10s
-          read-timeout: 5s
-        timeout: 1m
   
   jpa:
     hibernate:
       ddl-auto: update
     show-sql: true
+
+  messages:
+    basename:
+      - messages
+    encoding: UTF-8
+
+# Environment variables
+payment-service:
+  refund-max-days: ${REFUND_MAX_DAYS}
