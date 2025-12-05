@@ -1,5 +1,6 @@
 package br.com.threadstech.stockfy.service;
 
+import br.com.threadstech.stockfy.config.properties.PaymentPropertiesConfig;
 import br.com.threadstech.stockfy.entity.Cart;
 import br.com.threadstech.stockfy.entity.Payment;
 import br.com.threadstech.stockfy.entity.Product;
@@ -17,23 +18,19 @@ import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@ConfigurationProperties(prefix = "payment-service")
 public class PaymentService {
 
   private final PaymentRepository paymentRepository;
   private final ProductRepository productRepository;
-
-  // TODO: Corrigir o problema com o MapStruct e a annotation @Value
-  // O erro estrá relacionado a injeção de dependência. Devo verificar como funciona corretamente as
-  // injeções de dependência em classes do MapStruct.
-
-  //  @Value("${refund.max-days}")
-  private final int refundMaxDays = 7;
+  private final PaymentPropertiesConfig properties;
 
   @Transactional
   public void save(Payment payment) {
@@ -78,7 +75,8 @@ public class PaymentService {
   private void verifyPayment(Payment payment) {
     Long paymentId = payment.getId();
     int daysSincePayment = payment.getCreatedAt().compareTo(Instant.now());
-    boolean isDaysSincePaymentGreaterThanRefundMaxDays = daysSincePayment > refundMaxDays;
+    boolean isDaysSincePaymentGreaterThanRefundMaxDays =
+        daysSincePayment > properties.getRefundMaxDays();
     boolean isPaymentNotPaid = payment.getPaymentStatus() != PaymentStatus.PAID;
 
     if (isDaysSincePaymentGreaterThanRefundMaxDays || isPaymentNotPaid) {

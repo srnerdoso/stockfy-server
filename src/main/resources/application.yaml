@@ -13,5 +13,5 @@ spring:
     encoding: UTF-8
 
 # Environment variables
-refund:
-  max-days: ${REFUND_MAX_DAYS}
+payment-service:
+  refund-max-days: ${REFUND_MAX_DAYS}
