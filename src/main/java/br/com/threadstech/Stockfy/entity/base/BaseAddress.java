@@ -1,26 +1,22 @@
-package br.com.threadstech.stockfy.entity;
+package br.com.threadstech.stockfy.entity.base;
 
 import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
+import jakarta.persistence.MappedSuperclass;
 import java.util.Objects;
-import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-@Entity
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "addresses")
-public class Address {
+@MappedSuperclass
+public class BaseAddress extends BaseAuditDelete {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -51,16 +47,13 @@ public class Address {
   @Column(name = "country", nullable = false, length = 100)
   private String country;
 
-  @OneToMany(mappedBy = "address")
-  private Set<Customer> customers;
-
   @Override
   public boolean equals(Object o) {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    Address address = (Address) o;
-    return Objects.equals(id, address.id);
+    BaseAddress that = (BaseAddress) o;
+    return Objects.equals(id, that.id);
   }
 
   @Override
@@ -70,6 +63,6 @@ public class Address {
 
   @Override
   public String toString() {
-    return getClass().getSimpleName() + "(" + "id = " + id + ")";
+    return "BaseAddress{" + "id=" + id + '}';
   }
 }

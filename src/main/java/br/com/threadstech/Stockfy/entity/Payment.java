@@ -1,5 +1,6 @@
 package br.com.threadstech.stockfy.entity;
 
+import br.com.threadstech.stockfy.entity.base.BaseAudit;
 import br.com.threadstech.stockfy.enums.PaymentMethod;
 import br.com.threadstech.stockfy.enums.PaymentStatus;
 import jakarta.annotation.Nullable;

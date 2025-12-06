@@ -1,5 +1,6 @@
-package br.com.threadstech.stockfy.web.dto.mapper.exception;
+package br.com.threadstech.stockfy.web.exception;
 
+import br.com.threadstech.stockfy.exception.CustomerUniqueViolationException;
 import br.com.threadstech.stockfy.exception.EntityNotFoundException;
 import br.com.threadstech.stockfy.exception.ProductUniqueViolationException;
 import br.com.threadstech.stockfy.exception.UnavailableFromRefundException;
@@ -15,6 +16,9 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+// TODO: Separar os handlers em classes diferentes e criar métodos base para construir cada método
+// sem repetição de código
 
 @Slf4j
 @RequiredArgsConstructor
@@ -40,6 +44,18 @@ public class ApiExceptionHandler {
         .body(new ErrorMessage(request, HttpStatus.NOT_FOUND, message));
   }
 
+  @ExceptionHandler(UnavailableFromRefundException.class)
+  public ResponseEntity<ErrorMessage> unavailableFromRefundException(
+      UnavailableFromRefundException ex, HttpServletRequest request) {
+    var params = new Object[] {ex.getRefoundId()};
+    String message =
+        messageSource.getMessage("exception.unavailableFromRefundException", params, locale);
+    return ResponseEntity.unprocessableContent()
+        .body(new ErrorMessage(request, HttpStatus.UNPROCESSABLE_CONTENT, message));
+  }
+
+  // -- Conflict Handlers -- //
+
   @ExceptionHandler(ProductUniqueViolationException.class)
   public ResponseEntity<ErrorMessage> productUniqueFieldViolationException(
       ProductUniqueViolationException ex, HttpServletRequest request) {
@@ -50,13 +66,13 @@ public class ApiExceptionHandler {
         .body(new ErrorMessage(request, HttpStatus.CONFLICT, message));
   }
 
-  @ExceptionHandler(UnavailableFromRefundException.class)
-  public ResponseEntity<ErrorMessage> unavailableFromRefundException(
-      UnavailableFromRefundException ex, HttpServletRequest request) {
-    var params = new Object[] {ex.getRefoundId()};
+  @ExceptionHandler(CustomerUniqueViolationException.class)
+  public ResponseEntity<ErrorMessage> customerUniqueFieldViolationException(
+      CustomerUniqueViolationException ex, HttpServletRequest request) {
+    var params = new Object[] {ex.getFieldName()};
     String message =
-        messageSource.getMessage("exception.unavailableFromRefundException", params, locale);
-    return ResponseEntity.unprocessableContent()
-        .body(new ErrorMessage(request, HttpStatus.UNPROCESSABLE_CONTENT, message));
+        messageSource.getMessage("exception.customerUniqueViolationException", params, locale);
+    return ResponseEntity.status(HttpStatus.CONFLICT)
+        .body(new ErrorMessage(request, HttpStatus.CONFLICT, message));
   }
 }

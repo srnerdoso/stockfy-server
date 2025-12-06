@@ -29,8 +29,9 @@ import org.hibernate.annotations.SQLRestriction;
 @SQLDelete(
     sql =
         """
-    UPDATE products SET deleted = true,
-      bar_code = CONCAT(bar_code, '_deleted_', id)
+    UPDATE products
+    SET deleted = true,
+        bar_code = CONCAT(bar_code, '_deleted_', id)
     WHERE id = ?
     """)
 @SQLRestriction("deleted = false")
@@ -69,7 +70,7 @@ public class Product {
   private ProductType type;
 
   @Column(name = "deleted", nullable = false)
-  boolean deleted = false;
+  private boolean deleted = false;
 
   @Override
   public boolean equals(Object o) {

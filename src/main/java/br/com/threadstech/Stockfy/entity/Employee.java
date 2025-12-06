@@ -1,16 +1,9 @@
 package br.com.threadstech.stockfy.entity;
 
+import br.com.threadstech.stockfy.entity.base.BaseAudit;
 import br.com.threadstech.stockfy.enums.Role;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.OneToOne;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
+
 import java.util.Objects;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -22,7 +15,7 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "addresses")
+@Table(name = "employees")
 public class Employee extends BaseAudit {
 
   @Id
@@ -40,16 +33,16 @@ public class Employee extends BaseAudit {
   @Column(name = "role", nullable = false, length = 25)
   private Role role;
 
-  @OneToOne
-  @JoinColumn(name = "contact_id")
-  private Contact contact;
-
   @Column(name = "password", nullable = false, length = 255)
   private String password;
 
-  @OneToOne
-  @JoinColumn(name = "address_id")
-  private Address address;
+  @OneToOne(cascade = CascadeType.PERSIST, fetch = FetchType.LAZY)
+  @JoinColumn(name = "employee_contact_id")
+  private EmployeeContact contact;
+
+  @OneToOne(cascade = CascadeType.PERSIST, fetch = FetchType.LAZY)
+  @JoinColumn(name = "employee_address_id")
+  private EmployeeAddress address;
 
   @Override
   public boolean equals(Object o) {

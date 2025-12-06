@@ -1,15 +1,8 @@
 package br.com.threadstech.stockfy.entity;
 
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
+import br.com.threadstech.stockfy.entity.base.BaseAudit;
+import jakarta.persistence.*;
+
 import java.time.LocalDate;
 import java.util.Objects;
 import java.util.Set;
@@ -17,6 +10,10 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
+
+// TODO: Corrigir os nomes das constraints
 
 @Entity
 @Getter
@@ -24,6 +21,16 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "customers")
+@SQLDelete(
+    sql =
+        """
+    UPDATE customers
+    SET deleted = true,
+        full_name = 'deleted',
+        cpf = CONCAT('cpf_', id, '_deleted')
+    WHERE id = ?
+    """)
+@SQLRestriction("deleted = false")
 public class Customer extends BaseAudit {
 
   @Id
@@ -34,22 +41,25 @@ public class Customer extends BaseAudit {
   @Column(name = "full_name", nullable = false, length = 255)
   private String fullName;
 
-  @Column(name = "cpf", nullable = false, unique = true, length = 255)
+  @Column(name = "cpf", nullable = false, unique = true, length = 20)
   private String cpf;
 
   @Column(name = "birthday", nullable = false)
   private LocalDate birthday;
 
-  @ManyToOne(cascade = CascadeType.PERSIST)
-  @JoinColumn(name = "contact_id", nullable = false)
-  private Contact contact;
+  @ManyToOne(cascade = CascadeType.PERSIST, fetch = FetchType.LAZY)
+  @JoinColumn(name = "customer_contact_id", nullable = false)
+  private CustomerContact contact;
 
-  @ManyToOne(cascade = CascadeType.PERSIST)
-  @JoinColumn(name = "address_id", nullable = false)
-  private Address address;
+  @ManyToOne(cascade = CascadeType.PERSIST, fetch = FetchType.LAZY)
+  @JoinColumn(name = "customer_address_id", nullable = false)
+  private CustomerAddress address;
 
   @OneToMany(mappedBy = "customer")
   private Set<Payment> payments;
+
+  @Column(name = "deleted", nullable = false)
+  private boolean deleted = false;
 
   @Override
   public boolean equals(Object o) {
