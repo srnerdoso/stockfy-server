@@ -3,6 +3,7 @@ package br.com.threadstech.stockfy.service;
 import br.com.threadstech.stockfy.entity.Customer;
 import br.com.threadstech.stockfy.exception.EntityNotFoundException;
 import br.com.threadstech.stockfy.repository.CustomerRepository;
+import br.com.threadstech.stockfy.web.dto.CustomerCreateDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -13,6 +14,10 @@ import org.springframework.stereotype.Service;
 public class CustomerService {
 
   private final CustomerRepository customerRepository;
+
+  public void save(Customer customer) {
+    customerRepository.save(customer);
+  }
 
   public Customer findById(Long id) {
     return customerRepository

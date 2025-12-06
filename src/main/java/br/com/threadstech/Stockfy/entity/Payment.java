@@ -31,7 +31,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "payments")
-public class Payment extends AuditListener {
+public class Payment extends BaseAudit {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -23,7 +23,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "addresses")
-public class Employee extends AuditListener {
+public class Employee extends BaseAudit {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -5,13 +5,14 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import java.util.Objects;
+import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import lombok.ToString;
 
 @Entity
 @Getter
@@ -19,7 +20,6 @@ import lombok.ToString;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "addresses")
-@ToString
 public class Address {
 
   @Id
@@ -51,6 +51,9 @@ public class Address {
   @Column(name = "country", nullable = false, length = 100)
   private String country;
 
+  @OneToMany(mappedBy = "address")
+  private Set<Customer> customers;
+
   @Override
   public boolean equals(Object o) {
     if (o == null || getClass() != o.getClass()) {
@@ -63,5 +66,10 @@ public class Address {
   @Override
   public int hashCode() {
     return Objects.hashCode(id);
+  }
+
+  @Override
+  public String toString() {
+    return getClass().getSimpleName() + "(" + "id = " + id + ")";
   }
 }

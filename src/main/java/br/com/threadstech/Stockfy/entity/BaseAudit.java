@@ -15,24 +15,22 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @Getter
 @Setter
 @MappedSuperclass
-// @EntityListeners(AuditingEntityListener.class)
-public class AuditListener {
-
-  // TODO: Remover default values quando o AuditorAware for configurado
+@EntityListeners(AuditingEntityListener.class)
+public class BaseAudit {
 
   @CreatedDate
   @Column(name = "created_at", nullable = false)
-  private Instant createdAt = Instant.now();
+  private Instant createdAt;
 
   @LastModifiedDate
   @Column(name = "updated_at", nullable = false)
-  private Instant updatedAt = Instant.now();
+  private Instant updatedAt;
 
   @CreatedBy
   @Column(name = "created_by", nullable = false)
-  private String createdBy = "srnerdoso";
+  private String createdBy;
 
   @LastModifiedBy
   @Column(name = "updated_by", nullable = false)
-  private String updatedBy = "srnerdoso";
+  private String updatedBy;
 }

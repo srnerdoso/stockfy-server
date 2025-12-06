@@ -5,13 +5,14 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import java.util.Objects;
+import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import lombok.ToString;
 
 @Entity
 @Getter
@@ -19,7 +20,6 @@ import lombok.ToString;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "contacts")
-@ToString
 public class Contact {
 
   @Id
@@ -27,11 +27,14 @@ public class Contact {
   @Column(nullable = false)
   private Long id;
 
-  @Column(name = "email", unique = true, nullable = false, length = 255)
+  @Column(name = "email", unique = true, length = 255)
   private String email;
 
   @Column(name = "phone_number", unique = true, nullable = false, length = 20)
   private String phoneNumber;
+
+  @OneToMany(mappedBy = "contact")
+  private Set<Customer> customers;
 
   @Override
   public boolean equals(Object o) {
@@ -45,5 +48,10 @@ public class Contact {
   @Override
   public int hashCode() {
     return Objects.hashCode(id);
+  }
+
+  @Override
+  public String toString() {
+    return getClass().getSimpleName() + "(" + "id = " + id + ")";
   }
 }
