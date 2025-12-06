@@ -1,10 +1,11 @@
 package br.com.threadstech.stockfy.service;
 
+import br.com.threadstech.stockfy.config.constraints.CustomerConstraintNames;
 import br.com.threadstech.stockfy.entity.Customer;
 import br.com.threadstech.stockfy.exception.CustomerUniqueViolationException;
 import br.com.threadstech.stockfy.exception.EntityNotFoundException;
 import br.com.threadstech.stockfy.repository.CustomerRepository;
-import br.com.threadstech.stockfy.web.dto.CustomerCreateDto;
+import br.com.threadstech.stockfy.utils.ConstraintI18nResolver;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -18,16 +19,16 @@ import org.springframework.stereotype.Service;
 public class CustomerService {
 
   private final CustomerRepository customerRepository;
+  private final ConstraintNameService constraintNameService;
 
   public void save(Customer customer) {
     try {
       Customer customerSaved = customerRepository.save(customer);
       log.info("Customer saved successfully with id={}", customerSaved.getId());
     } catch (DataIntegrityViolationException ex) {
-      String constraint = "unknown";
-      if (ex.getCause() instanceof org.hibernate.exception.ConstraintViolationException cve) {
-        constraint = cve.getConstraintName();
-      }
+      String constraint =
+          ConstraintI18nResolver.resolveDisplayName(
+              ex, constraintNameService, CustomerConstraintNames.class);
       throw new CustomerUniqueViolationException(constraint);
     }
   }
