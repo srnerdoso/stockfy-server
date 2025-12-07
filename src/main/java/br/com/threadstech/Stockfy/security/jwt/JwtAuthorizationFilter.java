@@ -7,6 +7,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -15,14 +16,10 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import java.io.IOException;
-import java.util.Arrays;
-
 @Slf4j
 public class JwtAuthorizationFilter extends OncePerRequestFilter {
 
   @Autowired private JwtUserDetailsService detailsService;
-  //  @Autowired private RefreshTokenService refreshTokenService;
   @Autowired private JwtUtils jwtUtils;
   @Autowired private CookieUtils cookieUtils;
 
@@ -33,8 +30,8 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
 
     log.info("JWT Filter - Request URI: {}", request.getRequestURI());
 
-    if (request.getRequestURI().equals(ApiPaths.AUTH)) {
-      log.info("Request URI public. No authentication required.");
+    if (request.getRequestURI().contains(ApiPaths.AUTH)) {
+      log.info("JWT Filter - Request URI public. No authentication required.");
       filterChain.doFilter(request, response);
       return;
     }

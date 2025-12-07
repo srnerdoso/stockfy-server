@@ -23,4 +23,8 @@ public class LoginDto {
   @NotEmpty(message = "{NotEmpty.loginDto.password}")
   @Size(min = 8, max = 64, message = "{Size.loginDto.password}")
   private String password;
+
+  @NotEmpty(message = "{NotEmpty.loginDto.deviceId}")
+  @Size(min = 16, max = 64, message = "{Size.loginDto.deviceId}")
+  private String deviceId;
 }

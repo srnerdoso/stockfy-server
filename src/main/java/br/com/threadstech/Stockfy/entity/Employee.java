@@ -3,10 +3,13 @@ package br.com.threadstech.stockfy.entity;
 import br.com.threadstech.stockfy.config.constraints.EmployeeConstraintNames;
 import br.com.threadstech.stockfy.entity.base.BaseAudit;
 import br.com.threadstech.stockfy.enums.Role;
+import br.com.threadstech.stockfy.security.refreshtoken.RefreshToken;
 import jakarta.persistence.*;
 
 import java.time.LocalDate;
 import java.util.Objects;
+import java.util.Set;
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -54,6 +57,13 @@ public class Employee extends BaseAudit {
   @OneToOne(cascade = CascadeType.PERSIST, fetch = FetchType.LAZY)
   @JoinColumn(name = "employee_address_id")
   private EmployeeAddress address;
+
+  @OneToMany(
+      cascade = CascadeType.PERSIST,
+      mappedBy = "employee",
+      fetch = FetchType.LAZY,
+      orphanRemoval = true)
+  private Set<RefreshToken> refreshTokens;
 
   @Override
   public boolean equals(Object o) {

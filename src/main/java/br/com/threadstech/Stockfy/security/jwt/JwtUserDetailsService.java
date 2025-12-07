@@ -18,8 +18,7 @@ public class JwtUserDetailsService implements UserDetailsService {
   @Override
   public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
     Employee employee = employeeService.findByEmail(username);
-    // TODO: Remove this after the migration to the new password encoder
-    employee.setPassword("{noop}" + employee.getPassword());
+    employee.setPassword(employee.getPassword());
     return new JwtUserDetails(employee);
   }
 
