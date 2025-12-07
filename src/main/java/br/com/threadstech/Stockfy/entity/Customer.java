@@ -60,11 +60,11 @@ public class Customer extends BaseAudit {
   @Column(name = "birthday", nullable = false)
   private LocalDate birthday;
 
-  @ManyToOne(cascade = CascadeType.PERSIST, fetch = FetchType.LAZY)
+  @ManyToOne(cascade = {CascadeType.PERSIST, CascadeType.REMOVE}, fetch = FetchType.LAZY)
   @JoinColumn(name = "customer_contact_id", nullable = false)
   private CustomerContact contact;
 
-  @ManyToOne(cascade = CascadeType.PERSIST, fetch = FetchType.LAZY)
+  @ManyToOne(cascade = {CascadeType.PERSIST, CascadeType.REMOVE}, fetch = FetchType.LAZY)
   @JoinColumn(name = "customer_address_id", nullable = false)
   private CustomerAddress address;
 

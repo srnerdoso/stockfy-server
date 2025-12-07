@@ -19,6 +19,7 @@ import lombok.ToString;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 
+// TODO: Implementar mapeamento de constraints únicas do banco de dados para nomes legíveis.
 @Entity
 @Getter
 @Setter
