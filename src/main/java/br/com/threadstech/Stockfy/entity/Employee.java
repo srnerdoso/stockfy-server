@@ -1,9 +1,11 @@
 package br.com.threadstech.stockfy.entity;
 
+import br.com.threadstech.stockfy.config.constraints.EmployeeConstraintNames;
 import br.com.threadstech.stockfy.entity.base.BaseAudit;
 import br.com.threadstech.stockfy.enums.Role;
 import jakarta.persistence.*;
 
+import java.time.LocalDate;
 import java.util.Objects;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -15,7 +17,13 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "employees")
+@Table(
+    name = "employees",
+    uniqueConstraints = {
+      @UniqueConstraint(
+          name = EmployeeConstraintNames.UK_CPF,
+          columnNames = {"cpf"})
+    })
 public class Employee extends BaseAudit {
 
   @Id
@@ -26,8 +34,11 @@ public class Employee extends BaseAudit {
   @Column(name = "cpf", unique = true, nullable = false, length = 255)
   private String cpf;
 
-  @Column(name = "name", nullable = false, length = 255)
-  private String name;
+  @Column(name = "birthday", nullable = false)
+  private LocalDate birthday;
+
+  @Column(name = "full_name", nullable = false, length = 255)
+  private String fullName;
 
   @Enumerated(EnumType.STRING)
   @Column(name = "role", nullable = false, length = 25)

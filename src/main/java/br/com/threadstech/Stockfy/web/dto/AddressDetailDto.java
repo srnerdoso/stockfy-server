@@ -1,9 +1,5 @@
 package br.com.threadstech.stockfy.web.dto;
 
-import br.com.threadstech.stockfy.validation.Phone;
-import jakarta.annotation.Nullable;
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -15,7 +11,7 @@ import lombok.ToString;
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
-public class CustomerAddressDetailDto {
+public class AddressDetailDto {
   private Long id;
   private String street;
   private String number;
