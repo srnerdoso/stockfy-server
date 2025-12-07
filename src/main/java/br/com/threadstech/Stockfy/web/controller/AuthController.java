@@ -14,6 +14,8 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+
+import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,10 +23,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @Slf4j
 @RestController
@@ -66,11 +65,9 @@ public class AuthController {
   @PostMapping("/refresh")
   public ResponseEntity<Void> refreshToken(
       HttpServletRequest request, HttpServletResponse response) {
-    Cookie[] cookies = request.getCookies();
     String refreshToken =
-        cookieUtils
-            .getCookieByName(cookies, "refresh_token")
-            .getValue(); // Verificação de nulidade já é feita no filtro
+        getRefreshTokenCookieValue(
+            request); // Verificação de nulidade já é feita no filtro para este endpoint
     RefreshToken newRefreshToken = refreshTokenService.refresh(refreshToken);
 
     Employee employee = newRefreshToken.getEmployee();
@@ -82,7 +79,16 @@ public class AuthController {
     return ResponseEntity.noContent().build();
   }
 
-  // TODO: Logout
+  @DeleteMapping("/logout")
+  public ResponseEntity<Void> logout(HttpServletRequest request, HttpServletResponse response) {
+    String refreshToken = getRefreshTokenCookieValue(request);
+    if (refreshToken == null) {
+      return ResponseEntity.noContent().build();
+    }
+    refreshTokenService.deleteByToken(refreshToken);
+    deleteCookies(response);
+    return ResponseEntity.noContent().build();
+  }
 
   private void addCookies(HttpServletResponse response, JwtToken jwtToken, UUID refreshToken) {
     int expireDays = jwtUtils.getExpireDays();
@@ -97,5 +103,21 @@ public class AuthController {
         cookieUtils.createHttpOnlyCookie(accessTokenName, jwtToken.getToken(), maxAge));
     response.addCookie(
         cookieUtils.createHttpOnlyCookie(refreshTokenName, refreshToken.toString(), maxAge));
+  }
+
+  private void deleteCookies(HttpServletResponse response) {
+    Cookie refreshDelete = cookieUtils.deleteCookie(cookieUtils.getRefreshTokenCookieName(), "");
+    Cookie accessDelete = cookieUtils.deleteCookie(cookieUtils.getAccessTokenCookieName(), "");
+    response.addCookie(refreshDelete);
+    response.addCookie(accessDelete);
+  }
+
+  private String getRefreshTokenCookieValue(HttpServletRequest request) {
+    return Optional.ofNullable(request.getCookies())
+        .map(
+            cookies ->
+                cookieUtils.getCookieByName(cookies, cookieUtils.getRefreshTokenCookieName()))
+        .map(Cookie::getValue)
+        .orElse(null);
   }
 }

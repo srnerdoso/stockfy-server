@@ -80,4 +80,11 @@ public class RefreshTokenService {
     log.info("Refresh token refreshed successfully.");
     return newToken;
   }
+
+  @Transactional
+  public void deleteByToken(String refreshToken) {
+    log.info("Deleting refresh token...");
+    refreshTokenRepository.deleteByToken(UUID.fromString(refreshToken));
+    log.info("Refresh token deleted successfully.");
+  }
 }

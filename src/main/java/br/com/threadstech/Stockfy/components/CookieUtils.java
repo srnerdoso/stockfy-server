@@ -22,8 +22,8 @@ public class CookieUtils {
     return cookie;
   }
 
-  public void deleteCookie(String name, String value) {
-    createHttpOnlyCookie(name, value, 0);
+  public Cookie deleteCookie(String name, String value) {
+    return createHttpOnlyCookie(name, value, 0);
   }
 
   public Cookie getCookieByName(Cookie[] cookies, String expectedName) {
