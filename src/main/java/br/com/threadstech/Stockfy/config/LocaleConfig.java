@@ -7,7 +7,7 @@ import org.springframework.web.servlet.i18n.AcceptHeaderLocaleResolver;
 
 @Configuration
 public class LocaleConfig {
-  @Bean
+  @Bean(name = "customLocaleResolver")
   LocaleResolver localeResolver() {
     return new AcceptHeaderLocaleResolver();
   }

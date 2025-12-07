@@ -1,6 +1,10 @@
 package br.com.threadstech.stockfy.web.exception;
 
-import br.com.threadstech.stockfy.exception.*;
+import br.com.threadstech.stockfy.exception.CustomerUniqueViolationException;
+import br.com.threadstech.stockfy.exception.EntityNotFoundException;
+import br.com.threadstech.stockfy.exception.InvalidPasswordException;
+import br.com.threadstech.stockfy.exception.ProductUniqueViolationException;
+import br.com.threadstech.stockfy.exception.UnavailableFromRefundException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.Locale;
 import lombok.RequiredArgsConstructor;

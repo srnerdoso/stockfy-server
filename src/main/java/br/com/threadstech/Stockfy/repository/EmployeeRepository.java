@@ -17,4 +17,7 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
   @Modifying
   @Query("UPDATE Employee e SET e.password = :newPassword WHERE e.id = :id")
   void updatePasswordById(Long id, String newPassword);
+
+  @Query("SELECT e FROM Employee e LEFT JOIN FETCH e.contact WHERE e.contact.email = :email")
+  Optional<Employee> findByEmailWithContact(String email);
 }

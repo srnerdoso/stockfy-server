@@ -85,4 +85,14 @@ public class EmployeeService {
   public void deleteById(Long id) {
     employeeRepository.deleteById(id);
   }
+
+  public Employee findByEmail(String email) {
+    return employeeRepository
+        .findByEmailWithContact(email)
+        .orElseThrow(() -> new EntityNotFoundException(email));
+  }
+
+  public long count() {
+    return employeeRepository.count();
+  }
 }

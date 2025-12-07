@@ -1,14 +1,13 @@
 package br.com.threadstech.stockfy.web.dto;
 
 import br.com.threadstech.stockfy.web.dto.serializer.CpfMaskSerializer;
+import java.time.LocalDate;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 import tools.jackson.databind.annotation.JsonSerialize;
-
-import java.time.LocalDate;
 
 @Getter
 @Setter
