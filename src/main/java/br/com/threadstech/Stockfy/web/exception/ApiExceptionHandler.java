@@ -1,9 +1,6 @@
 package br.com.threadstech.stockfy.web.exception;
 
-import br.com.threadstech.stockfy.exception.CustomerUniqueViolationException;
-import br.com.threadstech.stockfy.exception.EntityNotFoundException;
-import br.com.threadstech.stockfy.exception.ProductUniqueViolationException;
-import br.com.threadstech.stockfy.exception.UnavailableFromRefundException;
+import br.com.threadstech.stockfy.exception.*;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.Locale;
 import lombok.RequiredArgsConstructor;
@@ -51,6 +48,16 @@ public class ApiExceptionHandler {
     String message =
         messageSource.getMessage("exception.unavailableFromRefundException", params, locale);
     return ResponseEntity.unprocessableContent()
+        .body(new ErrorMessage(request, HttpStatus.UNPROCESSABLE_CONTENT, message));
+  }
+
+  @ExceptionHandler(InvalidPasswordException.class)
+  public ResponseEntity<ErrorMessage> invalidPasswordException(
+      InvalidPasswordException ex, HttpServletRequest request) {
+    String message =
+        messageSource.getMessage(
+            "exception.invalidPasswordException." + ex.getPasswordKey(), new Object[] {}, locale);
+    return ResponseEntity.status(HttpStatus.UNPROCESSABLE_CONTENT)
         .body(new ErrorMessage(request, HttpStatus.UNPROCESSABLE_CONTENT, message));
   }
 

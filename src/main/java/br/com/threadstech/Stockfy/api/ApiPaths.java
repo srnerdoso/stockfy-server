@@ -11,4 +11,6 @@ public class ApiPaths {
   public static final String PAYMENT = API_BASE + "/payments";
 
   public static final String CUSTOMER = API_BASE + "/customers";
+
+  public static final String EMPLOYEE = API_BASE + "/employees";
 }

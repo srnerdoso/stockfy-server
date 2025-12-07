@@ -1,6 +1,7 @@
 package br.com.threadstech.stockfy.web.dto;
 
 import br.com.threadstech.stockfy.web.dto.serializer.CpfMaskSerializer;
+import java.time.LocalDate;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -8,14 +9,12 @@ import lombok.Setter;
 import lombok.ToString;
 import tools.jackson.databind.annotation.JsonSerialize;
 
-import java.time.LocalDate;
-
 @Getter
 @Setter
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
-public class CustomerDetailDto {
+public class EmployeeDetailDto {
   private Long id;
   private String fullName;
 
@@ -25,4 +24,5 @@ public class CustomerDetailDto {
   private LocalDate birthday;
   private ContactDetailDto contact;
   private AddressDetailDto address;
+  private String role;
 }

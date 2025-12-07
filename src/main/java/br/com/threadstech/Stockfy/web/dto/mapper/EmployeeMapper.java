@@ -1,11 +1,18 @@
 package br.com.threadstech.stockfy.web.dto.mapper;
 
-import br.com.threadstech.stockfy.entity.Customer;
-import br.com.threadstech.stockfy.entity.CustomerAddress;
-import br.com.threadstech.stockfy.entity.CustomerContact;
+import br.com.threadstech.stockfy.entity.Employee;
+import br.com.threadstech.stockfy.entity.EmployeeAddress;
+import br.com.threadstech.stockfy.entity.EmployeeContact;
 import br.com.threadstech.stockfy.validation.AddressCreateDto;
-import br.com.threadstech.stockfy.web.dto.*;
+import br.com.threadstech.stockfy.web.dto.AddressDetailDto;
+import br.com.threadstech.stockfy.web.dto.AddressUpdateDto;
+import br.com.threadstech.stockfy.web.dto.ContactCreateDto;
 import br.com.threadstech.stockfy.web.dto.ContactDetailDto;
+import br.com.threadstech.stockfy.web.dto.ContactUpdateDto;
+import br.com.threadstech.stockfy.web.dto.EmployeeCreateDto;
+import br.com.threadstech.stockfy.web.dto.EmployeeDetailDto;
+import br.com.threadstech.stockfy.web.dto.EmployeeSummaryDto;
+import br.com.threadstech.stockfy.web.dto.EmployeeUpdateDto;
 import br.com.threadstech.stockfy.web.dto.mapper.anotations.IgnoreAddressContactDeleteAudit;
 import br.com.threadstech.stockfy.web.dto.mapper.anotations.IgnoreAuditFields;
 import br.com.threadstech.stockfy.web.dto.mapper.anotations.IgnoreSoftDeleteFields;
@@ -17,54 +24,51 @@ import org.mapstruct.ReportingPolicy;
 import org.springframework.data.domain.Page;
 
 @Mapper
-public interface CustomerMapper {
+public interface EmployeeMapper {
 
   @IgnoreAuditFields
   @Mapping(target = "id", ignore = true)
-  @Mapping(target = "payments", ignore = true)
-  @Mapping(target = "deleted", ignore = true)
-  Customer toCustomer(CustomerCreateDto customerDto);
+  Employee toEmployee(EmployeeCreateDto employeeCreateDto);
 
   @IgnoreSoftDeleteFields
   @Mapping(target = "id", ignore = true)
-  @Mapping(target = "customers", ignore = true)
-  CustomerContact toContact(ContactCreateDto contactDto);
+  @Mapping(target = "employees", ignore = true)
+  EmployeeContact toContact(ContactCreateDto contactDto);
 
   @IgnoreSoftDeleteFields
   @Mapping(target = "id", ignore = true)
-  @Mapping(target = "customers", ignore = true)
-  CustomerAddress toAddress(AddressCreateDto addressDto);
+  @Mapping(target = "employees", ignore = true)
+  EmployeeAddress toAddress(AddressCreateDto addressDto);
 
   @Mapping(source = "contact.email", target = "email")
   @Mapping(source = "contact.phoneNumber", target = "phoneNumber")
   @BeanMapping(unmappedSourcePolicy = ReportingPolicy.IGNORE)
-  CustomerSummaryDto toSummary(Customer customer);
+  EmployeeSummaryDto toSummary(Employee customer);
 
-  default Page<CustomerSummaryDto> toPageSummary(Page<Customer> customerPage) {
+  default Page<EmployeeSummaryDto> toPageSummary(Page<Employee> customerPage) {
     return customerPage.map(this::toSummary);
   }
 
   @BeanMapping(unmappedSourcePolicy = ReportingPolicy.IGNORE)
-  CustomerDetailDto toDetail(Customer customer);
+  EmployeeDetailDto toDetail(Employee customer);
 
   @BeanMapping(unmappedSourcePolicy = ReportingPolicy.IGNORE)
-  ContactDetailDto toContactDetail(CustomerContact contact);
+  ContactDetailDto toContactDetail(EmployeeContact contact);
 
   @BeanMapping(unmappedSourcePolicy = ReportingPolicy.IGNORE)
-  AddressDetailDto toAddressDetail(CustomerAddress address);
+  AddressDetailDto toAddressDetail(EmployeeAddress address);
 
   @IgnoreAuditFields
   @IgnoreAddressContactDeleteAudit
   @Mapping(target = "id", ignore = true)
   @Mapping(target = "birthday", ignore = true)
   @Mapping(target = "cpf", ignore = true)
-  @Mapping(target = "deleted", ignore = true)
-  @Mapping(target = "payments", ignore = true)
-  Customer update(CustomerUpdateDto customerDto, @MappingTarget Customer customer);
+  @Mapping(target = "password", ignore = true)
+  Employee update(EmployeeUpdateDto customerDto, @MappingTarget Employee customer);
 
   @BeanMapping(unmappedSourcePolicy = ReportingPolicy.IGNORE)
-  ContactUpdateDto toContactUpdate(CustomerContact contact);
+  ContactUpdateDto toContactUpdate(EmployeeContact contact);
 
   @BeanMapping(unmappedSourcePolicy = ReportingPolicy.IGNORE)
-  AddressUpdateDto toAddressUpdate(CustomerAddress address);
+  AddressUpdateDto toAddressUpdate(EmployeeAddress address);
 }

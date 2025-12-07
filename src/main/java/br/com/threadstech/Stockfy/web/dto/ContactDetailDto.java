@@ -11,7 +11,7 @@ import lombok.ToString;
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
-public class CustomerContactDetailDto {
+public class ContactDetailDto {
   private Long id;
   private String email;
   private String phoneNumber;
