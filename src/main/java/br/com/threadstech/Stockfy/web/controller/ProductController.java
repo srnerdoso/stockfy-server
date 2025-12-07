@@ -58,6 +58,7 @@ public class ProductController {
   public ResponseEntity<Void> updateProductById(
       @PathVariable Long id, @Valid @RequestBody ProductUpdateDto productDto) {
     productService.updateById(id, productDto, productMapper);
+
     return ResponseEntity.noContent().build();
   }
 

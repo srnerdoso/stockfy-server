@@ -1,33 +1,28 @@
-package br.com.threadstech.stockfy.entity;
+package br.com.threadstech.stockfy.entity.base;
 
 import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.MappedSuperclass;
 import java.util.Objects;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import lombok.ToString;
 
-@Entity
 @Getter
 @Setter
+@MappedSuperclass
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "contacts")
-@ToString
-public class Contact {
-
+public class BaseContact extends BaseAuditDelete {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Column(nullable = false)
   private Long id;
 
-  @Column(name = "email", unique = true, nullable = false, length = 255)
+  @Column(name = "email", unique = true, length = 255)
   private String email;
 
   @Column(name = "phone_number", unique = true, nullable = false, length = 20)
@@ -38,12 +33,17 @@ public class Contact {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    Contact contact = (Contact) o;
-    return Objects.equals(id, contact.id);
+    BaseContact that = (BaseContact) o;
+    return Objects.equals(id, that.id);
   }
 
   @Override
   public int hashCode() {
     return Objects.hashCode(id);
+  }
+
+  @Override
+  public String toString() {
+    return "BaseContact{" + "id=" + id + '}';
   }
 }
