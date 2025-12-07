@@ -15,3 +15,28 @@ spring:
 # Environment variables
 payment-service:
   refund-max-days: ${REFUND_MAX_DAYS}
+
+jwt:
+  secret: ${JWT_SECRET}
+  expire-days: ${JWT_EXPIRE_DAYS}
+  expire-hours: ${JWT_EXPIRE_HOURS}
+  expire-minutes: ${JWT_EXPIRE_MINUTES}
+
+owner:
+  full-name: ${OWNER_FULL_NAME}
+  cpf: ${OWNER_CPF}
+  birthday: ${OWNER_BIRTHDAY}
+  password: ${OWNER_PASSWORD}
+  role: ${OWNER_ROLE}
+  contact:
+    email: ${OWNER_EMAIL}
+    phone-number: ${OWNER_PHONE_NUMBER}
+  address:
+    street: ${OWNER_ADDRESS_STREET}
+    number: ${OWNER_ADDRESS_NUMBER}
+    complement: ${OWNER_ADDRESS_COMPLEMENT}
+    neighborhood: ${OWNER_ADDRESS_NEIGHBORHOOD}
+    city: ${OWNER_ADDRESS_CITY}
+    state: ${OWNER_ADDRESS_STATE}
+    zip-code: ${OWNER_ADDRESS_ZIP_CODE}
+    country: ${OWNER_ADDRESS_COUNTRY}

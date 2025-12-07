@@ -15,6 +15,7 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,12 +24,13 @@ import org.springframework.transaction.annotation.Transactional;
 public class EmployeeService {
 
   private final EmployeeRepository employeeRepository;
+  private final PasswordEncoder passwordEncoder;
   private final ConstraintResolver constraintResolver;
 
   @Transactional
   public void save(Employee employee) {
     try {
-      // TODO: encrypt password
+      employee.setPassword(passwordEncoder.encode(employee.getPassword()));
       employeeRepository.save(employee);
     } catch (DataIntegrityViolationException ex) {
       constraintResolver.resolveConstraint(ex);
@@ -72,17 +74,28 @@ public class EmployeeService {
         employeeRepository
             .findPasswordById(id)
             .orElseThrow(() -> new EntityNotFoundException(id.toString()));
-    if (!passwordUpdateDto.getCurrentPassword().equals(currentPassword)) {
+
+    if (!passwordEncoder.matches(passwordUpdateDto.getCurrentPassword(), currentPassword)) {
       throw new InvalidPasswordException(PasswordKey.CURRENT);
     }
     if (!passwordUpdateDto.getNewPassword().equals(passwordUpdateDto.getConfirmPassword())) {
       throw new InvalidPasswordException(PasswordKey.CONFIRM);
     }
-    // TODO: encrypt password
-    employeeRepository.updatePasswordById(id, passwordUpdateDto.getNewPassword());
+    String newPassword = passwordEncoder.encode(passwordUpdateDto.getNewPassword());
+    employeeRepository.updatePasswordById(id, newPassword);
   }
 
   public void deleteById(Long id) {
     employeeRepository.deleteById(id);
+  }
+
+  public Employee findByEmail(String email) {
+    return employeeRepository
+        .findByEmailWithContact(email)
+        .orElseThrow(() -> new EntityNotFoundException(email));
+  }
+
+  public long count() {
+    return employeeRepository.count();
   }
 }

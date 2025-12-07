@@ -13,4 +13,6 @@ public class ApiPaths {
   public static final String CUSTOMER = API_BASE + "/customers";
 
   public static final String EMPLOYEE = API_BASE + "/employees";
+
+  public static final String AUTH = API_BASE + "/auth";
 }
