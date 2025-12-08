@@ -22,6 +22,9 @@ jwt:
   expire-hours: ${JWT_EXPIRE_HOURS}
   expire-minutes: ${JWT_EXPIRE_MINUTES}
 
+refresh-token:
+  expire-days: ${REFRESH_TOKEN_EXPIRE_DAYS}
+
 owner:
   full-name: ${OWNER_FULL_NAME}
   cpf: ${OWNER_CPF}

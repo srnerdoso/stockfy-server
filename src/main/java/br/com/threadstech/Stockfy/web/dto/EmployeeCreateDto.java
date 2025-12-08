@@ -45,7 +45,6 @@ public class EmployeeCreateDto {
   @Role(message = "{Role.employeeDto.role}")
   private String role;
 
-  // TODO: criar validador de senha
   @NotEmpty(message = "{NotEmpty.employeeDto.password}")
   @Size(min = 8, max = 64, message = "{Size.employeeDto.password}")
   private String password;
