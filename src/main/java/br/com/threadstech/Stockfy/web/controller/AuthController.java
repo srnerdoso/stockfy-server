@@ -19,6 +19,7 @@ import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -38,6 +39,9 @@ public class AuthController {
   private final JwtUserDetailsService jwtUserDetailsService;
   private final AuthenticationManager authenticationManager;
 
+  @Value("${refresh-token.expire-days}")
+  private int refreshTokenExpireDays;
+
   @PostMapping("/login")
   public ResponseEntity<Void> auth(
       @Valid @RequestBody LoginDto loginDto, HttpServletResponse response) {
@@ -51,7 +55,10 @@ public class AuthController {
       JwtToken jwtToken =
           jwtUserDetailsService.getTokenAuthenticated(
               employee.getId(), employee.getContact().getEmail(), employee.getRole().name());
-      UUID refreshToken = refreshTokenService.save(loginDto.getDeviceId(), employee).getToken();
+      UUID refreshToken =
+          refreshTokenService
+              .save(loginDto.getDeviceId(), employee, refreshTokenExpireDays)
+              .getToken();
       addCookies(response, jwtToken, refreshToken);
 
       log.info("Authentication successful.");
@@ -68,7 +75,8 @@ public class AuthController {
     String refreshToken =
         getRefreshTokenCookieValue(
             request); // Verificação de nulidade já é feita no filtro para este endpoint
-    RefreshToken newRefreshToken = refreshTokenService.refresh(refreshToken);
+    RefreshToken newRefreshToken =
+        refreshTokenService.refresh(refreshToken, refreshTokenExpireDays);
 
     Employee employee = newRefreshToken.getEmployee();
     JwtToken jwtToken =
@@ -95,14 +103,18 @@ public class AuthController {
     int expireHours = jwtUtils.getExpireHours();
     int expireMinutes = jwtUtils.getExpireMinutes();
 
-    int maxAge = (expireDays * 24 * 60 * 60) + (expireHours * 60 * 60) + (expireMinutes * 60);
+    int accessTokenMaxAge =
+        (expireDays * 24 * 60 * 60) + (expireHours * 60 * 60) + (expireMinutes * 60);
     String accessTokenName = cookieUtils.getAccessTokenCookieName();
+
+    int refreshTokenMaxAge = refreshTokenExpireDays * 24 * 60 * 60;
     String refreshTokenName = cookieUtils.getRefreshTokenCookieName();
 
     response.addCookie(
-        cookieUtils.createHttpOnlyCookie(accessTokenName, jwtToken.getToken(), maxAge));
+        cookieUtils.createHttpOnlyCookie(accessTokenName, jwtToken.getToken(), accessTokenMaxAge));
     response.addCookie(
-        cookieUtils.createHttpOnlyCookie(refreshTokenName, refreshToken.toString(), maxAge));
+        cookieUtils.createHttpOnlyCookie(
+            refreshTokenName, refreshToken.toString(), refreshTokenMaxAge));
   }
 
   private void deleteCookies(HttpServletResponse response) {

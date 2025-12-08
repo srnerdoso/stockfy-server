@@ -1,6 +1,8 @@
 package br.com.threadstech.stockfy.security.refreshtoken;
 
 import br.com.threadstech.stockfy.entity.Employee;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,7 +19,7 @@ public class RefreshTokenService {
   private final RefreshTokenRepository refreshTokenRepository;
 
   @Transactional
-  public RefreshToken save(String deviceId, Employee employee) {
+  public RefreshToken save(String deviceId, Employee employee, int expireDays) {
     log.info("Saving refresh token...");
     UUID token = UUID.randomUUID();
 
@@ -25,6 +27,7 @@ public class RefreshTokenService {
     refreshToken.setToken(token);
     refreshToken.setDeviceId(deviceId);
     refreshToken.setEmployee(employee);
+    refreshToken.setExpiresAt(Instant.now().plus(expireDays, ChronoUnit.DAYS));
 
     refreshToken.setDeviceId(passwordEncoder.encode(refreshToken.getDeviceId()));
     RefreshToken saved = refreshTokenRepository.save(refreshToken);
@@ -67,16 +70,20 @@ public class RefreshTokenService {
       log.error("Unauthorized access: token is revoked.");
       return false;
     }
+    if (refreshToken.getExpiresAt().isBefore(Instant.now())) {
+      log.error("Unauthorized access: token is expired.");
+      return false;
+    }
     log.info("Access allowed: refresh token is valid.");
 
     return true;
   }
 
-  public RefreshToken refresh(String refreshToken) {
+  public RefreshToken refresh(String refreshToken, int expireDays) {
     log.info("Refreshing refresh token...");
     UUID token = UUID.fromString(refreshToken);
     RefreshToken revoked = revokeByToken(token);
-    RefreshToken newToken = save(revoked.getDeviceId(), revoked.getEmployee());
+    RefreshToken newToken = save(revoked.getDeviceId(), revoked.getEmployee(), expireDays);
     log.info("Refresh token refreshed successfully.");
     return newToken;
   }

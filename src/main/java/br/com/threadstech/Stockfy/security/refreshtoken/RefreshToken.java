@@ -11,6 +11,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
@@ -43,6 +44,9 @@ public class RefreshToken extends BaseAudit {
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "employee_id", nullable = false)
   private Employee employee;
+  
+  @Column(name = "expires_at", nullable = false)
+  private Instant expiresAt;
 
   @Override
   public boolean equals(Object o) {
