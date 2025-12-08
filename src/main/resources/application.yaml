@@ -12,6 +12,12 @@ spring:
       - messages
     encoding: UTF-8
 
+springdoc:
+  swagger-ui.path: /docs-stockfy.html
+  packagesToScan: br.com.threadstech.stockfy.web.controller
+  api-docs:
+    path: /docs-stockfy
+
 # Environment variables
 payment-service:
   refund-max-days: ${REFUND_MAX_DAYS}
