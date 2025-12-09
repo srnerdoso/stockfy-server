@@ -43,6 +43,9 @@ public class SpringDocOpenApiConfig {
                     SwaggerRefUtils.NOT_FOUND_RES,
                     buildErrorMessageResponse("Recurso não encontrado."))
                 .addResponses(
+                    SwaggerRefUtils.CONFLICT_RES,
+                    buildErrorMessageResponse("Conflito entre os dados."))
+                .addResponses(
                     SwaggerRefUtils.UNPROCESSABLE_ENTITY_RES,
                     buildErrorMessageResponse("Recurso não processável.")));
   }
