@@ -41,6 +41,7 @@ public interface ProductControllerDoc {
 
   @Operation(
       summary = "Busca todos os produtos",
+      description = "Retorna uma lista de produtos paginada.",
       security = @SecurityRequirement(name = "jwt - Cookie HttpOnly"),
       responses = {
         @ApiResponse(
@@ -73,6 +74,7 @@ public interface ProductControllerDoc {
 
   @Operation(
       summary = "Busca um ou mais produtos por nome",
+      description = "Retorna uma lista de produtos paginada.",
       security = @SecurityRequirement(name = "jwt - Cookie HttpOnly"),
       responses = {
         @ApiResponse(

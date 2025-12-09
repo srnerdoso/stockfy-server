@@ -3,6 +3,7 @@ package br.com.threadstech.stockfy.web.controller;
 import br.com.threadstech.stockfy.api.ApiPaths;
 import br.com.threadstech.stockfy.entity.Employee;
 import br.com.threadstech.stockfy.service.EmployeeService;
+import br.com.threadstech.stockfy.web.doc.EmployeeControllerDoc;
 import br.com.threadstech.stockfy.web.dto.EmployeeCreateDto;
 import br.com.threadstech.stockfy.web.dto.EmployeeDetailDto;
 import br.com.threadstech.stockfy.web.dto.EmployeeSummaryDto;
@@ -26,10 +27,13 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+// TODO: Trocar ou adicionar mais métodos que usam o contexto de autenticação do spring para
+//       realizar recursos que precisam do id do usuário
+
 @RestController
 @RequiredArgsConstructor
 @RequestMapping(ApiPaths.EMPLOYEE)
-public class EmployeeController {
+public class EmployeeController implements EmployeeControllerDoc {
 
   private final EmployeeService employeeService;
   private final EmployeeMapper employeeMapper;
