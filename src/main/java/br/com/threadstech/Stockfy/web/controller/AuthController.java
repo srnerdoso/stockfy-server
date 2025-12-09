@@ -9,6 +9,7 @@ import br.com.threadstech.stockfy.security.jwt.JwtUtils;
 import br.com.threadstech.stockfy.security.refreshtoken.RefreshToken;
 import br.com.threadstech.stockfy.security.refreshtoken.RefreshTokenService;
 import br.com.threadstech.stockfy.service.EmployeeService;
+import br.com.threadstech.stockfy.web.doc.AuthControllerDoc;
 import br.com.threadstech.stockfy.web.dto.LoginDto;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -30,7 +31,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping(ApiPaths.AUTH)
-public class AuthController {
+public class AuthController implements AuthControllerDoc {
 
   private final JwtUtils jwtUtils;
   private final CookieUtils cookieUtils;
