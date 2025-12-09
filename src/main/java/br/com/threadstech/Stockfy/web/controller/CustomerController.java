@@ -3,6 +3,7 @@ package br.com.threadstech.stockfy.web.controller;
 import br.com.threadstech.stockfy.api.ApiPaths;
 import br.com.threadstech.stockfy.entity.Customer;
 import br.com.threadstech.stockfy.service.CustomerService;
+import br.com.threadstech.stockfy.web.doc.CustomerControllerDoc;
 import br.com.threadstech.stockfy.web.dto.CustomerCreateDto;
 import br.com.threadstech.stockfy.web.dto.CustomerDetailDto;
 import br.com.threadstech.stockfy.web.dto.CustomerSummaryDto;
@@ -25,11 +26,13 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+// FIXME: Adicionar verificações de role para os endpoints
+
 @Slf4j
 @RestController
 @RequestMapping(ApiPaths.CUSTOMER)
 @RequiredArgsConstructor
-public class CustomerController {
+public class CustomerController implements CustomerControllerDoc {
 
   private final CustomerService customerService;
   private final CustomerMapper customerMapper;

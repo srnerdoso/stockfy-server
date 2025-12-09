@@ -24,6 +24,20 @@ import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 @EnableMethodSecurity
 public class SpringSecurityConfig {
 
+  private static final String[] DOCUMENTATION_OPENAPI = {
+    "/docs/index.html",
+    "/docs-stockfy.html",
+    "/docs-stockfy/**",
+    "/v3/api-docs/**",
+    "/swagger-ui-custom.html",
+    "/swagger-ui.html",
+    "/swagger-ui/**",
+    "/**.html",
+    "/webjars/**",
+    "/configuration/**",
+    "/swagger-resources/**"
+  };
+
   @Bean
   public SecurityFilterChain filterChain(HttpSecurity http) {
     return http.csrf(AbstractHttpConfigurer::disable)
@@ -37,7 +51,12 @@ public class SpringSecurityConfig {
                     .accessDeniedHandler(new JwtAccessDeniedHandler()))
         .authorizeHttpRequests(
             auth ->
-                auth.requestMatchers(ApiPaths.AUTH + "/*").permitAll().anyRequest().authenticated())
+                auth.requestMatchers(DOCUMENTATION_OPENAPI)
+                    .permitAll()
+                    .requestMatchers(ApiPaths.AUTH + "/*")
+                    .permitAll()
+                    .anyRequest()
+                    .authenticated())
         .addFilterBefore(jwtFilter(), UsernamePasswordAuthenticationFilter.class)
         .build();
   }
