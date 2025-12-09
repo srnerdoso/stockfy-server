@@ -31,33 +31,28 @@ public class ProductController implements ProductControllerDoc {
   private final ProductService productService;
   private final ProductMapper productMapper;
 
-  @Override
   @PostMapping
   public ResponseEntity<Void> save(@Valid @RequestBody ProductCreateDto product) {
     productService.save(productMapper.toProduct(product));
     return ResponseEntity.status(HttpStatus.CREATED).build();
   }
 
-  @Override
   @GetMapping
   public ResponseEntity<Page<ProductResponseDto>> findAll(@PageableDefault Pageable pageable) {
     return ResponseEntity.ok(productMapper.toPageDto(productService.findAll(pageable)));
   }
 
-  @Override
   @GetMapping("/{barCode}/barcode")
   public ResponseEntity<ProductResponseDto> findByBarCode(@PathVariable String barCode) {
     return ResponseEntity.ok(productMapper.toDto(productService.findByBarCode(barCode)));
   }
 
-  @Override
   @GetMapping("/{name}/name")
   public ResponseEntity<Page<ProductResponseDto>> findAllByName(
       @PathVariable String name, @PageableDefault Pageable pageable) {
     return ResponseEntity.ok(productMapper.toPageDto(productService.findAllByName(name, pageable)));
   }
 
-  @Override
   @PatchMapping("/{id}/id")
   public ResponseEntity<Void> updateProductById(
       @PathVariable Long id, @Valid @RequestBody ProductUpdateDto productDto) {
@@ -65,7 +60,6 @@ public class ProductController implements ProductControllerDoc {
     return ResponseEntity.noContent().build();
   }
 
-  @Override
   @DeleteMapping("/{id}/id")
   public ResponseEntity<Void> deleteProductById(@PathVariable Long id) {
     productService.deleteById(id);

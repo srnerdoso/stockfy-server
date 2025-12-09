@@ -46,7 +46,12 @@ public interface ProductControllerDoc {
         @ApiResponse(
             responseCode = "200",
             description = "Produtos encontrados com sucesso.",
-            content = @Content(schema = @Schema(implementation = ProductResponseDto.class))),
+            content =
+                @Content(
+                    schema =
+                        @Schema(
+                            implementation = ProductResponseDto.class,
+                            contentMediaType = "application/json"))),
         @ApiResponse(responseCode = "401", ref = SwaggerRefUtils.UNAUTHORIZED_RES),
         @ApiResponse(responseCode = "403", ref = SwaggerRefUtils.FORBIDDEN_RES)
       })
@@ -73,7 +78,12 @@ public interface ProductControllerDoc {
         @ApiResponse(
             responseCode = "200",
             description = "Produto encontrado com sucesso.",
-            content = @Content(schema = @Schema(implementation = ProductResponseDto.class))),
+            content =
+                @Content(
+                    schema =
+                        @Schema(
+                            implementation = ProductResponseDto.class,
+                            contentMediaType = "application/json"))),
         @ApiResponse(responseCode = "401", ref = SwaggerRefUtils.UNAUTHORIZED_RES),
         @ApiResponse(responseCode = "403", ref = SwaggerRefUtils.FORBIDDEN_RES),
       })
@@ -92,7 +102,8 @@ public interface ProductControllerDoc {
         @ApiResponse(responseCode = "204", description = "Produto atualizado com sucesso."),
         @ApiResponse(responseCode = "401", ref = SwaggerRefUtils.UNAUTHORIZED_RES),
         @ApiResponse(responseCode = "403", ref = SwaggerRefUtils.FORBIDDEN_RES),
-        @ApiResponse(responseCode = "404", ref = SwaggerRefUtils.NOT_FOUND_RES)
+        @ApiResponse(responseCode = "404", ref = SwaggerRefUtils.NOT_FOUND_RES),
+        @ApiResponse(responseCode = "409", ref = SwaggerRefUtils.CONFLICT_RES),
       })
   ResponseEntity<Void> updateProductById(
       @PathVariable Long id, @Valid @RequestBody ProductUpdateDto productDto);
