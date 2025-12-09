@@ -4,7 +4,10 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.HashMap;
 import java.util.Map;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 import org.springframework.context.MessageSource;
@@ -15,7 +18,10 @@ import org.springframework.validation.FieldError;
 
 @Getter
 @Setter
+@Builder
 @ToString
+@NoArgsConstructor
+@AllArgsConstructor
 public class ErrorMessage {
 
   private String message;
@@ -26,8 +32,6 @@ public class ErrorMessage {
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private Map<String, String> errors;
-
-  public ErrorMessage() {}
 
   public ErrorMessage(
       HttpServletRequest request,
