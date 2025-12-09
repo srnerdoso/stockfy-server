@@ -2,6 +2,7 @@ package br.com.threadstech.stockfy.web.controller;
 
 import br.com.threadstech.stockfy.api.ApiPaths;
 import br.com.threadstech.stockfy.service.PaymentService;
+import br.com.threadstech.stockfy.web.doc.PaymentControllerDoc;
 import br.com.threadstech.stockfy.web.dto.PaymentCreateDto;
 import br.com.threadstech.stockfy.web.dto.mapper.PaymentMapper;
 import jakarta.validation.Valid;
@@ -19,7 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping(ApiPaths.PAYMENT)
 @RequiredArgsConstructor
-public class PaymentController {
+public class PaymentController implements PaymentControllerDoc {
 
   private final PaymentService paymentService;
   private final PaymentMapper paymentMapper;

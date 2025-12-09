@@ -41,7 +41,7 @@ public class SpringDocOpenApiConfig {
                     new ApiResponse().description("Acesso não autorizado."))
                 .addResponses(
                     SwaggerRefUtils.NOT_FOUND_RES,
-                    buildErrorMessageResponse("Recurso não encontrado."))
+                    buildErrorMessageResponse("Item não encontrado."))
                 .addResponses(
                     SwaggerRefUtils.CONFLICT_RES,
                     buildErrorMessageResponse("Conflito entre os dados."))
