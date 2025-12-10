@@ -1,9 +1,11 @@
 package br.com.threadstech.stockfy.config;
 
 import br.com.threadstech.stockfy.api.ApiPaths;
+import br.com.threadstech.stockfy.enums.Role;
 import br.com.threadstech.stockfy.security.jwt.JwtAccessDeniedHandler;
 import br.com.threadstech.stockfy.security.jwt.JwtAuthenticationEntryPoint;
 import br.com.threadstech.stockfy.security.jwt.JwtAuthorizationFilter;
+import java.util.Arrays;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -53,8 +55,12 @@ public class SpringSecurityConfig {
             auth ->
                 auth.requestMatchers(DOCUMENTATION_OPENAPI)
                     .permitAll()
-                    .requestMatchers(ApiPaths.AUTH + "/*")
+                    .requestMatchers(toPatternPath(ApiPaths.AUTH))
                     .permitAll()
+                    .requestMatchers(toPatternPaths(ApiPaths.CUSTOMER, ApiPaths.EMPLOYEE))
+                    .hasAnyRole(Role.ADMIN.name())
+                    .requestMatchers(toPatternPath(ApiPaths.PAYMENT))
+                    .hasAnyRole(Role.ADMIN.name(), Role.SALES_ATTENDANT.name())
                     .anyRequest()
                     .authenticated())
         .addFilterBefore(jwtFilter(), UsernamePasswordAuthenticationFilter.class)
@@ -75,5 +81,13 @@ public class SpringSecurityConfig {
   @Bean
   public PasswordEncoder passwordEncoder() {
     return new BCryptPasswordEncoder();
+  }
+
+  private String toPatternPath(String basePath) {
+    return basePath + "/*";
+  }
+
+  private String[] toPatternPaths(String... basePaths) {
+    return Arrays.stream(basePaths).map(this::toPatternPath).toArray(String[]::new);
   }
 }
