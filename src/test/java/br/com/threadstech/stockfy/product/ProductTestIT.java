@@ -1,8 +1,9 @@
 package br.com.threadstech.stockfy.product;
 
+import static org.assertj.core.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import br.com.threadstech.stockfy.AdminTest;
 import br.com.threadstech.stockfy.IntegrationTests;
@@ -12,7 +13,16 @@ import br.com.threadstech.stockfy.entity.Product;
 import br.com.threadstech.stockfy.repository.ProductRepository;
 import br.com.threadstech.stockfy.utils.DataGenUtils;
 import br.com.threadstech.stockfy.web.dto.ProductCreateDto;
+import br.com.threadstech.stockfy.web.dto.ProductResponseDto;
+import br.com.threadstech.stockfy.web.dto.ProductUpdateDto;
 import br.com.threadstech.stockfy.web.dto.mapper.ProductMapper;
+import com.jayway.jsonpath.JsonPath;
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -20,22 +30,14 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
-import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.assertj.MockMvcTester;
 
-import java.util.ArrayList;
-import java.util.List;
-
+@Slf4j
 @IntegrationTests
 @Import(PostgreTestContainer.class)
 public class ProductTestIT {
 
-  // TODO: Trocar mockMvc por mockMvcTester
-  // TODO: Implementar testes com verificação de corpo de resposta
-
   @Autowired private MockMvc mockMvc;
-  @Autowired private MockMvcTester mockMvcTester;
   @Autowired private ProductRepository productRepository;
   @Autowired private ProductMapper productMapper;
 
@@ -94,38 +96,73 @@ public class ProductTestIT {
   @DisplayName("Find product/products")
   class FindProduct {
 
+    int size = 2;
+
     @BeforeEach
     void setUp() {
-      if (productRepository.count() == 0) {
-        List<Product> products = new ArrayList<>();
-        for (int i = 0; i < 5; i++) {
-          products.add(saveProduct());
-        }
-        productRepository.saveAll(products);
+      productRepository.deleteAll();
+      List<Product> products = new ArrayList<>();
+      for (int i = 0; i < size; i++) {
+        products.add(saveProduct());
       }
+      productRepository.saveAll(products);
     }
 
     @AdminTest
     void shouldFindAllProductsWithReturnStatusOk() throws Exception {
-      mockMvc.perform(get(ApiPaths.PRODUCT)).andDo(print()).andExpect(status().isOk());
+      String response =
+          mockMvc
+              .perform(get(ApiPaths.PRODUCT))
+              .andDo(print())
+              .andExpect(status().isOk())
+              .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+              .andExpect(jsonPath("$.content").isArray())
+              .andExpect(jsonPath("$.content.length()").value(size))
+              .andReturn()
+              .getResponse()
+              .getContentAsString();
+
+      List<Map<String, Object>> products = JsonPath.read(response, "$.content");
+      products.forEach(ProductTestIT.this::validateProductResponse);
     }
 
     @AdminTest
     void shouldFindProductByBarCodeWithReturnStatusOk() throws Exception {
       Product product = saveProduct();
-      mockMvc
-          .perform(get(getPatternPath(product.getBarCode(), "barcode")))
-          .andDo(print())
-          .andExpect(status().isOk());
+      String responseBody =
+          mockMvc
+              .perform(get(getByBarCodePath(product.getBarCode())))
+              .andDo(print())
+              .andExpect(status().isOk())
+              .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+              .andReturn()
+              .getResponse()
+              .getContentAsString();
+
+      Map<String, Object> responseProduct = JsonPath.read(responseBody, "$");
+      validateProductResponse(responseProduct);
     }
 
     @AdminTest
     void shouldFindAllProductsByNameWithReturnStatusOk() throws Exception {
-      Product product = saveProduct();
-      mockMvc
-          .perform(get(getPatternPath(product.getName(), "name")))
-          .andDo(print())
-          .andExpect(status().isOk());
+      String productName = "Laranja";
+      for (int i = 0; i < size; i++) {
+        saveProduct(productName);
+      }
+      String response =
+          mockMvc
+              .perform(get(getByNamePath(productName)))
+              .andDo(print())
+              .andExpect(status().isOk())
+              .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+              .andExpect(jsonPath("$.content").isArray())
+              .andExpect(jsonPath("$.content.length()").value(size))
+              .andReturn()
+              .getResponse()
+              .getContentAsString();
+
+      List<Map<String, Object>> products = JsonPath.read(response, "$.content");
+      products.forEach(ProductTestIT.this::validateProductResponse);
     }
 
     @Test
@@ -133,11 +170,11 @@ public class ProductTestIT {
       Product product = saveProduct();
       mockMvc.perform(get(ApiPaths.PRODUCT)).andExpect(status().isUnauthorized());
       mockMvc
-          .perform(get(getPatternPath(product.getBarCode(), "barcode")))
+          .perform(get(getByBarCodePath(product.getBarCode())))
           .andDo(print())
           .andExpect(status().isUnauthorized());
       mockMvc
-          .perform(get(getPatternPath(product.getName(), "name")))
+          .perform(get(getByNamePath(product.getName())))
           .andDo(print())
           .andExpect(status().isUnauthorized());
     }
@@ -145,21 +182,95 @@ public class ProductTestIT {
     @AdminTest
     void shouldFindProductByBarCodeWithReturnStatusNotFound() throws Exception {
       productRepository.deleteAll();
-      var response =
-          mockMvcTester
-              .get()
-              .uri(getPatternPath("123456789", "barcode"))
-              .exchange();
+      mockMvc
+          .perform(get(getByBarCodePath("123456789")))
+          .andDo(print())
+          .andExpect(status().isNotFound());
     }
   }
 
-  private String getPatternPath(String pathVar, String resource) {
+  @Nested
+  @DisplayName("Delete product")
+  class DeleteProduct {
+
+    @AdminTest
+    void shouldDeleteProductWithReturnStatusNoContent() throws Exception {
+      Product product = saveProduct();
+      mockMvc.perform(delete(getByIdPath(product.getId()))).andExpect(status().isNoContent());
+    }
+
+    @Test
+    void shouldDeleteProductWithReturnStatusUnauthorized() throws Exception {
+      Product product = saveProduct();
+      mockMvc.perform(delete(getByIdPath(product.getId()))).andExpect(status().isUnauthorized());
+    }
+  }
+
+  @Nested
+  @DisplayName("Update product")
+  class UpdateProduct {
+
+    @AdminTest
+    void shouldUpdateProductWithReturnStatusNoContent() throws Exception {
+      // FIXME: Corrigir problema 400 bad request
+      String productNameUpdate = "NOME DE PRODUTO TESTE";
+      Product product = saveProduct();
+      String productUpdateJson = String.format("{ 'name': '%s' }", productNameUpdate);
+      mockMvc
+          .perform(
+              patch(getByIdPath(product.getId()))
+                  .content(productUpdateJson)
+                  .contentType(MediaType.APPLICATION_JSON))
+          .andExpect(status().isNoContent());
+      Product updatedProduct = productRepository.findById(product.getId()).orElseGet(() -> null);
+      assertThat(updatedProduct).isNotNull();
+      assertThat(updatedProduct.getName()).isNotEqualTo(product.getName());
+    }
+  }
+
+  private String getPatternPathResource(String pathVar, String resource) {
     return ApiPaths.PRODUCT + "/" + pathVar + "/" + resource;
+  }
+
+  private String getByBarCodePath(String barCode) {
+    return getPatternPathResource(barCode, "barcode");
+  }
+
+  private String getByNamePath(String name) {
+    return getPatternPathResource(name, "name");
+  }
+
+  private String getByIdPath(Long id) {
+    return getPatternPathResource(id.toString(), "id");
+  }
+
+  private Product saveProduct(String name) {
+    ProductCreateDto productDto = DataGenUtils.validProductCreateDto(name);
+    Product productMapped = productMapper.toProduct(productDto);
+    return productRepository.save(productMapped);
   }
 
   private Product saveProduct() {
     ProductCreateDto productDto = DataGenUtils.validProductCreateDto();
     Product productMapped = productMapper.toProduct(productDto);
     return productRepository.save(productMapped);
+  }
+
+  private void validateProductResponse(Map<String, Object> responseProduct) {
+    Field[] dtoFields = ProductResponseDto.class.getDeclaredFields();
+    List<String> expectedFieldNames = Arrays.stream(dtoFields).map(Field::getName).toList();
+    log.info("Expected field names: {}", expectedFieldNames);
+
+    expectedFieldNames.forEach(
+        fieldName -> {
+          log.info(
+              "Product '{}' contains field '{}': {}",
+              responseProduct.get("name"),
+              fieldName,
+              responseProduct.containsKey(fieldName));
+          assertThat(responseProduct)
+              .as("Product should have field '%s' defined in response.", fieldName)
+              .containsKey(fieldName);
+        });
   }
 }
