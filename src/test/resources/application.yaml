@@ -6,6 +6,8 @@ spring:
     hibernate:
       ddl-auto: create-drop
     show-sql: true
+    sql:
+      init-mode: always
 
   messages:
     basename:

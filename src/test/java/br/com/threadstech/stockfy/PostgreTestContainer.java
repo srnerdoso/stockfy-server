@@ -1,27 +1,22 @@
 package br.com.threadstech.stockfy;
 
-import java.util.concurrent.atomic.AtomicBoolean;
-import org.junit.jupiter.api.extension.BeforeAllCallback;
-import org.junit.jupiter.api.extension.ExtensionContext;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
-import org.testcontainers.junit.jupiter.Container;
+import org.springframework.context.annotation.Bean;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 import org.testcontainers.utility.DockerImageName;
 
-public class PostgreTestContainer implements BeforeAllCallback {
+@TestConfiguration
+public class PostgreTestContainer {
 
-  private static final AtomicBoolean containerStarted = new AtomicBoolean(false);
-
-  @Container
+  @Bean
   @ServiceConnection
-  static PostgreSQLContainer postgre =
-      new PostgreSQLContainer(DockerImageName.parse("postgres:16-alpine"));
-
-  @Override
-  public void beforeAll(ExtensionContext context) throws Exception {
-    if (!containerStarted.get()) {
-      postgre.start();
-      containerStarted.set(true);
-    }
+  @SuppressWarnings("resource")
+  PostgreSQLContainer postgre() {
+    return new PostgreSQLContainer(DockerImageName.parse("postgres:16-alpine"))
+        .withDatabaseName("stockfy_tests_db")
+        .withUsername("username")
+        .withPassword("password")
+        .withReuse(true);
   }
 }

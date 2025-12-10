@@ -19,15 +19,15 @@ public class DataGenUtils {
       new BigDecimal(randomDecimalString(10, 2));
   private static final BigDecimal randomPrecision5Scale2 =
       new BigDecimal(randomDecimalString(5, 2));
+  private static final BigDecimal negativeScale = new BigDecimal("-1.000");
 
   @SneakyThrows
-  public static String validProductCreateJson() {
-
+  public static ProductCreateDto validProductCreateDto() {
     String barCode = String.valueOf(faker.barcode().ean13());
     String name = faker.commerce().productName();
     String type = faker.options().option(ProductType.class).name();
 
-    var productDto = ProductCreateDto.builder()
+    return ProductCreateDto.builder()
         .barCode(barCode)
         .name(name)
         .stock(randomPrecision10Scale3)
@@ -38,8 +38,32 @@ public class DataGenUtils {
         .discountPercentage(randomPrecision5Scale2)
         .type(type)
         .build();
+  }
 
-    return objectMapper.writeValueAsString(productDto);
+  @SneakyThrows
+  public static String validProductCreateJson() {
+    return objectMapper.writeValueAsString(validProductCreateDto());
+  }
+
+  @SneakyThrows
+  public static String nullFieldsProductCreateJson() {
+    return objectMapper.writeValueAsString(new ProductCreateDto());
+  }
+
+  @SneakyThrows
+  public static String invalidSizeProductCreateJson() {
+    return objectMapper.writeValueAsString(
+        ProductCreateDto.builder()
+            .barCode("123")
+            .name("")
+            .stock(negativeScale)
+            .price(negativeScale)
+            .cost(negativeScale)
+            .profit(negativeScale)
+            .discount(negativeScale)
+            .discountPercentage(negativeScale)
+            .type("ANY")
+            .build());
   }
 
   private static String randomDecimalString(int precision, int scale) {
