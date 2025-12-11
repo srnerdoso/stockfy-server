@@ -1,15 +1,18 @@
 package br.com.threadstech.stockfy.service;
 
+import br.com.threadstech.stockfy.components.ConstraintResolver;
+import br.com.threadstech.stockfy.config.constraints.EmployeeConstraintNames;
+import br.com.threadstech.stockfy.config.constraints.ProductConstraintNames;
 import br.com.threadstech.stockfy.entity.Product;
+import br.com.threadstech.stockfy.exception.EmployeeUniqueViolationException;
 import br.com.threadstech.stockfy.exception.EntityNotFoundException;
 import br.com.threadstech.stockfy.exception.ProductUniqueViolationException;
 import br.com.threadstech.stockfy.repository.ProductRepository;
-import br.com.threadstech.stockfy.web.dto.ProductCreateDto;
 import br.com.threadstech.stockfy.web.dto.ProductUpdateDto;
 import br.com.threadstech.stockfy.web.dto.mapper.ProductMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.MessageSource;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -20,16 +23,16 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class ProductService {
 
-  private final MessageSource messageSource;
   private final ProductRepository productRepository;
+  private final ConstraintResolver constraintResolver;
 
   @Transactional
   public void save(Product product) {
     log.info("Saving product: {}", product.getName());
     try {
       productRepository.save(product);
-    } catch (org.springframework.dao.DataIntegrityViolationException ex) {
-      throw new ProductUniqueViolationException(product.getBarCode());
+    } catch (DataIntegrityViolationException ex) {
+      resolveUniqueConstraint(ex);
     }
   }
 
@@ -55,7 +58,6 @@ public class ProductService {
         .orElseThrow(() -> new EntityNotFoundException(id.toString()));
   }
 
-  @Transactional
   public void updateById(Long id, ProductUpdateDto productDto, ProductMapper productMapper) {
     log.info(
         """
@@ -65,8 +67,12 @@ public class ProductService {
         """,
         id,
         productDto.toString());
-    Product product = findById(id);
-    productMapper.updateProduct(productDto, product);
+    try {
+      Product product = findById(id);
+      productMapper.updateProduct(productDto, product);
+    } catch (DataIntegrityViolationException ex) {
+      resolveUniqueConstraint(ex);
+    }
     log.info("Product id={} updated successfully.", id);
   }
 
@@ -78,5 +84,11 @@ public class ProductService {
 
   public Page<Product> findAll(Pageable pageable) {
     return productRepository.findAll(pageable);
+  }
+
+  private void resolveUniqueConstraint(DataIntegrityViolationException ex)
+      throws ProductUniqueViolationException {
+    String constraint = constraintResolver.resolveDisplayName(ex, ProductConstraintNames.class);
+    throw new ProductUniqueViolationException(constraint);
   }
 }

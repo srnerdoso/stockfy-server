@@ -2,6 +2,7 @@ package br.com.threadstech.stockfy.utils;
 
 import br.com.threadstech.stockfy.enums.ProductType;
 import br.com.threadstech.stockfy.web.dto.ProductCreateDto;
+import br.com.threadstech.stockfy.web.dto.ProductUpdateDto;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.SneakyThrows;
 import net.datafaker.Faker;
@@ -29,6 +30,24 @@ public class DataGenUtils {
     return ProductCreateDto.builder()
         .barCode(barCode)
         .name(name)
+        .stock(randomPrecision10Scale3)
+        .price(randomPrecision10Scale2)
+        .cost(randomPrecision10Scale2)
+        .profit(randomPrecision10Scale2)
+        .discount(randomPrecision10Scale2)
+        .discountPercentage(randomPrecision5Scale2)
+        .type(type)
+        .build();
+  }
+
+  @SneakyThrows
+  public static ProductUpdateDto validProductUpdateDto() {
+    String barCode = String.valueOf(faker.barcode().ean13());
+    String type = faker.options().option(ProductType.class).name();
+
+    return ProductUpdateDto.builder()
+        .barCode(barCode)
+        .name(faker.commerce().productName())
         .stock(randomPrecision10Scale3)
         .price(randomPrecision10Scale2)
         .cost(randomPrecision10Scale2)
@@ -84,5 +103,9 @@ public class DataGenUtils {
     int decimalMax = (int) Math.pow(10, scale);
     long decimal = faker.number().numberBetween(0, decimalMax);
     return integer + "." + String.format("%0" + scale + "d", decimal);
+  }
+
+  public static String validProductUpdateJson() {
+    return toJson(validProductUpdateDto());
   }
 }

@@ -60,6 +60,9 @@ public class AdminBootstrapConfig implements CommandLineRunner {
 
     employee.setAddress(employeeAddress);
 
+    employee.setCreatedBy("system");
+    employee.setUpdatedBy("system");
+
     employeeService.save(employee);
     log.info("Admin user created successfully.");
   }

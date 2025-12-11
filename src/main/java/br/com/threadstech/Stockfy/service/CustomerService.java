@@ -1,7 +1,9 @@
 package br.com.threadstech.stockfy.service;
 
 import br.com.threadstech.stockfy.components.ConstraintResolver;
+import br.com.threadstech.stockfy.config.constraints.CustomerConstraintNames;
 import br.com.threadstech.stockfy.entity.Customer;
+import br.com.threadstech.stockfy.exception.CustomerUniqueViolationException;
 import br.com.threadstech.stockfy.exception.EntityNotFoundException;
 import br.com.threadstech.stockfy.repository.CustomerRepository;
 import br.com.threadstech.stockfy.web.dto.CustomerUpdateDto;
@@ -28,7 +30,7 @@ public class CustomerService {
       Customer customerSaved = customerRepository.save(customer);
       log.info("Customer saved successfully with id={}", customerSaved.getId());
     } catch (DataIntegrityViolationException ex) {
-      constraintResolver.resolveConstraint(ex);
+      resolveUniqueConstraint(ex);
     }
   }
 
@@ -57,11 +59,17 @@ public class CustomerService {
       Customer updatedCustomer = customerMapper.update(customerDto, customer);
       customerRepository.save(updatedCustomer);
     } catch (DataIntegrityViolationException ex) {
-      constraintResolver.resolveConstraint(ex);
+      resolveUniqueConstraint(ex);
     }
   }
 
   public void deleteById(Long id) {
     customerRepository.deleteById(id);
+  }
+
+  private void resolveUniqueConstraint(DataIntegrityViolationException ex)
+      throws CustomerUniqueViolationException {
+    String constraint = constraintResolver.resolveDisplayName(ex, CustomerConstraintNames.class);
+    throw new CustomerUniqueViolationException(constraint);
   }
 }

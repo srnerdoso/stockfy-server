@@ -22,6 +22,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+
+import jakarta.persistence.EntityManager;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -40,6 +42,7 @@ public class ProductTestIT {
   @Autowired private MockMvc mockMvc;
   @Autowired private ProductRepository productRepository;
   @Autowired private ProductMapper productMapper;
+  @Autowired private EntityManager entityManager;
 
   @Nested
   @DisplayName("Create product")
@@ -47,12 +50,27 @@ public class ProductTestIT {
 
     @AdminTest
     void shouldCreateProductWithReturnStatusCreated() throws Exception {
+      ProductCreateDto productDto = DataGenUtils.validProductCreateDto();
       mockMvc
           .perform(
               post(ApiPaths.PRODUCT)
                   .contentType(MediaType.APPLICATION_JSON)
-                  .content(DataGenUtils.validProductCreateJson()))
+                  .content(DataGenUtils.toJson(productDto)))
           .andExpect(status().isCreated());
+
+      Product productSaved =
+          productRepository.findByBarCode(productDto.getBarCode()).orElseGet(() -> null);
+      assertThat(productSaved).isNotNull();
+      assertThat(productSaved.getBarCode()).isEqualTo(productDto.getBarCode());
+      assertThat(productSaved.getName()).isEqualTo(productDto.getName());
+      assertThat(productSaved.getStock()).isEqualTo(productDto.getStock());
+      assertThat(productSaved.getPrice()).isEqualTo(productDto.getPrice());
+      assertThat(productSaved.getCost()).isEqualTo(productDto.getCost());
+      assertThat(productSaved.getProfit()).isEqualTo(productDto.getProfit());
+      assertThat(productSaved.getDiscount()).isEqualTo(productDto.getDiscount());
+      assertThat(productSaved.getDiscountPercentage())
+          .isEqualTo(productDto.getDiscountPercentage());
+      assertThat(productSaved.getType().name()).isEqualTo(productDto.getType());
     }
 
     @AdminTest
@@ -197,6 +215,17 @@ public class ProductTestIT {
     void shouldDeleteProductWithReturnStatusNoContent() throws Exception {
       Product product = saveProduct();
       mockMvc.perform(delete(getByIdPath(product.getId()))).andExpect(status().isNoContent());
+
+      Product productDeleted =
+          (Product)
+              entityManager
+                  .createNativeQuery("SELECT * FROM products where id = :id", Product.class)
+                  .setParameter("id", product.getId())
+                  .getSingleResult();
+      assertThat(productDeleted).isNotNull();
+      assertThat(productDeleted.getBarCode())
+          .isEqualTo(product.getBarCode() + "_deleted_" + product.getId());
+      assertThat(productDeleted.isDeleted()).isEqualTo(true);
     }
 
     @Test
@@ -212,10 +241,10 @@ public class ProductTestIT {
 
     @AdminTest
     void shouldUpdateProductWithReturnStatusNoContent() throws Exception {
-      // FIXME: Corrigir problema 400 bad request
-      String productNameUpdate = "NOME DE PRODUTO TESTE";
       Product product = saveProduct();
-      String productUpdateJson = String.format("{ 'name': '%s' }", productNameUpdate);
+      ProductUpdateDto productUpdateDto = DataGenUtils.validProductUpdateDto();
+
+      String productUpdateJson = DataGenUtils.toJson(productUpdateDto);
       mockMvc
           .perform(
               patch(getByIdPath(product.getId()))
@@ -223,8 +252,56 @@ public class ProductTestIT {
                   .contentType(MediaType.APPLICATION_JSON))
           .andExpect(status().isNoContent());
       Product updatedProduct = productRepository.findById(product.getId()).orElseGet(() -> null);
+
       assertThat(updatedProduct).isNotNull();
-      assertThat(updatedProduct.getName()).isNotEqualTo(product.getName());
+      assertThat(updatedProduct.getBarCode()).isEqualTo(productUpdateDto.getBarCode());
+      assertThat(updatedProduct.getName()).isEqualTo(productUpdateDto.getName());
+      assertThat(updatedProduct.getStock()).isEqualTo(productUpdateDto.getStock());
+      assertThat(updatedProduct.getPrice()).isEqualTo(productUpdateDto.getPrice());
+      assertThat(updatedProduct.getCost()).isEqualTo(productUpdateDto.getCost());
+      assertThat(updatedProduct.getProfit()).isEqualTo(productUpdateDto.getProfit());
+      assertThat(updatedProduct.getDiscount()).isEqualTo(productUpdateDto.getDiscount());
+      assertThat(updatedProduct.getDiscountPercentage())
+          .isEqualTo(productUpdateDto.getDiscountPercentage());
+      assertThat(updatedProduct.getType().name()).isEqualTo(productUpdateDto.getType());
+    }
+
+    @Test
+    void shouldUpdateProductWithReturnStatusUnauthorized() throws Exception {
+      Product product = saveProduct();
+      mockMvc
+          .perform(
+              patch(getByIdPath(product.getId()))
+                  .content(DataGenUtils.validProductUpdateJson())
+                  .contentType(MediaType.APPLICATION_JSON))
+          .andExpect(status().isUnauthorized());
+    }
+
+    @AdminTest
+    void shouldUpdateProductWithReturnStatusNotFound() throws Exception {
+      mockMvc
+          .perform(
+              patch(getByIdPath(151256191561986L))
+                  .content(DataGenUtils.validProductUpdateJson())
+                  .contentType(MediaType.APPLICATION_JSON))
+          .andExpect(status().isNotFound());
+    }
+
+    @AdminTest
+    void shouldUpdateProductWithReturnStatusConflict() throws Exception {
+      Product product = saveProduct();
+      Product product2 = saveProduct();
+
+      ProductUpdateDto productUpdateDto = DataGenUtils.validProductUpdateDto();
+      productUpdateDto.setBarCode(product.getBarCode());
+      String productUpdateJson = DataGenUtils.toJson(productUpdateDto);
+
+      mockMvc
+          .perform(
+              patch(getByIdPath(product2.getId()))
+                  .content(productUpdateJson)
+                  .contentType(MediaType.APPLICATION_JSON))
+          .andExpect(status().isConflict());
     }
   }
 
@@ -244,16 +321,16 @@ public class ProductTestIT {
     return getPatternPathResource(id.toString(), "id");
   }
 
-  private Product saveProduct(String name) {
+  private void saveProduct(String name) {
     ProductCreateDto productDto = DataGenUtils.validProductCreateDto(name);
     Product productMapped = productMapper.toProduct(productDto);
-    return productRepository.save(productMapped);
+    productRepository.save(productMapped);
   }
 
   private Product saveProduct() {
     ProductCreateDto productDto = DataGenUtils.validProductCreateDto();
     Product productMapped = productMapper.toProduct(productDto);
-    return productRepository.save(productMapped);
+    return productRepository.saveAndFlush(productMapped);
   }
 
   private void validateProductResponse(Map<String, Object> responseProduct) {

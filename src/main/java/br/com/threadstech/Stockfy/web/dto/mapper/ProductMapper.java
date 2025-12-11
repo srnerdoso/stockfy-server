@@ -20,7 +20,7 @@ public interface ProductMapper {
 
   @Mapping(target = "id", ignore = true)
   @Mapping(target = "deleted", ignore = true)
-  void updateProduct(ProductUpdateDto productUpdateDto, @MappingTarget Product product);
+  Product updateProduct(ProductUpdateDto productUpdateDto, @MappingTarget Product product);
 
   @BeanMapping(unmappedSourcePolicy = ReportingPolicy.IGNORE)
   ProductResponseDto toDto(Product product);
