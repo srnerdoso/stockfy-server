@@ -13,6 +13,8 @@ spring:
     basename:
       - messages
     encoding: UTF-8
+    common-messages: "classpath:messages.properties"
+    fallback-to-system-locale: false
 
 payment-service:
   refund-max-days: 15

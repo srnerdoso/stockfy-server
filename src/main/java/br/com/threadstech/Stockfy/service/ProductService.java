@@ -70,6 +70,7 @@ public class ProductService {
     try {
       Product product = findById(id);
       productMapper.updateProduct(productDto, product);
+      productRepository.save(product);
     } catch (DataIntegrityViolationException ex) {
       resolveUniqueConstraint(ex);
     }

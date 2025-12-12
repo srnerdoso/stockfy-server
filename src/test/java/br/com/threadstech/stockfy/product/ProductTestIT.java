@@ -17,13 +17,12 @@ import br.com.threadstech.stockfy.web.dto.ProductResponseDto;
 import br.com.threadstech.stockfy.web.dto.ProductUpdateDto;
 import br.com.threadstech.stockfy.web.dto.mapper.ProductMapper;
 import com.jayway.jsonpath.JsonPath;
+import jakarta.persistence.EntityManager;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-
-import jakarta.persistence.EntityManager;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -301,6 +300,7 @@ public class ProductTestIT {
               patch(getByIdPath(product2.getId()))
                   .content(productUpdateJson)
                   .contentType(MediaType.APPLICATION_JSON))
+          .andDo(print())
           .andExpect(status().isConflict());
     }
   }

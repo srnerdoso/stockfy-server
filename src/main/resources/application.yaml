@@ -1,7 +1,7 @@
 spring:
   application:
     name: Stockfy
-  
+
   jpa:
     hibernate:
       ddl-auto: update
@@ -11,6 +11,8 @@ spring:
     basename:
       - messages
     encoding: UTF-8
+    common-messages: "classpath:messages.properties"
+    fallback-to-system-locale: false
 
 springdoc:
   swagger-ui.path: /docs-stockfy.html
