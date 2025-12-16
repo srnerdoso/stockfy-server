@@ -409,6 +409,31 @@ public class EmployeeTestsIT {
     void shouldUpdateEmployeeWithSalesAttendantWithReturnStatusForbidden() throws Exception {
       mockMvc.perform(patch(patternPath(1L))).andExpect(status().isForbidden());
     }
+
+    // FIXME: Por algum motivo a senha do dto de criação não está batendo com a senha do banco de dados
+    //        No postman tudo funciona normalmente
+    @AdminTest
+    void shouldUpdateEmployeePasswordWithReturnStatusNoContent() throws Exception {
+      EmployeeCreateDto employeeDto = EmployeeTestsUtils.validEmployeeCreateDto();
+      Employee employee = employeeRepository.save(employeeMapper.toEmployee(employeeDto));
+      String currentPassword = employeeDto.getPassword();
+
+      String newPassword = DataGenUtils.faker.credentials().password();
+      var dto =
+          PasswordUpdateDto.builder()
+              .currentPassword(currentPassword)
+              .newPassword(newPassword)
+              .confirmPassword(newPassword)
+              .build();
+      String json = DataGenUtils.toJson(dto);
+
+      mockMvc
+          .perform(
+              put(patternPath(employee.getId()) + "/password")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content(json))
+          .andExpect(status().isNoContent());
+    }
   }
 
   @Nested

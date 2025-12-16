@@ -1,7 +1,9 @@
 package br.com.threadstech.stockfy.utils;
 
+import br.com.threadstech.stockfy.enums.Role;
 import br.com.threadstech.stockfy.web.dto.EmployeeCreateDto;
 import br.com.threadstech.stockfy.web.dto.EmployeeUpdateDto;
+import br.com.threadstech.stockfy.web.dto.PasswordUpdateDto;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -17,6 +19,8 @@ public class EmployeeTestsUtils {
         .birthday(DataGenUtils.faker.timeAndDate().birthday())
         .contact(ContactTestUtils.validContactCreateDto())
         .address(AddressTestUtils.validAddressCreateDto())
+        .password(DataGenUtils.faker.credentials().password())
+        .role(DataGenUtils.faker.options().option(Role.class).name())
         .build();
   }
 
@@ -35,6 +39,8 @@ public class EmployeeTestsUtils {
                     DataGenUtils.faker.timeAndDate().future(), ZoneId.systemDefault()))
             .contact(ContactTestUtils.invalidContactCreateDto())
             .address(AddressTestUtils.invalidAddressCreateDto())
+            .password("")
+            .role("ANY")
             .build();
     return DataGenUtils.toJson(dto);
   }
@@ -63,6 +69,7 @@ public class EmployeeTestsUtils {
         .fullName(DataGenUtils.faker.name().fullName())
         .contact(ContactTestUtils.validContactUpdateDto())
         .address(AddressTestUtils.validAddressUpdateDto())
+        .role(DataGenUtils.faker.options().option(Role.class).name())
         .build();
   }
 
@@ -73,6 +80,7 @@ public class EmployeeTestsUtils {
             .fullName("")
             .contact(ContactTestUtils.invalidContactUpdateDto())
             .address(AddressTestUtils.invalidAddressUpdateDto())
+            .role("ANY")
             .build();
     return DataGenUtils.toJson(dto);
   }
@@ -83,5 +91,16 @@ public class EmployeeTestsUtils {
 
   public static String validEmployeeUpdateJson() {
     return DataGenUtils.toJson(validEmployeeUpdateDto());
+  }
+
+  public static String validEmployeePasswordUpdateJson(String currentPassword) {
+    String newPassword = DataGenUtils.faker.credentials().password();
+    var dto =
+        PasswordUpdateDto.builder()
+            .currentPassword(currentPassword)
+            .newPassword(newPassword)
+            .confirmPassword(newPassword)
+            .build();
+    return DataGenUtils.toJson(dto);
   }
 }
