@@ -12,7 +12,7 @@ public class JwtUserDetails extends User {
     super(
         employee.getContact().getEmail(),
         employee.getPassword(),
-        AuthorityUtils.createAuthorityList(employee.getRole().getDeclaringClass().getName()));
+        AuthorityUtils.createAuthorityList("ROLE_" + employee.getRole().name()));
     this.employee = employee;
   }
 

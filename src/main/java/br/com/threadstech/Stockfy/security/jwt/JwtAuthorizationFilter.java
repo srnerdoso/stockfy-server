@@ -67,6 +67,7 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
     }
 
     toAuthentication(request, username);
+    log.info("User authenticated. Permission granted.");
     filterChain.doFilter(request, response);
   }
 
@@ -76,5 +77,6 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
         new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
     authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
     SecurityContextHolder.getContext().setAuthentication(authentication);
+    log.info("User authorities: {}", authentication.getAuthorities());
   }
 }

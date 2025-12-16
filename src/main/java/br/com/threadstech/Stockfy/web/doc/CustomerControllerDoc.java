@@ -90,6 +90,8 @@ public interface CustomerControllerDoc {
   ResponseEntity<Void> update(
       @PathVariable Long id, @Valid @RequestBody CustomerUpdateDto customerDto);
 
+  // TODO: Adicionar na doc de delete para status 401 e 403
+
   @Operation(
       summary = "Deleta um cliente pelo seu id.",
       responses = {

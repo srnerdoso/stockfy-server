@@ -416,38 +416,38 @@ public class CustomerTestsIT {
       Customer customer = customerRepository.save(createCustomer());
       mockMvc.perform(delete(patternPath(customer.getId()))).andExpect(status().isNoContent());
 
-      Customer customerTeste = customerRepository.findById(customer.getId()).orElse(null);
-      log.info("Customer deleted: {}", customerTeste.toString());
-
       String deleted = "deleted";
 
       Customer customerDeleted =
-          entityManager
-              .createQuery(
-                  """
-                SELECT c
-                FROM Customer c
-                JOIN FETCH c.contact
-                JOIN FETCH c.address
-                WHERE c.id = :id
-                """,
-                  Customer.class)
-              .setParameter("id", customer.getId())
-              .getSingleResult();
+          (Customer)
+              entityManager
+                  .createNativeQuery(
+                      """
+                    SELECT c.*
+                    FROM customers c
+                    JOIN customer_contacts cc
+                        ON cc.id = c.customer_contact_id
+                    JOIN customer_addresses ca
+                        ON ca.id = c.customer_address_id
+                    WHERE c.id = :id
+                    """,
+                      Customer.class)
+                  .setParameter("id", customer.getId())
+                  .getSingleResult();
 
       assertThat(customerDeleted).isNotNull();
       assertThat(customerDeleted.isDeleted()).isTrue();
       assertThat(customerDeleted.getFullName()).isEqualTo("deleted");
       assertThat(customerDeleted.getCpf()).endsWith("cpf_" + customer.getId() + "_deleted");
 
-      CustomerContact contact = customerDeleted.getContact();
+      CustomerContact contact = entityManager.find(CustomerContact.class, customer.getContact().getId());
       assertThat(contact).isNotNull();
       assertThat(contact.isDeleted()).isTrue();
       assertThat(contact.getEmail()).endsWith("email_" + customer.getId() + "_deleted");
       assertThat(contact.getPhoneNumber())
           .endsWith("phone_number_" + customer.getId() + "_deleted");
 
-      CustomerAddress address = customerDeleted.getAddress();
+      CustomerAddress address = entityManager.find(CustomerAddress.class, customer.getAddress().getId());
       assertThat(address).isNotNull();
       assertThat(address.isDeleted()).isTrue();
       assertThat(address.getStreet()).isEqualTo(deleted);
@@ -458,6 +458,21 @@ public class CustomerTestsIT {
       assertThat(address.getState()).isEqualTo(deleted);
       assertThat(address.getZipCode()).isEqualTo(deleted);
       assertThat(address.getCountry()).isEqualTo(deleted);
+    }
+
+    @Test
+    void shouldDeleteCustomerWithReturnStatusUnauthorized() throws Exception {
+      mockMvc.perform(delete(patternPath(1L))).andExpect(status().isUnauthorized());
+    }
+
+    @InventoryManagerTest
+    void shouldDeleteCustomerWithInventoryManagerWithReturnStatusForbidden() throws Exception {
+      mockMvc.perform(delete(patternPath(1L))).andExpect(status().isForbidden());
+    }
+
+    @SalesAttendantTest
+    void shouldDeleteCustomerWithSalesAttendantWithReturnStatusForbidden() throws Exception {
+      mockMvc.perform(delete(patternPath(1L))).andExpect(status().isForbidden());
     }
   }
 

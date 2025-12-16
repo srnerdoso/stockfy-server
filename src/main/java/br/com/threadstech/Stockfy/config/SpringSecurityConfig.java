@@ -8,6 +8,7 @@ import br.com.threadstech.stockfy.security.jwt.JwtAuthorizationFilter;
 import java.util.Arrays;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -57,9 +58,7 @@ public class SpringSecurityConfig {
                     .permitAll()
                     .requestMatchers(toPatternPath(ApiPaths.AUTH))
                     .permitAll()
-                    .requestMatchers(ApiPaths.CUSTOMER)
-                    .hasAnyRole(Role.ADMIN.name())
-                    .requestMatchers(ApiPaths.EMPLOYEE)
+                    .requestMatchers(new String[] {ApiPaths.CUSTOMER, ApiPaths.EMPLOYEE})
                     .hasAnyRole(Role.ADMIN.name())
                     .requestMatchers(toPatternPaths(ApiPaths.CUSTOMER, ApiPaths.EMPLOYEE))
                     .hasAnyRole(Role.ADMIN.name())
