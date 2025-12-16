@@ -1,17 +1,15 @@
-package br.com.threadstech.stockfy.product;
+package br.com.threadstech.stockfy;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-import br.com.threadstech.stockfy.AdminTest;
-import br.com.threadstech.stockfy.IntegrationTests;
-import br.com.threadstech.stockfy.PostgreTestContainer;
 import br.com.threadstech.stockfy.api.ApiPaths;
 import br.com.threadstech.stockfy.entity.Product;
 import br.com.threadstech.stockfy.repository.ProductRepository;
 import br.com.threadstech.stockfy.utils.DataGenUtils;
+import br.com.threadstech.stockfy.utils.ProductTestsUtils;
 import br.com.threadstech.stockfy.web.dto.ProductCreateDto;
 import br.com.threadstech.stockfy.web.dto.ProductResponseDto;
 import br.com.threadstech.stockfy.web.dto.ProductUpdateDto;
@@ -29,13 +27,11 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 @Slf4j
 @IntegrationTests
-@Import(PostgreTestContainer.class)
 public class ProductTestIT {
 
   @Autowired private MockMvc mockMvc;
@@ -49,7 +45,7 @@ public class ProductTestIT {
 
     @AdminTest
     void shouldCreateProductWithReturnStatusCreated() throws Exception {
-      ProductCreateDto productDto = DataGenUtils.validProductCreateDto();
+      ProductCreateDto productDto = ProductTestsUtils.validProductCreateDto();
       mockMvc
           .perform(
               post(ApiPaths.PRODUCT)
@@ -74,7 +70,7 @@ public class ProductTestIT {
 
     @AdminTest
     void shouldCreateProductWithReturnStatusConflict() throws Exception {
-      String product = DataGenUtils.validProductCreateJson();
+      String product = ProductTestsUtils.validProductCreateJson();
       mockMvc.perform(
           post(ApiPaths.PRODUCT).contentType(MediaType.APPLICATION_JSON).content(product));
       mockMvc
@@ -84,8 +80,8 @@ public class ProductTestIT {
 
     @AdminTest
     void shouldCreateProductWithReturnStatusBadRequest() throws Exception {
-      String nullFields = DataGenUtils.nullFieldsProductCreateJson();
-      String invalidProduct = DataGenUtils.invalidSizeProductCreateJson();
+      String nullFields = ProductTestsUtils.nullFieldsProductCreateJson();
+      String invalidProduct = ProductTestsUtils.invalidSizeProductCreateJson();
       mockMvc
           .perform(
               post(ApiPaths.PRODUCT).contentType(MediaType.APPLICATION_JSON).content(nullFields))
@@ -104,7 +100,7 @@ public class ProductTestIT {
           .perform(
               post(ApiPaths.PRODUCT)
                   .contentType(MediaType.APPLICATION_JSON)
-                  .content(DataGenUtils.validProductCreateJson()))
+                  .content(ProductTestsUtils.validProductCreateJson()))
           .andExpect(status().isUnauthorized());
     }
   }
@@ -241,7 +237,7 @@ public class ProductTestIT {
     @AdminTest
     void shouldUpdateProductWithReturnStatusNoContent() throws Exception {
       Product product = saveProduct();
-      ProductUpdateDto productUpdateDto = DataGenUtils.validProductUpdateDto();
+      ProductUpdateDto productUpdateDto = ProductTestsUtils.validProductUpdateDto();
 
       String productUpdateJson = DataGenUtils.toJson(productUpdateDto);
       mockMvc
@@ -271,7 +267,7 @@ public class ProductTestIT {
       mockMvc
           .perform(
               patch(getByIdPath(product.getId()))
-                  .content(DataGenUtils.validProductUpdateJson())
+                  .content(ProductTestsUtils.validProductUpdateJson())
                   .contentType(MediaType.APPLICATION_JSON))
           .andExpect(status().isUnauthorized());
     }
@@ -281,7 +277,7 @@ public class ProductTestIT {
       mockMvc
           .perform(
               patch(getByIdPath(151256191561986L))
-                  .content(DataGenUtils.validProductUpdateJson())
+                  .content(ProductTestsUtils.validProductUpdateJson())
                   .contentType(MediaType.APPLICATION_JSON))
           .andExpect(status().isNotFound());
     }
@@ -291,7 +287,7 @@ public class ProductTestIT {
       Product product = saveProduct();
       Product product2 = saveProduct();
 
-      ProductUpdateDto productUpdateDto = DataGenUtils.validProductUpdateDto();
+      ProductUpdateDto productUpdateDto = ProductTestsUtils.validProductUpdateDto();
       productUpdateDto.setBarCode(product.getBarCode());
       String productUpdateJson = DataGenUtils.toJson(productUpdateDto);
 
@@ -322,13 +318,13 @@ public class ProductTestIT {
   }
 
   private void saveProduct(String name) {
-    ProductCreateDto productDto = DataGenUtils.validProductCreateDto(name);
+    ProductCreateDto productDto = ProductTestsUtils.validProductCreateDto(name);
     Product productMapped = productMapper.toProduct(productDto);
     productRepository.save(productMapped);
   }
 
   private Product saveProduct() {
-    ProductCreateDto productDto = DataGenUtils.validProductCreateDto();
+    ProductCreateDto productDto = ProductTestsUtils.validProductCreateDto();
     Product productMapped = productMapper.toProduct(productDto);
     return productRepository.saveAndFlush(productMapped);
   }

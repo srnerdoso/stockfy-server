@@ -33,7 +33,7 @@ import org.hibernate.annotations.SQLDelete;
     UPDATE customer_contacts
     SET deleted = true,
         email = CONCAT('email_', id, '_deleted'),
-        phone_number = CONCAT('email_', id, '_deleted')
+        phone_number = CONCAT('phone_number_', id, '_deleted')
     WHERE id = ?
     """)
 public class CustomerContact extends BaseContact {

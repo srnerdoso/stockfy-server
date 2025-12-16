@@ -25,7 +25,7 @@ public class BaseContact extends BaseAuditDelete {
   @Column(name = "email", unique = true, length = 255)
   private String email;
 
-  @Column(name = "phone_number", unique = true, nullable = false, length = 20)
+  @Column(name = "phone_number", unique = true, nullable = false, length = 255)
   private String phoneNumber;
 
   @Override

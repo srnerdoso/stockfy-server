@@ -57,6 +57,10 @@ public class SpringSecurityConfig {
                     .permitAll()
                     .requestMatchers(toPatternPath(ApiPaths.AUTH))
                     .permitAll()
+                    .requestMatchers(ApiPaths.CUSTOMER)
+                    .hasAnyRole(Role.ADMIN.name())
+                    .requestMatchers(ApiPaths.EMPLOYEE)
+                    .hasAnyRole(Role.ADMIN.name())
                     .requestMatchers(toPatternPaths(ApiPaths.CUSTOMER, ApiPaths.EMPLOYEE))
                     .hasAnyRole(Role.ADMIN.name())
                     .requestMatchers(toPatternPath(ApiPaths.PAYMENT))
@@ -84,7 +88,7 @@ public class SpringSecurityConfig {
   }
 
   private String toPatternPath(String basePath) {
-    return basePath + "/*";
+    return basePath + "/**";
   }
 
   private String[] toPatternPaths(String... basePaths) {

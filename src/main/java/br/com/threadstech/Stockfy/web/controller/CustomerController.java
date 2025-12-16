@@ -11,7 +11,6 @@ import br.com.threadstech.stockfy.web.dto.CustomerUpdateDto;
 import br.com.threadstech.stockfy.web.dto.mapper.CustomerMapper;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -28,7 +27,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 // TODO: Adicionar método get para pagamentos pendentes
 
-@Slf4j
 @RestController
 @RequestMapping(ApiPaths.CUSTOMER)
 @RequiredArgsConstructor
@@ -39,7 +37,6 @@ public class CustomerController implements CustomerControllerDoc {
 
   @PostMapping
   public ResponseEntity<Void> save(@Valid @RequestBody CustomerCreateDto customerDto) {
-    log.info("Converting CustomerCreateDto to Customer and saving: {}", customerDto.toString());
     customerService.save(customerMapper.toCustomer(customerDto));
     return ResponseEntity.status(HttpStatus.CREATED).build();
   }
