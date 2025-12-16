@@ -44,7 +44,6 @@ public class Payment extends BaseAudit {
   @JoinColumn(name = "customer_id")
   private Customer customer;
 
-  @Embedded
   @Enumerated(EnumType.STRING)
   @Column(name = "payment_method", nullable = false, length = 20)
   private PaymentMethod paymentMethod;

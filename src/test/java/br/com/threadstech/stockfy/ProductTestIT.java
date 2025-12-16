@@ -5,6 +5,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+import br.com.threadstech.stockfy.annotations.AdminTest;
+import br.com.threadstech.stockfy.annotations.IntegrationTests;
 import br.com.threadstech.stockfy.api.ApiPaths;
 import br.com.threadstech.stockfy.entity.Product;
 import br.com.threadstech.stockfy.repository.ProductRepository;

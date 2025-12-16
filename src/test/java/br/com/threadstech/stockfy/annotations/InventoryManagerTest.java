@@ -1,4 +1,4 @@
-package br.com.threadstech.stockfy;
+package br.com.threadstech.stockfy.annotations;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;

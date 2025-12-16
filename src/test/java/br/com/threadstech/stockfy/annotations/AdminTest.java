@@ -1,6 +1,5 @@
-package br.com.threadstech.stockfy;
+package br.com.threadstech.stockfy.annotations;
 
-import br.com.threadstech.stockfy.utils.UserUtils;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.test.context.support.WithMockUser;
 

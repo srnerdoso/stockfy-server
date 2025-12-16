@@ -11,6 +11,7 @@ import br.com.threadstech.stockfy.repository.PaymentRepository;
 import br.com.threadstech.stockfy.repository.ProductRepository;
 import br.com.threadstech.stockfy.web.dto.CartCreateDto;
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
@@ -74,7 +75,7 @@ public class PaymentService {
 
   private void verifyPayment(Payment payment) {
     Long paymentId = payment.getId();
-    int daysSincePayment = payment.getCreatedAt().compareTo(Instant.now());
+    long daysSincePayment = Duration.between(payment.getCreatedAt(), Instant.now()).toDays();
     boolean isDaysSincePaymentGreaterThanRefundMaxDays =
         daysSincePayment > properties.getRefundMaxDays();
     boolean isPaymentNotPaid = payment.getPaymentStatus() != PaymentStatus.PAID;
