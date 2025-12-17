@@ -8,6 +8,7 @@ import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -15,51 +16,39 @@ import lombok.ToString;
 
 @Getter
 @Setter
+@Builder
+@ToString
 @NoArgsConstructor
 @AllArgsConstructor
-@ToString
 public class ProductCreateDto {
 
   @NotBlank(message = "{NotBlank.productDto.barCode}")
-  @Size(
-      min = 7,
-      max = 20,
-      message = "{Size.productDto.barCode}")
+  @Size(min = 7, max = 20, message = "{Size.productDto.barCode}")
   private String barCode;
 
   @NotBlank(message = "{NotBlank.productDto.name}")
-  @Size(
-      min = 1,
-      max = 255,
-      message = "{Size.productDto.name}")
+  @Size(min = 1, max = 255, message = "{Size.productDto.name}")
   private String name;
 
-  @Positive(
-      message = "{Positive.productDto.stock}")
+  @Positive(message = "{Positive.productDto.stock}")
   private BigDecimal stock;
 
-  @Positive(
-      message = "{Positive.productDto.price}")
+  @Positive(message = "{Positive.productDto.price}")
   private BigDecimal price;
 
-  @Positive(
-      message = "{Positive.productDto.cost}")
+  @Positive(message = "{Positive.productDto.cost}")
   private BigDecimal cost;
 
-  @Positive(
-      message = "{Positive.productDto.profit}")
+  @Positive(message = "{Positive.productDto.profit}")
   private BigDecimal profit;
 
-  @PositiveOrZero(
-      message = "{PositiveOrZero.productDto.discount}")
+  @PositiveOrZero(message = "{PositiveOrZero.productDto.discount}")
   private BigDecimal discount;
 
-  @PositiveOrZero(
-      message = "{PositiveOrZero.productDto.discountPercentage}")
+  @PositiveOrZero(message = "{PositiveOrZero.productDto.discountPercentage}")
   private BigDecimal discountPercentage;
 
   @NotNull(message = "{NotNull.productDto.type}")
-  @ProductType(
-      message = "{ProductType.productDto.type}")
+  @ProductType(message = "{ProductType.productDto.type}")
   private String type;
 }

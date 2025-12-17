@@ -1,6 +1,7 @@
 package br.com.threadstech.stockfy.web.exception;
 
 import br.com.threadstech.stockfy.exception.CustomerUniqueViolationException;
+import br.com.threadstech.stockfy.exception.EmployeeUniqueViolationException;
 import br.com.threadstech.stockfy.exception.EntityNotFoundException;
 import br.com.threadstech.stockfy.exception.InvalidPasswordException;
 import br.com.threadstech.stockfy.exception.ProductUniqueViolationException;
@@ -19,7 +20,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 // TODO: Separar os handlers em classes diferentes e criar métodos base para construir cada método
-// sem repetição de código
+//       sem repetição de código
 
 @Slf4j
 @RequiredArgsConstructor
@@ -70,7 +71,7 @@ public class ApiExceptionHandler {
   @ExceptionHandler(ProductUniqueViolationException.class)
   public ResponseEntity<ErrorMessage> productUniqueFieldViolationException(
       ProductUniqueViolationException ex, HttpServletRequest request) {
-    var params = new Object[] {ex.getBarCode()};
+    var params = new Object[] {ex.getFieldName()};
     String message =
         messageSource.getMessage("exception.productUniqueViolationException", params, locale);
     return ResponseEntity.status(HttpStatus.CONFLICT)
@@ -83,6 +84,16 @@ public class ApiExceptionHandler {
     var params = new Object[] {ex.getFieldName()};
     String message =
         messageSource.getMessage("exception.customerUniqueViolationException", params, locale);
+    return ResponseEntity.status(HttpStatus.CONFLICT)
+        .body(new ErrorMessage(request, HttpStatus.CONFLICT, message));
+  }
+
+  @ExceptionHandler(EmployeeUniqueViolationException.class)
+  public ResponseEntity<ErrorMessage> employeeUniqueFieldViolationException(
+      EmployeeUniqueViolationException ex, HttpServletRequest request) {
+    var params = new Object[] {ex.getFieldName()};
+    String message =
+        messageSource.getMessage("exception.employeeUniqueViolationException", params, locale);
     return ResponseEntity.status(HttpStatus.CONFLICT)
         .body(new ErrorMessage(request, HttpStatus.CONFLICT, message));
   }

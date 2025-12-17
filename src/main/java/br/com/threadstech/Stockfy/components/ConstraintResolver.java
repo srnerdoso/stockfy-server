@@ -5,7 +5,6 @@ import br.com.threadstech.stockfy.config.constraints.CustomerConstraintNames;
 import br.com.threadstech.stockfy.exception.CustomerUniqueViolationException;
 import br.com.threadstech.stockfy.service.ConstraintNameService;
 import java.lang.reflect.Constructor;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -38,12 +37,5 @@ public class ConstraintResolver {
       log.error("Unmapped constraint from exception: {}", e.getMessage());
       throw new IllegalArgumentException(e);
     }
-  }
-
-  public void resolveConstraint(DataIntegrityViolationException ex)
-      throws CustomerUniqueViolationException {
-    String constraint =
-        resolveDisplayName(ex, CustomerConstraintNames.class);
-    throw new CustomerUniqueViolationException(constraint);
   }
 }

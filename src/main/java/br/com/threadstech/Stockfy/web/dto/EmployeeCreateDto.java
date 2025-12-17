@@ -10,6 +10,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -18,6 +19,7 @@ import org.hibernate.validator.constraints.br.CPF;
 
 @Getter
 @Setter
+@Builder
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
@@ -45,7 +47,7 @@ public class EmployeeCreateDto {
   @Role(message = "{Role.employeeDto.role}")
   private String role;
 
-  @NotEmpty(message = "{NotEmpty.employeeDto.password}")
-  @Size(min = 8, max = 64, message = "{Size.employeeDto.password}")
+  @NotBlank(message = "{NotBlank.password}")
+  @Size(min = 8, max = 64, message = "{Size.password}")
   private String password;
 }

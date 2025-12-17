@@ -36,7 +36,6 @@ public interface CustomerControllerDoc {
         @ApiResponse(responseCode = "400", ref = SwaggerRefUtils.BAD_REQUEST_RES),
         @ApiResponse(responseCode = "401", ref = SwaggerRefUtils.UNAUTHORIZED_RES),
         @ApiResponse(responseCode = "403", ref = SwaggerRefUtils.FORBIDDEN_RES),
-        @ApiResponse(responseCode = "404", ref = SwaggerRefUtils.NOT_FOUND_RES),
         @ApiResponse(responseCode = "409", ref = SwaggerRefUtils.CONFLICT_RES),
       })
   ResponseEntity<Void> save(@Valid @RequestBody CustomerCreateDto customerDto);
@@ -90,6 +89,8 @@ public interface CustomerControllerDoc {
       })
   ResponseEntity<Void> update(
       @PathVariable Long id, @Valid @RequestBody CustomerUpdateDto customerDto);
+
+  // TODO: Adicionar na doc de delete para status 401 e 403
 
   @Operation(
       summary = "Deleta um cliente pelo seu id.",

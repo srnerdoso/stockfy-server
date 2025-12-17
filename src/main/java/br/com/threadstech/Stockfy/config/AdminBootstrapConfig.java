@@ -14,11 +14,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 
 @Slf4j
 @Configuration
 @RequiredArgsConstructor
 @ConfigurationProperties(prefix = "owner")
+@Profile("!test")
 public class AdminBootstrapConfig implements CommandLineRunner {
 
   private final EmployeeService employeeService;
@@ -57,6 +59,9 @@ public class AdminBootstrapConfig implements CommandLineRunner {
     employeeAddress.setCountry(address.getCountry());
 
     employee.setAddress(employeeAddress);
+
+    employee.setCreatedBy("system");
+    employee.setUpdatedBy("system");
 
     employeeService.save(employee);
     log.info("Admin user created successfully.");

@@ -54,7 +54,7 @@ public class Customer extends BaseAudit {
   @Column(name = "full_name", nullable = false, length = 255)
   private String fullName;
 
-  @Column(name = "cpf", nullable = false, unique = true, length = 20)
+  @Column(name = "cpf", nullable = false, unique = true, length = 255)
   private String cpf;
 
   @Column(name = "birthday", nullable = false)

@@ -68,7 +68,7 @@ public class EmployeeController implements EmployeeControllerDoc {
   public ResponseEntity<Void> updateById(
       @PathVariable Long id, @Valid @RequestBody EmployeeUpdateDto employeeUpdateDto) {
     employeeService.updateById(id, employeeUpdateDto, employeeMapper);
-    return ResponseEntity.ok().build();
+    return ResponseEntity.noContent().build();
   }
 
   @PutMapping("/{id}/password")

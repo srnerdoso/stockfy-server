@@ -1,5 +1,6 @@
 package br.com.threadstech.stockfy.entity;
 
+import br.com.threadstech.stockfy.config.constraints.ProductConstraintNames;
 import br.com.threadstech.stockfy.enums.ProductType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -9,6 +10,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import java.math.BigDecimal;
 import java.util.Objects;
 import lombok.AllArgsConstructor;
@@ -19,14 +21,17 @@ import lombok.ToString;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 
-// TODO: Implementar mapeamento de constraints únicas do banco de dados para nomes legíveis.
 @Entity
 @Getter
 @Setter
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "products")
+@Table(
+    name = "products",
+    uniqueConstraints = {
+      @UniqueConstraint(name = ProductConstraintNames.UK_BAR_CODE, columnNames = "bar_code")
+    })
 @SQLDelete(
     sql =
         """

@@ -4,9 +4,9 @@ import lombok.Getter;
 
 @Getter
 public class ProductUniqueViolationException extends RuntimeException {
-  private final String barCode;
+  private final String fieldName;
 
-  public ProductUniqueViolationException(String barCode) {
-    this.barCode = barCode;
+  public ProductUniqueViolationException(String fieldName) {
+    this.fieldName = fieldName;
   }
 }
