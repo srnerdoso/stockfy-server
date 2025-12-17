@@ -14,8 +14,8 @@ import br.com.threadstech.stockfy.entity.Employee;
 import br.com.threadstech.stockfy.entity.EmployeeAddress;
 import br.com.threadstech.stockfy.entity.EmployeeContact;
 import br.com.threadstech.stockfy.repository.EmployeeRepository;
-import br.com.threadstech.stockfy.utils.EmployeeTestsUtils;
 import br.com.threadstech.stockfy.utils.DataGenUtils;
+import br.com.threadstech.stockfy.utils.EmployeeTestsUtils;
 import br.com.threadstech.stockfy.utils.UserUtils;
 import br.com.threadstech.stockfy.validation.AddressCreateDto;
 import br.com.threadstech.stockfy.web.dto.*;
@@ -32,18 +32,27 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
-
-// FIXME: Revisar e corrigir alguns métodos de teste
 
 @Slf4j
 @IntegrationTests
+@Sql(
+    scripts = {
+      "/sql/employee-contacts-insert.sql",
+      "/sql/employee-addresses-insert.sql",
+      "/sql/employees-insert.sql"
+    },
+    executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
+@Sql(scripts = "/sql/employees-cleanup.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
 public class EmployeeTestsIT {
 
   @Autowired private MockMvc mockMvc;
   @Autowired private EmployeeRepository employeeRepository;
   @Autowired private EmployeeMapper employeeMapper;
   @Autowired private EntityManager entityManager;
+  @Autowired private PasswordEncoder passwordEncoder;
 
   @Nested
   @DisplayName("Create Employee")
@@ -314,6 +323,9 @@ public class EmployeeTestsIT {
   @DisplayName("Update Employee")
   class UpdateEmployee {
 
+    // ID do employee utilizado em /sql/employees-insert.sql
+    long employeeTestId = 100L;
+
     @AdminTest
     void shouldUpdateEmployeeWithReturnStatusNoContent() throws Exception {
       Employee employee = employeeRepository.save(createEmployee());
@@ -410,29 +422,86 @@ public class EmployeeTestsIT {
       mockMvc.perform(patch(patternPath(1L))).andExpect(status().isForbidden());
     }
 
-    // FIXME: Por algum motivo a senha do dto de criação não está batendo com a senha do banco de dados
-    //        No postman tudo funciona normalmente
     @AdminTest
     void shouldUpdateEmployeePasswordWithReturnStatusNoContent() throws Exception {
-      EmployeeCreateDto employeeDto = EmployeeTestsUtils.validEmployeeCreateDto();
-      Employee employee = employeeRepository.save(employeeMapper.toEmployee(employeeDto));
-      String currentPassword = employeeDto.getPassword();
-
-      String newPassword = DataGenUtils.faker.credentials().password();
-      var dto =
-          PasswordUpdateDto.builder()
-              .currentPassword(currentPassword)
-              .newPassword(newPassword)
-              .confirmPassword(newPassword)
-              .build();
-      String json = DataGenUtils.toJson(dto);
+      PasswordUpdateDto updatePasswordDto = EmployeeTestsUtils.validPasswordUpdateDto();
+      String updatePasswordJson = DataGenUtils.toJson(updatePasswordDto);
 
       mockMvc
           .perform(
-              put(patternPath(employee.getId()) + "/password")
+              put(passwordPath(employeeTestId))
                   .contentType(MediaType.APPLICATION_JSON)
-                  .content(json))
+                  .content(updatePasswordJson))
           .andExpect(status().isNoContent());
+
+      Employee employeeUpdated = employeeRepository.findById(employeeTestId).orElse(null);
+      assertThat(employeeUpdated).isNotNull();
+      assertThat(
+              passwordEncoder.matches(
+                  updatePasswordDto.getNewPassword(), employeeUpdated.getPassword()))
+          .isTrue();
+    }
+
+    @AdminTest
+    void shouldUpdateEmployeePasswordWithReturnStatusBadRequest() throws Exception {
+      mockMvc
+          .perform(
+              put(passwordPath(employeeTestId))
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content(EmployeeTestsUtils.invalidEmployeePasswordUpdateJson()))
+          .andExpect(status().isBadRequest());
+
+      mockMvc
+          .perform(
+              put(passwordPath(employeeTestId))
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content(EmployeeTestsUtils.nullFieldsEmployeePasswordUpdateJson()))
+          .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void shouldUpdateEmployeePasswordWithReturnStatusUnauthorized() throws Exception {
+      mockMvc.perform(put(passwordPath(employeeTestId))).andExpect(status().isUnauthorized());
+    }
+
+    @InventoryManagerTest
+    void shouldUpdateEmployeePasswordWithInventoryManagerWithReturnStatusForbidden()
+        throws Exception {
+      mockMvc.perform(put(passwordPath(employeeTestId))).andExpect(status().isForbidden());
+    }
+
+    @SalesAttendantTest
+    void shouldUpdateEmployeePasswordWithSalesAttendantWithReturnStatusForbidden()
+        throws Exception {
+      mockMvc.perform(put(passwordPath(employeeTestId))).andExpect(status().isForbidden());
+    }
+
+    @AdminTest
+    void shouldUpdateEmployeePasswordWithReturnStatusNotFound() throws Exception {
+      String updatePasswordJson = EmployeeTestsUtils.validEmployeePasswordUpdateJson();
+      mockMvc
+          .perform(
+              put(passwordPath(1591651981L))
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content(updatePasswordJson))
+          .andExpect(status().isNotFound());
+    }
+
+    @AdminTest
+    void shouldUpdateEmployeePasswordWithReturnStatusUnprocessableContent() throws Exception {
+      mockMvc
+          .perform(
+              put(passwordPath(employeeTestId))
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content(EmployeeTestsUtils.unmatchPasswordsEmployeePasswordUpdateJson()))
+          .andExpect(status().isUnprocessableContent());
+
+      mockMvc
+          .perform(
+              put(passwordPath(employeeTestId))
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content(EmployeeTestsUtils.invalidCurrentPasswordEmployeePasswordUpdateJson()))
+          .andExpect(status().isUnprocessableContent());
     }
   }
 
@@ -508,6 +577,10 @@ public class EmployeeTestsIT {
 
   private String patternPath(Long path) {
     return patternPath(path.toString());
+  }
+
+  private String passwordPath(Long employeeId) {
+    return patternPath(employeeId.toString(), "password");
   }
 
   private void employeeContainsLog(

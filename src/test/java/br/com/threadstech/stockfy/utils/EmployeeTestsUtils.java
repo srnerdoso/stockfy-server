@@ -10,6 +10,9 @@ import java.time.ZoneId;
 
 public class EmployeeTestsUtils {
 
+  // Senha utilizada em /sql/employees-insert.sql para Employee Id 100
+  private static final String currentPassword = "senhasegura1234";
+
   public static EmployeeCreateDto validEmployeeCreateDto() {
     registerJavaTimeModule();
 
@@ -93,14 +96,51 @@ public class EmployeeTestsUtils {
     return DataGenUtils.toJson(validEmployeeUpdateDto());
   }
 
-  public static String validEmployeePasswordUpdateJson(String currentPassword) {
+  public static PasswordUpdateDto validPasswordUpdateDto() {
+    String newPassword = DataGenUtils.faker.credentials().password();
+    return PasswordUpdateDto.builder()
+        .currentPassword(currentPassword)
+        .newPassword(newPassword)
+        .confirmPassword(newPassword)
+        .build();
+  }
+
+  public static String validEmployeePasswordUpdateJson() {
+    return DataGenUtils.toJson(validPasswordUpdateDto());
+  }
+
+  public static String invalidCurrentPasswordEmployeePasswordUpdateJson() {
     String newPassword = DataGenUtils.faker.credentials().password();
     var dto =
         PasswordUpdateDto.builder()
-            .currentPassword(currentPassword)
+            .currentPassword("senhaInválida12234568941891")
             .newPassword(newPassword)
             .confirmPassword(newPassword)
             .build();
     return DataGenUtils.toJson(dto);
+  }
+
+  public static String invalidEmployeePasswordUpdateJson() {
+    var dto =
+        PasswordUpdateDto.builder()
+            .currentPassword(currentPassword)
+            .newPassword("")
+            .confirmPassword("")
+            .build();
+    return DataGenUtils.toJson(dto);
+  }
+
+  public static String unmatchPasswordsEmployeePasswordUpdateJson() {
+    var dto =
+        PasswordUpdateDto.builder()
+            .currentPassword(currentPassword)
+            .newPassword("helloWorld123456789")
+            .confirmPassword("123456789helloWorld")
+            .build();
+    return DataGenUtils.toJson(dto);
+  }
+
+  public static String nullFieldsEmployeePasswordUpdateJson() {
+    return DataGenUtils.toJson(new PasswordUpdateDto());
   }
 }

@@ -38,7 +38,7 @@ import org.springframework.test.web.servlet.MockMvc;
       "/sql/payments-insert.sql"
     },
     executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
-@Sql(scripts = "/sql/cleanup.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
+@Sql(scripts = "/sql/payment-payment-cleanup.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
 public class PaymentTestsIT {
 
   @Autowired MockMvc mockMvc;
