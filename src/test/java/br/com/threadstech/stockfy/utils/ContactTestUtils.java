@@ -2,7 +2,6 @@ package br.com.threadstech.stockfy.utils;
 
 import br.com.threadstech.stockfy.web.dto.ContactCreateDto;
 import br.com.threadstech.stockfy.web.dto.ContactUpdateDto;
-import jakarta.validation.constraints.NotNull;
 
 public class ContactTestUtils {
 

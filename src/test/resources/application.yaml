@@ -20,7 +20,7 @@ payment-service:
   refund-max-days: 15
 
 jwt:
-  secret: test-secret-123
+  secret: test-secret-123-test-secret-123-test-secret-123-test-secret-123-test-secret-123-test-secret-123-test-secret
   expire-days: 7
   expire-hours: 12
   expire-minutes: 30

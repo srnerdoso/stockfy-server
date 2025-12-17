@@ -5,7 +5,6 @@ import br.com.threadstech.stockfy.enums.PaymentMethod;
 import br.com.threadstech.stockfy.enums.PaymentStatus;
 import br.com.threadstech.stockfy.web.dto.CartCreateDto;
 import br.com.threadstech.stockfy.web.dto.PaymentCreateDto;
-
 import java.math.BigDecimal;
 import java.util.Set;
 

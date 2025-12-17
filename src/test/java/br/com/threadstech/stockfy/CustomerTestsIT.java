@@ -22,11 +22,9 @@ import br.com.threadstech.stockfy.web.dto.*;
 import br.com.threadstech.stockfy.web.dto.mapper.CustomerMapper;
 import com.jayway.jsonpath.JsonPath;
 import jakarta.persistence.EntityManager;
-
 import java.lang.reflect.Field;
 import java.time.Instant;
 import java.util.*;
-
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

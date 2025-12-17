@@ -2,7 +2,6 @@ package br.com.threadstech.stockfy.utils;
 
 import br.com.threadstech.stockfy.validation.AddressCreateDto;
 import br.com.threadstech.stockfy.web.dto.AddressUpdateDto;
-import jakarta.validation.constraints.NotNull;
 import net.datafaker.providers.base.Address;
 
 public class AddressTestUtils {

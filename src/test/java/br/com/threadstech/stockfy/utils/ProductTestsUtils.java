@@ -3,9 +3,8 @@ package br.com.threadstech.stockfy.utils;
 import br.com.threadstech.stockfy.enums.ProductType;
 import br.com.threadstech.stockfy.web.dto.ProductCreateDto;
 import br.com.threadstech.stockfy.web.dto.ProductUpdateDto;
-import lombok.SneakyThrows;
-
 import java.math.BigDecimal;
+import lombok.SneakyThrows;
 
 public class ProductTestsUtils {
 

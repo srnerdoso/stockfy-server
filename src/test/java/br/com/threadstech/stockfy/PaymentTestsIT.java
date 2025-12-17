@@ -19,7 +19,6 @@ import br.com.threadstech.stockfy.web.dto.CartCreateDto;
 import br.com.threadstech.stockfy.web.dto.PaymentCreateDto;
 import jakarta.persistence.EntityManager;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -3,7 +3,6 @@ package br.com.threadstech.stockfy.utils;
 import br.com.threadstech.stockfy.web.dto.CustomerCreateDto;
 import br.com.threadstech.stockfy.web.dto.CustomerUpdateDto;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-
 import java.time.LocalDate;
 import java.time.ZoneId;
 

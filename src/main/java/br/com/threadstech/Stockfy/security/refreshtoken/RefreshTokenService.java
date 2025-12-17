@@ -4,6 +4,8 @@ import br.com.threadstech.stockfy.entity.Employee;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.UUID;
+
+import br.com.threadstech.stockfy.exception.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -48,7 +50,9 @@ public class RefreshTokenService {
   public RefreshToken findByToken(UUID token) {
     log.info("Finding refresh token by token...");
     RefreshToken refreshToken =
-        refreshTokenRepository.findByToken(token).orElseThrow(() -> new RuntimeException("Token"));
+        refreshTokenRepository
+            .findByToken(token)
+            .orElseThrow(() -> new EntityNotFoundException("Token"));
     log.info("Refresh token found successfully.");
     return refreshToken;
   }
