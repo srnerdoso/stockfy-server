@@ -9,7 +9,7 @@ services:
       - "8080:8080"
     environment:
       SPRING_PROFILES_ACTIVE: prod
-      SPRING_DATASOURCE_URL: jdbc:postgresql://host.docker.internal:5432/stockfy_db
+      SPRING_DATASOURCE_URL: ${DB_URL}
       SPRING_DATASOURCE_USERNAME: ${DB_USER}
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
       PAYMENT_SERVICE_REFUND_MAX_DAYS: ${REFUND_MAX_DAYS}

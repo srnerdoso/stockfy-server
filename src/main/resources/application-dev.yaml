@@ -7,7 +7,7 @@ spring:
     compose:
       service-connection:
         enabled: true
-      file: docker/dev.compose.yml
+      file: dev.docker-compose.yml
 
 springdoc:
   swagger-ui.path: /docs-stockfy.html
