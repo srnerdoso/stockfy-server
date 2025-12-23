@@ -3,6 +3,8 @@ package br.com.threadstech.stockfy.web.controller;
 import br.com.threadstech.stockfy.api.ApiPaths;
 import br.com.threadstech.stockfy.components.CookieUtils;
 import br.com.threadstech.stockfy.entity.Employee;
+import br.com.threadstech.stockfy.enums.PasswordKey;
+import br.com.threadstech.stockfy.exception.InvalidPasswordException;
 import br.com.threadstech.stockfy.security.jwt.JwtToken;
 import br.com.threadstech.stockfy.security.jwt.JwtUserDetailsService;
 import br.com.threadstech.stockfy.security.jwt.JwtUtils;
@@ -21,6 +23,7 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -66,7 +69,8 @@ public class AuthController implements AuthControllerDoc {
       return ResponseEntity.noContent().build();
     } catch (AuthenticationException ex) {
       log.error("Authentication failed: ", ex);
-      return ResponseEntity.badRequest().build();
+      // FIXME: Corrigir erro que é lançado. Deve ser relativo a status 401
+      throw new InvalidPasswordException(PasswordKey.CURRENT);
     }
   }
 
