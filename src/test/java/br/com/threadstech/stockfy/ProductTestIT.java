@@ -13,7 +13,7 @@ import br.com.threadstech.stockfy.repository.ProductRepository;
 import br.com.threadstech.stockfy.utils.DataGenUtils;
 import br.com.threadstech.stockfy.utils.ProductTestsUtils;
 import br.com.threadstech.stockfy.web.dto.ProductCreateDto;
-import br.com.threadstech.stockfy.web.dto.ProductResponseDto;
+import br.com.threadstech.stockfy.web.dto.ProductSummaryResponseDto;
 import br.com.threadstech.stockfy.web.dto.ProductUpdateDto;
 import br.com.threadstech.stockfy.web.dto.mapper.ProductMapper;
 import com.jayway.jsonpath.JsonPath;
@@ -332,7 +332,7 @@ public class ProductTestIT {
   }
 
   private void validateProductResponse(Map<String, Object> responseProduct) {
-    Field[] dtoFields = ProductResponseDto.class.getDeclaredFields();
+    Field[] dtoFields = ProductSummaryResponseDto.class.getDeclaredFields();
     List<String> expectedFieldNames = Arrays.stream(dtoFields).map(Field::getName).toList();
     log.info("Expected field names: {}", expectedFieldNames);
 

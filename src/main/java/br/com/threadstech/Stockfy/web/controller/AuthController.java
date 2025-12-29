@@ -49,6 +49,9 @@ public class AuthController implements AuthControllerDoc {
   @PostMapping("/login")
   public ResponseEntity<Void> auth(
       @Valid @RequestBody LoginDto loginDto, HttpServletResponse response) {
+    // FIXME: Remover valor gerado aleatóriamente para id de dispositivo
+    loginDto.setDeviceId(UUID.randomUUID().toString());
+
     try {
       String username = loginDto.getEmail();
       String password = loginDto.getPassword();

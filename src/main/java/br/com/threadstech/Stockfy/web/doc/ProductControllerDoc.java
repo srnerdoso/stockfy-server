@@ -2,9 +2,9 @@ package br.com.threadstech.stockfy.web.doc;
 
 import br.com.threadstech.stockfy.utils.SwaggerRefUtils;
 import br.com.threadstech.stockfy.web.dto.ProductCreateDto;
-import br.com.threadstech.stockfy.web.dto.ProductResponseDto;
+import br.com.threadstech.stockfy.web.dto.ProductDetailResponseDto;
+import br.com.threadstech.stockfy.web.dto.ProductSummaryResponseDto;
 import br.com.threadstech.stockfy.web.dto.ProductUpdateDto;
-import br.com.threadstech.stockfy.web.exception.ErrorMessage;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -51,12 +51,12 @@ public interface ProductControllerDoc {
                 @Content(
                     schema =
                         @Schema(
-                            implementation = ProductResponseDto.class,
+                            implementation = ProductSummaryResponseDto.class,
                             contentMediaType = "application/json"))),
         @ApiResponse(responseCode = "401", ref = SwaggerRefUtils.UNAUTHORIZED_RES),
         @ApiResponse(responseCode = "403", ref = SwaggerRefUtils.FORBIDDEN_RES)
       })
-  ResponseEntity<Page<ProductResponseDto>> findAll(@PageableDefault Pageable pageable);
+  ResponseEntity<Page<ProductSummaryResponseDto>> findAll(@PageableDefault Pageable pageable);
 
   @Operation(
       summary = "Busca um produto por barcode",
@@ -65,12 +65,12 @@ public interface ProductControllerDoc {
         @ApiResponse(
             responseCode = "200",
             description = "Produto encontrado com sucesso.",
-            content = @Content(schema = @Schema(implementation = ProductResponseDto.class))),
+            content = @Content(schema = @Schema(implementation = ProductDetailResponseDto.class))),
         @ApiResponse(responseCode = "401", ref = SwaggerRefUtils.UNAUTHORIZED_RES),
         @ApiResponse(responseCode = "403", ref = SwaggerRefUtils.FORBIDDEN_RES),
         @ApiResponse(responseCode = "404", ref = SwaggerRefUtils.NOT_FOUND_RES)
       })
-  ResponseEntity<ProductResponseDto> findByBarCode(@PathVariable String barCode);
+  ResponseEntity<ProductDetailResponseDto> findByBarCode(@PathVariable String barCode);
 
   @Operation(
       summary = "Busca um ou mais produtos por nome",
@@ -84,12 +84,12 @@ public interface ProductControllerDoc {
                 @Content(
                     schema =
                         @Schema(
-                            implementation = ProductResponseDto.class,
+                            implementation = ProductSummaryResponseDto.class,
                             contentMediaType = "application/json"))),
         @ApiResponse(responseCode = "401", ref = SwaggerRefUtils.UNAUTHORIZED_RES),
         @ApiResponse(responseCode = "403", ref = SwaggerRefUtils.FORBIDDEN_RES),
       })
-  ResponseEntity<Page<ProductResponseDto>> findAllByName(
+  ResponseEntity<Page<ProductSummaryResponseDto>> findAllByName(
       @PathVariable String name, @PageableDefault Pageable pageable);
 
   @Operation(
