@@ -16,11 +16,10 @@ spring:
     open-in-view: false
 
   datasource:
-    database:
-      driverClassName: org.postgresql.Driver
-      url: ${DATABASE_URL}
-      username: ${DATABASE_USERNAME}
-      password: ${DATABASE_PASSWORD}
+    driverClassName: org.postgresql.Driver
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
     hikari:
       connection-timeout: 30000
       maximum-pool-size: 10
@@ -31,8 +30,7 @@ spring:
 
   docker:
     compose:
-      service-connection:
-        enabled: false
+      enabled: false
 
 springdoc:
   swagger-ui:
