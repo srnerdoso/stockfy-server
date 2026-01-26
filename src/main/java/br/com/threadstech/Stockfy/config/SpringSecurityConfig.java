@@ -7,10 +7,8 @@ import br.com.threadstech.stockfy.security.jwt.JwtAuthenticationEntryPoint;
 import br.com.threadstech.stockfy.security.jwt.JwtAuthorizationFilter;
 import java.util.Arrays;
 import java.util.List;
-
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -25,7 +23,6 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 
-// TODO: Implementar cors para permitir apenas aplicativos mobile permitidos
 @EnableWebMvc
 @Configuration
 @EnableMethodSecurity
@@ -94,7 +91,10 @@ public class SpringSecurityConfig {
   @Bean
   public UrlBasedCorsConfigurationSource corsConfigurationSource() {
     CorsConfiguration configuration = new CorsConfiguration();
-    configuration.setAllowedOrigins(List.of("http://localhost:3000"));
+    // FIXME: Adicionar url real da aplicação com variável de
+    //        ambiente
+    configuration.setAllowedOrigins(
+        List.of("https://dev-app.threadstech.com.br", "http://localhost:3000"));
     configuration.setAllowedMethods(List.of("*"));
     configuration.setAllowedHeaders(List.of("*"));
     configuration.setAllowCredentials(true);
