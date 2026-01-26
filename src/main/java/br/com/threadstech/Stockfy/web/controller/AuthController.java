@@ -3,6 +3,8 @@ package br.com.threadstech.stockfy.web.controller;
 import br.com.threadstech.stockfy.api.ApiPaths;
 import br.com.threadstech.stockfy.components.CookieUtils;
 import br.com.threadstech.stockfy.entity.Employee;
+import br.com.threadstech.stockfy.enums.PasswordKey;
+import br.com.threadstech.stockfy.exception.InvalidPasswordException;
 import br.com.threadstech.stockfy.security.jwt.JwtToken;
 import br.com.threadstech.stockfy.security.jwt.JwtUserDetailsService;
 import br.com.threadstech.stockfy.security.jwt.JwtUtils;
@@ -15,7 +17,6 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
-
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -25,7 +26,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @Slf4j
 @RestController
@@ -46,6 +51,9 @@ public class AuthController implements AuthControllerDoc {
   @PostMapping("/login")
   public ResponseEntity<Void> auth(
       @Valid @RequestBody LoginDto loginDto, HttpServletResponse response) {
+    // FIXME: Remover valor gerado aleatóriamente para id de dispositivo
+    loginDto.setDeviceId(UUID.randomUUID().toString());
+
     try {
       String username = loginDto.getEmail();
       String password = loginDto.getPassword();
@@ -66,7 +74,8 @@ public class AuthController implements AuthControllerDoc {
       return ResponseEntity.noContent().build();
     } catch (AuthenticationException ex) {
       log.error("Authentication failed: ", ex);
-      return ResponseEntity.badRequest().build();
+      // FIXME: Corrigir erro que é lançado. Deve ser relativo a status 401
+      throw new InvalidPasswordException(PasswordKey.CURRENT);
     }
   }
 

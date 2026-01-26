@@ -11,6 +11,7 @@ import lombok.Setter;
 import lombok.ToString;
 
 // TODO: Trocar 'loginDto.password' por genérico '.password'
+// FIXME: Remover deviceId
 
 @Getter
 @Setter
@@ -28,7 +29,7 @@ public class LoginDto {
   @Size(min = 8, max = 64, message = "{Size.loginDto.password}")
   private String password;
 
-  @NotEmpty(message = "{NotEmpty.loginDto.deviceId}")
+  //  @NotEmpty(message = "{NotEmpty.loginDto.deviceId}")
   @Size(min = 16, max = 64, message = "{Size.loginDto.deviceId}")
   private String deviceId;
 }
