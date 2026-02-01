@@ -1,10 +1,7 @@
 package br.com.threadstech.stockfy.web.dto.mapper;
 
 import br.com.threadstech.stockfy.entity.Product;
-import br.com.threadstech.stockfy.web.dto.ProductCreateDto;
-import br.com.threadstech.stockfy.web.dto.ProductDetailResponseDto;
-import br.com.threadstech.stockfy.web.dto.ProductSummaryResponseDto;
-import br.com.threadstech.stockfy.web.dto.ProductUpdateDto;
+import br.com.threadstech.stockfy.web.dto.*;
 import org.mapstruct.BeanMapping;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -32,4 +29,11 @@ public interface ProductMapper {
 
   @BeanMapping(unmappedSourcePolicy = ReportingPolicy.IGNORE)
   ProductDetailResponseDto toDetailDto(Product product);
+
+  @BeanMapping(unmappedSourcePolicy = ReportingPolicy.IGNORE)
+  ProductAutocompleteResponseDto toAutocompleteDto(Product product);
+
+  default Page<ProductAutocompleteResponseDto> toAutocompletePageDto(Page<Product> productPage) {
+    return productPage.map(this::toAutocompleteDto);
+  }
 }

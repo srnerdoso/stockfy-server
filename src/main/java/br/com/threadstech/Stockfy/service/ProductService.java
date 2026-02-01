@@ -10,6 +10,7 @@ import br.com.threadstech.stockfy.exception.ProductUniqueViolationException;
 import br.com.threadstech.stockfy.repository.ProductRepository;
 import br.com.threadstech.stockfy.web.dto.ProductUpdateDto;
 import br.com.threadstech.stockfy.web.dto.mapper.ProductMapper;
+import jakarta.annotation.Nullable;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;

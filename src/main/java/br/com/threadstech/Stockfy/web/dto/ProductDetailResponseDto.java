@@ -15,6 +15,7 @@ import lombok.ToString;
 @ToString
 public class ProductDetailResponseDto {
 
+  private Long id;
   private String barCode;
   private String name;
   private BigDecimal stock;

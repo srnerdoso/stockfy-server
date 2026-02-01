@@ -1,13 +1,16 @@
 package br.com.threadstech.stockfy.web.controller;
 
 import br.com.threadstech.stockfy.api.ApiPaths;
+import br.com.threadstech.stockfy.entity.Product;
 import br.com.threadstech.stockfy.service.ProductService;
 import br.com.threadstech.stockfy.web.doc.ProductControllerDoc;
+import br.com.threadstech.stockfy.web.dto.ProductAutocompleteResponseDto;
 import br.com.threadstech.stockfy.web.dto.ProductCreateDto;
 import br.com.threadstech.stockfy.web.dto.ProductDetailResponseDto;
 import br.com.threadstech.stockfy.web.dto.ProductSummaryResponseDto;
 import br.com.threadstech.stockfy.web.dto.ProductUpdateDto;
 import br.com.threadstech.stockfy.web.dto.mapper.ProductMapper;
+import jakarta.annotation.Nullable;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -22,6 +25,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -66,5 +70,13 @@ public class ProductController implements ProductControllerDoc {
   public ResponseEntity<Void> deleteProductById(@PathVariable Long id) {
     productService.deleteById(id);
     return ResponseEntity.noContent().build();
+  }
+
+  @GetMapping("/autocomplete")
+  public ResponseEntity<Page<ProductAutocompleteResponseDto>> findAutocomplete(
+      @Nullable @RequestParam String name, @PageableDefault Pageable pageable) {
+    Page<Product> product = productService.findAllByName(name, pageable);
+    Page<ProductAutocompleteResponseDto> dto = productMapper.toAutocompletePageDto(product);
+    return ResponseEntity.ok(dto);
   }
 }
