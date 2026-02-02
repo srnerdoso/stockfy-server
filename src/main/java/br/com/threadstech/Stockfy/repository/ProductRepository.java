@@ -5,6 +5,7 @@ import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
 /**
  * Interface que representa o repositório de produtos.
@@ -12,7 +13,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
  * @author threadstech
  * @see Product
  */
-public interface ProductRepository extends JpaRepository<Product, Long> {
+public interface ProductRepository
+    extends JpaRepository<Product, Long>, JpaSpecificationExecutor<Product> {
 
   Optional<Product> findByBarCode(String barCode);
 

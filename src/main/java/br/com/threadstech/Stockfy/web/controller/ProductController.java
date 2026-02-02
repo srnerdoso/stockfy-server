@@ -79,4 +79,10 @@ public class ProductController implements ProductControllerDoc {
     Page<ProductAutocompleteResponseDto> dto = productMapper.toAutocompletePageDto(product);
     return ResponseEntity.ok(dto);
   }
+
+  @GetMapping("/{id}/id")
+  public ResponseEntity<ProductDetailResponseDto> getById(@PathVariable Long id) {
+    Product product = productService.findById(id);
+    return ResponseEntity.ok(productMapper.toDetailDto(product));
+  }
 }
