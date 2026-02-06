@@ -8,7 +8,8 @@ public class ProductSpecs {
 
   public static Specification<Product> containsInName(String name) {
     return (root, query, cb) -> {
-      String likeQuery = "%" + name.toLowerCase() + "%";
+      String formattedName = name == null ? "" : name.trim().toLowerCase();
+      String likeQuery = "%" + formattedName + "%";
       Predicate namePredicate = cb.like(cb.lower(root.get("name")), likeQuery);
       return cb.or(namePredicate);
     };
