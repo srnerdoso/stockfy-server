@@ -1,15 +1,14 @@
 package br.com.threadstech.stockfy.service;
 
 import br.com.threadstech.stockfy.components.ConstraintResolver;
-import br.com.threadstech.stockfy.config.constraints.CustomerConstraintNames;
 import br.com.threadstech.stockfy.config.constraints.EmployeeConstraintNames;
 import br.com.threadstech.stockfy.entity.Employee;
 import br.com.threadstech.stockfy.enums.PasswordKey;
-import br.com.threadstech.stockfy.exception.CustomerUniqueViolationException;
 import br.com.threadstech.stockfy.exception.EmployeeUniqueViolationException;
 import br.com.threadstech.stockfy.exception.EntityNotFoundException;
 import br.com.threadstech.stockfy.exception.InvalidPasswordException;
 import br.com.threadstech.stockfy.repository.EmployeeRepository;
+import br.com.threadstech.stockfy.web.dto.EmployeeSummaryDto;
 import br.com.threadstech.stockfy.web.dto.EmployeeUpdateDto;
 import br.com.threadstech.stockfy.web.dto.PasswordUpdateDto;
 import br.com.threadstech.stockfy.web.dto.mapper.EmployeeMapper;
@@ -42,8 +41,9 @@ public class EmployeeService {
   }
 
   @Transactional(readOnly = true)
-  public Page<Employee> findAll(Pageable pageable) {
-    return employeeRepository.findAll(pageable);
+  public Page<EmployeeSummaryDto> findAll(Pageable pageable, EmployeeMapper employeeMapper) {
+    Page<Employee> employees = employeeRepository.findAll(pageable);
+    return employeeMapper.toPageSummary(employees);
   }
 
   @Transactional(readOnly = true)

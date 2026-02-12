@@ -17,6 +17,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -47,9 +48,14 @@ public class EmployeeController implements EmployeeControllerDoc {
 
   @GetMapping
   public ResponseEntity<Page<EmployeeSummaryDto>> findAll(@PageableDefault Pageable pageable) {
-    Page<Employee> employees = employeeService.findAll(pageable);
-    Page<EmployeeSummaryDto> employeeSummaryDtos = employeeMapper.toPageSummary(employees);
-    return ResponseEntity.ok(employeeSummaryDtos);
+    // FIXME: Esta é uma solução temporária para resolver problemas com lazyInitializationException
+    //        no perfil de prod onde "open-in-view" está desativado. Mapper sendo passado para o
+    //        método findAll deve ser repensado e corrigido em futuras atualizações. O código abaixo
+    //        deve ser reescrito quando o problema for resolvido.
+
+    //  Page<Employee> employees = employeeService.findAll(pageable, employeeMapper);
+    //  Page<EmployeeSummaryDto> employeeSummaryDtos = employeeMapper.toPageSummary(employees);
+    return ResponseEntity.ok(employeeService.findAll(pageable, employeeMapper));
   }
 
   @GetMapping("/{id}")
