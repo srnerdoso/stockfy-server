@@ -1,13 +1,12 @@
 package br.com.threadstech.stockfy.service;
 
 import br.com.threadstech.stockfy.components.ConstraintResolver;
-import br.com.threadstech.stockfy.config.constraints.EmployeeConstraintNames;
 import br.com.threadstech.stockfy.config.constraints.ProductConstraintNames;
 import br.com.threadstech.stockfy.entity.Product;
-import br.com.threadstech.stockfy.exception.EmployeeUniqueViolationException;
 import br.com.threadstech.stockfy.exception.EntityNotFoundException;
 import br.com.threadstech.stockfy.exception.ProductUniqueViolationException;
 import br.com.threadstech.stockfy.repository.ProductRepository;
+import br.com.threadstech.stockfy.repository.spec.ProductSpecs;
 import br.com.threadstech.stockfy.web.dto.ProductUpdateDto;
 import br.com.threadstech.stockfy.web.dto.mapper.ProductMapper;
 import lombok.RequiredArgsConstructor;
@@ -47,7 +46,7 @@ public class ProductService {
   @Transactional(readOnly = true)
   public Page<Product> findAllByName(String name, Pageable pageable) {
     log.info("Finding product by name: {}", name);
-    return productRepository.findAllByName(name, pageable);
+    return productRepository.findAll(ProductSpecs.containsInName(name), pageable);
   }
 
   @Transactional(readOnly = true)

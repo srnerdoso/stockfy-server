@@ -1,0 +1,48 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+  docker:
+    compose:
+      service-connection:
+        enabled: true
+      file: dev.docker-compose.yml
+
+springdoc:
+  swagger-ui.path: /docs-stockfy.html
+  packagesToScan: br.com.threadstech.stockfy.web.controller
+  api-docs:
+    path: /docs-stockfy
+
+# Environment variables
+payment-service:
+  refund-max-days: 7
+
+jwt:
+  secret: "cwJbbdh9CInBCyjzINSTbLrxzIUhgeaTBVBBxirXUTk="
+  expire-days: 0
+  expire-hours: 0
+  expire-minutes: 30
+
+refresh-token:
+  expire-days: 7
+
+owner:
+  full-name: "Marcos Henrique Duarte"
+  cpf: "92837466512"
+  birthday: "1991-07-14"
+  password: "senhasegura1234"
+  role: "ADMIN"
+  contact:
+    email: "marcos.duarte91@example.com"
+    phone-number: "+55 11 98347-2219"
+  address:
+    street: "Rua das Acácias"
+    number: "457"
+    complement: "Apto 302"
+    neighborhood: "Jardim Aurora"
+    city: "São Paulo"
+    state: "SP"
+    zip-code: "04582-110"
+    country: "Brasil"

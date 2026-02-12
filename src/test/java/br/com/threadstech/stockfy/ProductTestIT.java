@@ -12,8 +12,9 @@ import br.com.threadstech.stockfy.entity.Product;
 import br.com.threadstech.stockfy.repository.ProductRepository;
 import br.com.threadstech.stockfy.utils.DataGenUtils;
 import br.com.threadstech.stockfy.utils.ProductTestsUtils;
+import br.com.threadstech.stockfy.web.dto.ProductAutocompleteResponseDto;
 import br.com.threadstech.stockfy.web.dto.ProductCreateDto;
-import br.com.threadstech.stockfy.web.dto.ProductResponseDto;
+import br.com.threadstech.stockfy.web.dto.ProductSummaryResponseDto;
 import br.com.threadstech.stockfy.web.dto.ProductUpdateDto;
 import br.com.threadstech.stockfy.web.dto.mapper.ProductMapper;
 import com.jayway.jsonpath.JsonPath;
@@ -138,7 +139,7 @@ public class ProductTestIT {
               .getContentAsString();
 
       List<Map<String, Object>> products = JsonPath.read(response, "$.content");
-      products.forEach(ProductTestIT.this::validateProductResponse);
+      products.forEach(ProductTestIT.this::validateProductSummaryResponse);
     }
 
     @AdminTest
@@ -155,7 +156,7 @@ public class ProductTestIT {
               .getContentAsString();
 
       Map<String, Object> responseProduct = JsonPath.read(responseBody, "$");
-      validateProductResponse(responseProduct);
+      validateProductSummaryResponse(responseProduct);
     }
 
     @AdminTest
@@ -177,7 +178,29 @@ public class ProductTestIT {
               .getContentAsString();
 
       List<Map<String, Object>> products = JsonPath.read(response, "$.content");
-      products.forEach(ProductTestIT.this::validateProductResponse);
+      products.forEach(ProductTestIT.this::validateProductSummaryResponse);
+    }
+
+    @AdminTest
+    void shouldFindAutocompleteWithReturnStatusOk() throws Exception {
+      String productName = "Laranja";
+      for (int i = 0; i < size; i++) {
+        saveProduct(productName);
+      }
+      String response =
+          mockMvc
+              .perform(get(ApiPaths.PRODUCT + "/autocomplete?name=" + productName))
+              .andDo(print())
+              .andExpect(status().isOk())
+              .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+              .andExpect(jsonPath("$.content").isArray())
+              .andExpect(jsonPath("$.content.length()").value(size))
+              .andReturn()
+              .getResponse()
+              .getContentAsString();
+
+      List<Map<String, Object>> products = JsonPath.read(response, "$.content");
+      products.forEach(ProductTestIT.this::validateAutocompleteResponse);
     }
 
     @Test
@@ -331,8 +354,8 @@ public class ProductTestIT {
     return productRepository.saveAndFlush(productMapped);
   }
 
-  private void validateProductResponse(Map<String, Object> responseProduct) {
-    Field[] dtoFields = ProductResponseDto.class.getDeclaredFields();
+  private void validateProductSummaryResponse(Map<String, Object> responseProduct) {
+    Field[] dtoFields = ProductSummaryResponseDto.class.getDeclaredFields();
     List<String> expectedFieldNames = Arrays.stream(dtoFields).map(Field::getName).toList();
     log.info("Expected field names: {}", expectedFieldNames);
 
@@ -340,6 +363,24 @@ public class ProductTestIT {
         fieldName -> {
           log.info(
               "Product '{}' contains field '{}': {}",
+              responseProduct.get("name"),
+              fieldName,
+              responseProduct.containsKey(fieldName));
+          assertThat(responseProduct)
+              .as("Product should have field '%s' defined in response.", fieldName)
+              .containsKey(fieldName);
+        });
+  }
+
+  private void validateAutocompleteResponse(Map<String, Object> responseProduct) {
+    Field[] dtoFields = ProductAutocompleteResponseDto.class.getDeclaredFields();
+    List<String> expectedFieldNames = Arrays.stream(dtoFields).map(Field::getName).toList();
+    log.info("Expected field names from autocomplete: {}", expectedFieldNames);
+
+    expectedFieldNames.forEach(
+        fieldName -> {
+          log.info(
+              "Product Autocomplete '{}' contains field '{}': {}",
               responseProduct.get("name"),
               fieldName,
               responseProduct.containsKey(fieldName));

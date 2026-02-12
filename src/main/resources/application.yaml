@@ -1,53 +1,11 @@
 spring:
   application:
     name: Stockfy
-
-  jpa:
-    hibernate:
-      ddl-auto: update
-    show-sql: true
-
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE}
   messages:
     basename:
       - messages
     encoding: UTF-8
     common-messages: "classpath:messages.properties"
     fallback-to-system-locale: false
-
-springdoc:
-  swagger-ui.path: /docs-stockfy.html
-  packagesToScan: br.com.threadstech.stockfy.web.controller
-  api-docs:
-    path: /docs-stockfy
-
-# Environment variables
-payment-service:
-  refund-max-days: ${REFUND_MAX_DAYS}
-
-jwt:
-  secret: ${JWT_SECRET}
-  expire-days: ${JWT_EXPIRE_DAYS}
-  expire-hours: ${JWT_EXPIRE_HOURS}
-  expire-minutes: ${JWT_EXPIRE_MINUTES}
-
-refresh-token:
-  expire-days: ${REFRESH_TOKEN_EXPIRE_DAYS}
-
-owner:
-  full-name: ${OWNER_FULL_NAME}
-  cpf: ${OWNER_CPF}
-  birthday: ${OWNER_BIRTHDAY}
-  password: ${OWNER_PASSWORD}
-  role: ${OWNER_ROLE}
-  contact:
-    email: ${OWNER_EMAIL}
-    phone-number: ${OWNER_PHONE_NUMBER}
-  address:
-    street: ${OWNER_ADDRESS_STREET}
-    number: ${OWNER_ADDRESS_NUMBER}
-    complement: ${OWNER_ADDRESS_COMPLEMENT}
-    neighborhood: ${OWNER_ADDRESS_NEIGHBORHOOD}
-    city: ${OWNER_ADDRESS_CITY}
-    state: ${OWNER_ADDRESS_STATE}
-    zip-code: ${OWNER_ADDRESS_ZIP_CODE}
-    country: ${OWNER_ADDRESS_COUNTRY}

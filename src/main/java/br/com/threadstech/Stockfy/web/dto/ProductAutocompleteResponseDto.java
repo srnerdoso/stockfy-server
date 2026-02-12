@@ -8,13 +8,10 @@ import lombok.ToString;
 
 @Getter
 @Setter
-@ToString
 @NoArgsConstructor
 @AllArgsConstructor
-public class EmployeeSummaryDto {
+@ToString
+public class ProductAutocompleteResponseDto {
   private Long id;
-  private String role;
-  private String fullName;
-  private String email;
-  private String phoneNumber;
+  private String name;
 }

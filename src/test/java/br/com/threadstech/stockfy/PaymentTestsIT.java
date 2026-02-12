@@ -26,6 +26,9 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
 
+// FIXME: Por algum motivo alguns testes desta classe falham quando todos os testes são executados
+//        juntos. O problema tem relação aos scripts sql que são executados.
+
 @Slf4j
 @IntegrationTests
 @Sql(
@@ -37,7 +40,7 @@ import org.springframework.test.web.servlet.MockMvc;
       "/sql/payments-insert.sql"
     },
     executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
-@Sql(scripts = "/sql/payment-payment-cleanup.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
+@Sql(scripts = "/sql/payment-cleanup.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
 public class PaymentTestsIT {
 
   @Autowired MockMvc mockMvc;

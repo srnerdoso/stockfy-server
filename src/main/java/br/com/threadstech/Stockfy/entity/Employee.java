@@ -50,11 +50,11 @@ public class Employee extends BaseAudit {
   @Column(name = "password", nullable = false, length = 255)
   private String password;
 
-  @OneToOne(cascade = CascadeType.PERSIST, fetch = FetchType.LAZY)
+  @ManyToOne(cascade = CascadeType.PERSIST, fetch = FetchType.LAZY)
   @JoinColumn(name = "employee_contact_id")
   private EmployeeContact contact;
 
-  @OneToOne(cascade = CascadeType.PERSIST, fetch = FetchType.LAZY)
+  @ManyToOne(cascade = CascadeType.PERSIST, fetch = FetchType.LAZY)
   @JoinColumn(name = "employee_address_id")
   private EmployeeAddress address;
 

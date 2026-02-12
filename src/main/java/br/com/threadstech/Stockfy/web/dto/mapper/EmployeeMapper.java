@@ -28,6 +28,7 @@ public interface EmployeeMapper {
 
   @IgnoreAuditFields
   @Mapping(target = "id", ignore = true)
+  @Mapping(target = "refreshTokens", ignore = true)
   Employee toEmployee(EmployeeCreateDto employeeCreateDto);
 
   @IgnoreSoftDeleteFields
@@ -64,6 +65,7 @@ public interface EmployeeMapper {
   @Mapping(target = "birthday", ignore = true)
   @Mapping(target = "cpf", ignore = true)
   @Mapping(target = "password", ignore = true)
+  @Mapping(target = "refreshTokens", ignore = true)
   Employee update(EmployeeUpdateDto customerDto, @MappingTarget Employee customer);
 
   @BeanMapping(unmappedSourcePolicy = ReportingPolicy.IGNORE)
