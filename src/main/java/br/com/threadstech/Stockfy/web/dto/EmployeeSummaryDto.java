@@ -13,6 +13,7 @@ import lombok.ToString;
 @AllArgsConstructor
 public class EmployeeSummaryDto {
   private Long id;
+  private String role;
   private String fullName;
   private String email;
   private String phoneNumber;
