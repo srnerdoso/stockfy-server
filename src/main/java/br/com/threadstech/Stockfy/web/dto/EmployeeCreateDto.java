@@ -17,6 +17,37 @@ import lombok.Setter;
 import lombok.ToString;
 import org.hibernate.validator.constraints.br.CPF;
 
+/*
+ * FIXME: Fluxo de criação de senha no cadastro de funcionários
+ *
+ * Atualmente este DTO permite que a senha do funcionário seja definida
+ * diretamente durante o registro feito por um operador do sistema.
+ * Esse modelo cria riscos de segurança, privacidade e responsabilidade,
+ * pois terceiros passam a ter conhecimento ou controle sobre credenciais
+ * que deveriam ser exclusivas do usuário final.
+ *
+ * Problemas do modelo atual:
+ * - exposição indevida de credenciais durante o cadastro
+ * - possibilidade de reutilização ou compartilhamento de senha
+ * - aumento da superfície de abuso interno
+ * - dificuldade de auditoria sobre quem teve acesso à senha
+ *
+ * Fluxo recomendado:
+ * - o cadastro inicial NÃO deve incluir senha
+ * - o sistema deve gerar um token de ativação com expiração
+ * - o funcionário deve criar a própria senha no primeiro acesso
+ * - a conta só deve ser ativada após a definição da senha
+ *
+ * Este DTO deve ser revisado futuramente para:
+ * - remover o campo de senha do registro administrativo
+ * - separar o fluxo de onboarding/auto-definição de senha
+ * - alinhar o processo com boas práticas de segurança de credenciais
+ *
+ * Importante: qualquer senha definida deve ser processada exclusivamente
+ * por mecanismos seguros (hash forte, validação e políticas internas),
+ * nunca sendo armazenada ou trafegada em formato reversível.
+ */
+
 @Getter
 @Setter
 @Builder
