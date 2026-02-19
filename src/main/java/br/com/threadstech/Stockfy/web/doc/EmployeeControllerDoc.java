@@ -26,8 +26,7 @@ public interface EmployeeControllerDoc {
                   @Content(
                       schema =
                           @Schema(
-                              implementation = EmployeeCreateDto.class,
-                              contentMediaType = "application/json"))),
+                              implementation = EmployeeCreateDto.class))),
       responses = {
         @ApiResponse(responseCode = "201", description = "Funcionário criado com sucesso."),
         @ApiResponse(responseCode = "400", ref = SwaggerRefUtils.BAD_REQUEST_RES),
