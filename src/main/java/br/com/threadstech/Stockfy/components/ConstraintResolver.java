@@ -10,6 +10,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
 
+// TODO: Adicionar método para pegar nome do campo que gerou a constraint
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
