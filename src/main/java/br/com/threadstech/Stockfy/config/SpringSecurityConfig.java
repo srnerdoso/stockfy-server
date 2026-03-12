@@ -61,6 +61,8 @@ public class SpringSecurityConfig {
                     .permitAll()
                     .requestMatchers(new String[] {ApiPaths.CUSTOMER, ApiPaths.EMPLOYEE})
                     .hasAnyRole(Role.ADMIN.name())
+                    .requestMatchers(toPatternPath(ApiPaths.DASHBOARD))
+                    .hasAnyRole(Role.ADMIN.name())
                     .requestMatchers(toPatternPaths(ApiPaths.CUSTOMER, ApiPaths.EMPLOYEE))
                     .hasAnyRole(Role.ADMIN.name())
                     .requestMatchers(toPatternPath(ApiPaths.PAYMENT))

@@ -14,5 +14,7 @@ public class ApiPaths {
 
   public static final String EMPLOYEE = API_BASE + "/employees";
 
+  public static final String DASHBOARD = API_BASE + "/dashboard";
+
   public static final String AUTH = API_BASE + "/auth";
 }
