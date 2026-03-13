@@ -25,6 +25,7 @@ public class PaymentController implements PaymentControllerDoc {
   private final PaymentService paymentService;
   private final PaymentMapper paymentMapper;
 
+  // FIXME: Ao finalizar o pagamento, se todo o valor for pago, o status do pagamento deve ser PAID
   @PostMapping("/pay")
   public ResponseEntity<Void> pay(@Valid @RequestBody PaymentCreateDto paymentDto) {
     log.info(

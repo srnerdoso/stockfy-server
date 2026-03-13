@@ -1,7 +1,10 @@
 package br.com.threadstech.stockfy.service;
 
+import br.com.threadstech.stockfy.entity.Cart;
+import br.com.threadstech.stockfy.entity.Payment;
 import br.com.threadstech.stockfy.enums.AuditI18nKeys;
 import br.com.threadstech.stockfy.enums.MetricI18nKeys;
+import br.com.threadstech.stockfy.enums.PaymentStatus;
 import br.com.threadstech.stockfy.enums.ProductType;
 import br.com.threadstech.stockfy.web.dto.AlertDto;
 import br.com.threadstech.stockfy.web.dto.AuditDto;
@@ -13,34 +16,66 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-// FIXME: Implementar buscas reais ao banco. Atualmente os dados retornados são dados mock sem valor
-//        real
 @Service
 @RequiredArgsConstructor
 public class DashboardService {
 
+  private final PaymentService paymentService;
+
+  @Transactional(readOnly = true)
   public List<MetricResponseDto> getMetrics() {
+    List<Payment> paidPayments = paymentService.findAllByStatus(PaymentStatus.PAID);
+
     return List.of(
         MetricResponseDto.builder()
             .type("monetary")
             .i18nKey(MetricI18nKeys.TOTAL_SALES)
-            .value(15000.50)
-            .percentage(12.5)
+            .value(calculateTotalSales(paidPayments))
+            .percentage(0.0)
             .build(),
         MetricResponseDto.builder()
             .type("base")
             .i18nKey(MetricI18nKeys.TOTAL_PROFIT)
-            .value(4500.0)
-            .percentage(5.2)
+            .value(calculateTotalProfit(paidPayments))
+            .percentage(0.0)
             .build(),
         MetricResponseDto.builder()
             .type("non-percentage")
             .i18nKey(MetricI18nKeys.TOTAL_CUSTOMERS)
-            .value(85.0)
+            .value(calculateTotalCustomers(paidPayments))
             .build());
+  }
+
+  private Double calculateTotalSales(List<Payment> payments) {
+    return payments.stream()
+        .map(Payment::getTotal)
+        .reduce(BigDecimal.ZERO, BigDecimal::add)
+        .doubleValue();
+  }
+
+  private Double calculateTotalProfit(List<Payment> payments) {
+    return payments.stream()
+        .flatMap(payment -> payment.getCart().stream())
+        .map(this::calculateCartProfit)
+        .reduce(BigDecimal.ZERO, BigDecimal::add)
+        .doubleValue();
+  }
+
+  private BigDecimal calculateCartProfit(Cart cart) {
+    BigDecimal cost = cart.getProduct().getCost();
+    BigDecimal quantity = cart.getQuantity();
+    BigDecimal paymentValue = cart.getPaymentValue();
+    return paymentValue.subtract(cost.multiply(quantity));
+  }
+
+  private Double calculateTotalCustomers(List<Payment> payments) {
+    return (double)
+        payments.stream().map(Payment::getCustomer).filter(Objects::nonNull).distinct().count();
   }
 
   public List<TopProductDto> getTopProducts() {

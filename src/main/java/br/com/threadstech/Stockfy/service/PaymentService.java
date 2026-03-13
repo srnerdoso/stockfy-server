@@ -73,6 +73,11 @@ public class PaymentService {
     log.info("Payment refunded successfully: {}", payment.getPaymentStatus());
   }
 
+  @Transactional(readOnly = true)
+  public List<Payment> findAllByStatus(PaymentStatus status) {
+    return paymentRepository.findAllByPaymentStatus(status);
+  }
+
   private void verifyPayment(Payment payment) {
     Long paymentId = payment.getId();
     long daysSincePayment = Duration.between(payment.getCreatedAt(), Instant.now()).toDays();
