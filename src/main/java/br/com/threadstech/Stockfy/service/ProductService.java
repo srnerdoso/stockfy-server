@@ -3,6 +3,7 @@ package br.com.threadstech.stockfy.service;
 import br.com.threadstech.stockfy.components.ConstraintResolver;
 import br.com.threadstech.stockfy.config.constraints.ProductConstraintNames;
 import br.com.threadstech.stockfy.entity.Product;
+import br.com.threadstech.stockfy.enums.AuditI18nKeys;
 import br.com.threadstech.stockfy.exception.EntityNotFoundException;
 import br.com.threadstech.stockfy.exception.ProductUniqueViolationException;
 import br.com.threadstech.stockfy.repository.ProductRepository;
@@ -24,12 +25,14 @@ public class ProductService {
 
   private final ProductRepository productRepository;
   private final ConstraintResolver constraintResolver;
+  private final AuditLogService auditLogService;
 
   @Transactional
   public void save(Product product) {
     log.info("Saving product: {}", product.getName());
     try {
       productRepository.save(product);
+      auditLogService.log(AuditI18nKeys.PRODUCT_CREATED);
     } catch (DataIntegrityViolationException ex) {
       resolveUniqueConstraint(ex);
     }
@@ -70,6 +73,7 @@ public class ProductService {
       Product product = findById(id);
       productMapper.updateProduct(productDto, product);
       productRepository.save(product);
+      auditLogService.log(AuditI18nKeys.PRODUCT_UPDATED);
     } catch (DataIntegrityViolationException ex) {
       resolveUniqueConstraint(ex);
     }
@@ -79,6 +83,7 @@ public class ProductService {
   public void deleteById(Long id) {
     log.info("Deleting product by id: {}...", id);
     productRepository.deleteById(id);
+    auditLogService.log(AuditI18nKeys.PRODUCT_DELETED);
     log.info("Deleted product successfully!");
   }
 

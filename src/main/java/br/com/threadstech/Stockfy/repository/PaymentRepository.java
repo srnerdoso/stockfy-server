@@ -2,14 +2,17 @@ package br.com.threadstech.stockfy.repository;
 
 import br.com.threadstech.stockfy.entity.Payment;
 import br.com.threadstech.stockfy.enums.PaymentStatus;
+import br.com.threadstech.stockfy.enums.ProductType;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface PaymentRepository extends JpaRepository<Payment, Long> {
+
 
   @Query(
       """
@@ -24,6 +27,17 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
 
   @Query(
       """
+      SELECT SUM(p.total)
+      FROM Payment p
+      WHERE p.paymentStatus = :status AND p.createdAt BETWEEN :start AND :end
+      """)
+  BigDecimal calculateTotalSalesByStatusAndCreatedAtBetween(
+      @Param("status") PaymentStatus status,
+      @Param("start") Instant start,
+      @Param("end") Instant end);
+
+  @Query(
+      """
       SELECT SUM(c.paymentValue - (c.product.cost * c.quantity))
       FROM Payment p
       JOIN p.cart c
@@ -33,4 +47,27 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
       @Param("status") PaymentStatus status,
       @Param("start") Instant start,
       @Param("end") Instant end);
+
+  @Query(
+      """
+      SELECT c.product.name, SUM(c.quantity)
+      FROM Payment p
+      JOIN p.cart c
+      WHERE p.paymentStatus = :status AND p.createdAt BETWEEN :start AND :end AND c.product.type = :type
+      GROUP BY c.product.name
+      ORDER BY SUM(c.quantity) DESC
+      """)
+  List<Object[]> findTopProductsByStatusAndCreatedAtBetween(
+      @Param("status") PaymentStatus status,
+      @Param("start") Instant start,
+      @Param("end") Instant end,
+      @Param("type") ProductType type);
+
+  @Query(
+      """
+      SELECT p FROM Payment p
+      LEFT JOIN FETCH p.customer
+      ORDER BY p.createdAt DESC
+      """)
+  List<Payment> findLastSales(Pageable pageable);
 }

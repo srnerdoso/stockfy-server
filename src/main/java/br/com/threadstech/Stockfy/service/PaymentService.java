@@ -4,6 +4,7 @@ import br.com.threadstech.stockfy.config.properties.PaymentPropertiesConfig;
 import br.com.threadstech.stockfy.entity.Cart;
 import br.com.threadstech.stockfy.entity.Payment;
 import br.com.threadstech.stockfy.entity.Product;
+import br.com.threadstech.stockfy.enums.AuditI18nKeys;
 import br.com.threadstech.stockfy.enums.PaymentStatus;
 import br.com.threadstech.stockfy.exception.EntityNotFoundException;
 import br.com.threadstech.stockfy.exception.UnavailableFromRefundException;
@@ -32,6 +33,7 @@ public class PaymentService {
   private final PaymentRepository paymentRepository;
   private final ProductRepository productRepository;
   private final PaymentPropertiesConfig properties;
+  private final AuditLogService auditLogService;
 
   @Transactional
   public void save(Payment payment) {
@@ -42,6 +44,9 @@ public class PaymentService {
       product.setStock(productStock.subtract(quantity));
     }
     paymentRepository.save(payment);
+    if (payment.getPaymentStatus() == PaymentStatus.PAID) {
+      auditLogService.log(AuditI18nKeys.SALE_COMPLETED);
+    }
     log.info("Payment successfully: {}", payment);
   }
 
@@ -69,6 +74,7 @@ public class PaymentService {
       product.setStock(productStock.add(quantity));
     }
     payment.setPaymentStatus(PaymentStatus.REFUNDED);
+    auditLogService.log(AuditI18nKeys.SALE_CANCELLED);
     log.info("Payment refunded successfully: {}", payment);
     log.info("Payment refunded successfully: {}", payment.getPaymentStatus());
   }

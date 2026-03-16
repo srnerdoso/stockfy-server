@@ -3,6 +3,7 @@ package br.com.threadstech.stockfy.service;
 import br.com.threadstech.stockfy.components.ConstraintResolver;
 import br.com.threadstech.stockfy.config.constraints.CustomerConstraintNames;
 import br.com.threadstech.stockfy.entity.Customer;
+import br.com.threadstech.stockfy.enums.AuditI18nKeys;
 import br.com.threadstech.stockfy.exception.CustomerUniqueViolationException;
 import br.com.threadstech.stockfy.exception.EntityNotFoundException;
 import br.com.threadstech.stockfy.repository.CustomerRepository;
@@ -23,11 +24,13 @@ public class CustomerService {
 
   private final CustomerRepository customerRepository;
   private final ConstraintResolver constraintResolver;
+  private final AuditLogService auditLogService;
 
   @Transactional
   public void save(Customer customer) {
     try {
       Customer customerSaved = customerRepository.save(customer);
+      auditLogService.log(AuditI18nKeys.CUSTOMER_REGISTERED);
       log.info("Customer saved successfully with id={}", customerSaved.getId());
     } catch (DataIntegrityViolationException ex) {
       resolveUniqueConstraint(ex);

@@ -1,7 +1,9 @@
 package br.com.threadstech.stockfy.web.controller;
 
 import br.com.threadstech.stockfy.api.ApiPaths;
+import br.com.threadstech.stockfy.enums.ProductType;
 import br.com.threadstech.stockfy.service.DashboardService;
+import br.com.threadstech.stockfy.web.doc.DashboardControllerDoc;
 import br.com.threadstech.stockfy.web.dto.AlertDto;
 import br.com.threadstech.stockfy.web.dto.AuditDto;
 import br.com.threadstech.stockfy.web.dto.LastSaleDto;
@@ -13,42 +15,51 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping(ApiPaths.DASHBOARD)
 @RequiredArgsConstructor
-public class DashboardController {
+public class DashboardController implements DashboardControllerDoc {
 
   private final DashboardService dashboardService;
 
+  @Override
   @GetMapping("/metrics")
   public ResponseEntity<List<MetricResponseDto>> getMetrics() {
     return ResponseEntity.ok(dashboardService.getMetrics());
   }
 
-  @GetMapping("/top-products")
-  public ResponseEntity<List<TopProductDto>> getTopProducts() {
-    return ResponseEntity.ok(dashboardService.getTopProducts());
+  @Override
+  @GetMapping("/sales")
+  public ResponseEntity<List<SalesGraphDto>> getSalesGraph(
+      @RequestParam(name = "filter", defaultValue = "days") String filter) {
+    return ResponseEntity.ok(dashboardService.getSalesGraph(filter));
   }
 
+  @Override
+  @GetMapping("/top-products")
+  public ResponseEntity<List<TopProductDto>> getTopProducts(
+      @RequestParam(name = "type", defaultValue = "UNIT") ProductType type) {
+    return ResponseEntity.ok(dashboardService.getTopProducts(type));
+  }
+
+  @Override
   @GetMapping("/last-sales")
   public ResponseEntity<List<LastSaleDto>> getLastSales() {
     return ResponseEntity.ok(dashboardService.getLastSales());
   }
 
-  @GetMapping("/audit-events")
+  @Override
+  @GetMapping("/audit")
   public ResponseEntity<List<AuditDto>> getAuditEvents() {
     return ResponseEntity.ok(dashboardService.getAuditEvents());
   }
 
+  @Override
   @GetMapping("/alerts")
   public ResponseEntity<List<AlertDto>> getAlerts() {
     return ResponseEntity.ok(dashboardService.getAlerts());
-  }
-
-  @GetMapping("/sales-graph")
-  public ResponseEntity<List<SalesGraphDto>> getSalesGraph() {
-    return ResponseEntity.ok(dashboardService.getSalesGraph());
   }
 }

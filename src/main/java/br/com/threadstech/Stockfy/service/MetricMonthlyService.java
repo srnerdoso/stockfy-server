@@ -33,12 +33,16 @@ public class MetricMonthlyService {
     BigDecimal profit = Optional.ofNullable(
         paymentRepository.calculateProfitByStatusAndCreatedAtBetween(PaymentStatus.PAID, start, end)
     ).orElse(BigDecimal.ZERO);
+    BigDecimal totalSales = Optional.ofNullable(
+        paymentRepository.calculateTotalSalesByStatusAndCreatedAtBetween(PaymentStatus.PAID, start, end)
+    ).orElse(BigDecimal.ZERO);
 
     MetricMonthly metric = new MetricMonthly();
     metric.setDate(firstDay);
     metric.setNewCustomersCount(customersCount);
     metric.setPurchasesCount(purchasesCount);
     metric.setProfit(profit);
+    metric.setTotalSales(totalSales);
     metric.setExpenses(BigDecimal.ZERO);
 
     metricMonthlyRepository.save(metric);

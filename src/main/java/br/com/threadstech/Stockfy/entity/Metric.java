@@ -29,6 +29,9 @@ public abstract class Metric {
   @Column(name = "new_customers_count", nullable = false, updatable = false)
   private Long newCustomersCount;
 
+  @Column(name = "total_sales", nullable = false, updatable = false, precision = 10, scale = 2)
+  private BigDecimal totalSales;
+
   @Column(name = "profit", nullable = false, updatable = false, precision = 10, scale = 2)
   private BigDecimal profit;
 

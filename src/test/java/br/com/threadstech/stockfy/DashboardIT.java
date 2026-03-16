@@ -72,7 +72,7 @@ public class DashboardIT {
   @DisplayName("Should return top products")
   void shouldReturnTopProducts() throws Exception {
     mockMvc
-        .perform(get(ApiPaths.DASHBOARD + "/top-products"))
+        .perform(get(ApiPaths.DASHBOARD + "/top-products").param("type", "UNIT"))
         .andExpect(status().isOk())
         .andExpect(content().contentType(MediaType.APPLICATION_JSON))
         .andExpect(jsonPath("$").isArray());
@@ -92,7 +92,7 @@ public class DashboardIT {
   @DisplayName("Should return audit events")
   void shouldReturnAuditEvents() throws Exception {
     mockMvc
-        .perform(get(ApiPaths.DASHBOARD + "/audit-events"))
+        .perform(get(ApiPaths.DASHBOARD + "/audit"))
         .andExpect(status().isOk())
         .andExpect(content().contentType(MediaType.APPLICATION_JSON))
         .andExpect(jsonPath("$").isArray());
@@ -112,7 +112,7 @@ public class DashboardIT {
   @DisplayName("Should return sales graph")
   void shouldReturnSalesGraph() throws Exception {
     mockMvc
-        .perform(get(ApiPaths.DASHBOARD + "/sales-graph"))
+        .perform(get(ApiPaths.DASHBOARD + "/sales").param("filter", "days"))
         .andExpect(status().isOk())
         .andExpect(content().contentType(MediaType.APPLICATION_JSON))
         .andExpect(jsonPath("$").isArray());
