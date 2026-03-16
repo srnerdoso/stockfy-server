@@ -77,3 +77,22 @@ If the feature requires any of the following, the agent must ask the user first:
 * Adding new dependencies
 
 The agent must never perform these actions automatically.
+
+## 6. Internationalization and Messages
+
+The agent **must not use hardcoded string values** in API responses, including but not limited to:
+
+* Error messages
+* Validation messages
+* Success messages
+* Any user-facing response text
+
+All response messages must be retrieved using **Spring's MessageSource**.
+
+Rules:
+
+* Always resolve messages through `MessageSource`
+* Message keys must be defined in the project's message resource files
+* The agent must reference the message key instead of embedding literal strings in the code
+
+This ensures that all responses support proper **internationalization (i18n)** and maintain consistency across the application.
