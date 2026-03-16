@@ -96,3 +96,27 @@ Rules:
 * The agent must reference the message key instead of embedding literal strings in the code
 
 This ensures that all responses support proper **internationalization (i18n)** and maintain consistency across the application.
+
+## 7. OpenAPI Documentation
+
+All endpoints must be documented using **Swagger OpenAPI** through dedicated documentation interfaces.
+
+Rules:
+
+* The agent must create a **public interface** inside the directory `/web/doc`.
+* This interface is responsible **only for endpoint documentation**.
+* Controllers must **extend the corresponding documentation interface**.
+
+Naming convention:
+
+* Documentation interfaces must follow the pattern: `<Resource>ControllerDoc`
+* Examples:
+    * `AuthControllerDoc`
+    * `UserControllerDoc`
+
+Responsibilities:
+
+* The documentation interface must contain all **OpenAPI annotations** (`@Operation`, `@ApiResponse`, `@Parameter`, etc.).
+* Controllers must only implement the logic and extend the documentation interface.
+
+This approach keeps **documentation separated from implementation**, improving readability and maintainability.
