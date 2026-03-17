@@ -275,8 +275,8 @@ Rule:
 - Metrics are updated by **scheduled jobs**.
 - Metrics track data such as:
 
-   - Sales
-   - Customers
+    - Sales
+    - Customers
 
 ### Alerts
 
@@ -292,3 +292,18 @@ Current implementation status:
 
 - `AuditorAware` implemented
 - Full audit logging still pending
+
+## Restrictions (What the Agent Must NOT Do)
+
+- The agent must NOT modify or remove any content inside the .agent directory (CRITICAL).
+- The agent must NOT create methods whose sole responsibility is to construct DTOs. In these cases, prefer using the
+  DTO's own builder or constructor.
+- The agent must NOT execute Maven tests without wrapping the `-Dtest` flag in quotes.
+
+    - Incorrect: `mvn test -Dtest=DashboardIT,DashboardServiceTest`
+    - Correct: `mvn test "-Dtest=DashboardIT,DashboardServiceTest"`
+
+- The agent must NOT add profile-specific fields to the main `application.yaml`. Fields defined in
+  `application-prod.yaml` and/or `application-dev.yaml` must remain isolated to those profiles and must not be
+  duplicated in `application.yaml`.
+- Do not add comments to the code unless explicitly requested by the user.
