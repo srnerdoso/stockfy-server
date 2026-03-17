@@ -27,3 +27,9 @@ jwt:
 
 refresh-token:
   expire-days: 20
+
+# Scheduler
+scheduler:
+  metric:
+    cron: "0 0 0 * * *"
+

@@ -46,3 +46,8 @@ owner:
     state: "SP"
     zip-code: "04582-110"
     country: "Brasil"
+
+# Scheduler
+scheduler:
+  metric:
+    cron: "0 * * * * *"

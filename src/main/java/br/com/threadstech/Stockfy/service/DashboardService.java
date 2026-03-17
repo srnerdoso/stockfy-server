@@ -6,8 +6,11 @@ import br.com.threadstech.stockfy.entity.MetricMonthly;
 import br.com.threadstech.stockfy.entity.Payment;
 import br.com.threadstech.stockfy.entity.TopProductMetric;
 import br.com.threadstech.stockfy.enums.MetricI18nKeys;
+import br.com.threadstech.stockfy.enums.PaymentStatus;
 import br.com.threadstech.stockfy.enums.ProductType;
 import br.com.threadstech.stockfy.repository.AuditLogRepository;
+import br.com.threadstech.stockfy.repository.CustomerRepository;
+import br.com.threadstech.stockfy.repository.EmployeeRepository;
 import br.com.threadstech.stockfy.repository.MetricDailyRepository;
 import br.com.threadstech.stockfy.repository.MetricMonthlyRepository;
 import br.com.threadstech.stockfy.repository.MetricYearlyRepository;
@@ -22,7 +25,9 @@ import br.com.threadstech.stockfy.web.dto.SalesGraphDto;
 import br.com.threadstech.stockfy.web.dto.TopProductDto;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -44,56 +49,93 @@ public class DashboardService {
   private final PaymentRepository paymentRepository;
   private final AuditLogRepository auditLogRepository;
   private final ProductRepository productRepository;
+  private final CustomerRepository customerRepository;
+  private final EmployeeRepository employeeRepository;
 
   @Transactional(readOnly = true)
   public List<MetricResponseDto> getMetrics() {
-    LocalDate now = LocalDate.now().withDayOfMonth(1);
-    LocalDate previousMonth = now.minusMonths(1);
-
-    Optional<MetricMonthly> currentMetricOpt = metricMonthlyRepository.findByDate(now);
-    Optional<MetricMonthly> previousMetricOpt = metricMonthlyRepository.findByDate(previousMonth);
-
     List<MetricResponseDto> metrics = new ArrayList<>();
+    ZoneId zoneId = ZoneId.systemDefault();
+    LocalDate today = LocalDate.now();
 
-    // Total Sales
-    metrics.add(
-        createMetricDto(
-            "monetary",
-            MetricI18nKeys.TOTAL_SALES,
-            currentMetricOpt.map(m -> m.getTotalSales().doubleValue()).orElse(0.0),
-            calculatePercentage(
-                currentMetricOpt.map(Metric::getTotalSales).orElse(BigDecimal.ZERO),
-                previousMetricOpt.map(Metric::getTotalSales).orElse(BigDecimal.ZERO))));
+    // 1. Daily Revenue
+    Instant todayStart = today.atStartOfDay(zoneId).toInstant();
+    Instant todayEnd = today.plusDays(1).atStartOfDay(zoneId).toInstant();
+    BigDecimal dailyRevenue =
+        Optional.ofNullable(
+                paymentRepository.calculateTotalSalesByStatusAndCreatedAtBetween(
+                    PaymentStatus.PAID, todayStart, todayEnd))
+            .orElse(BigDecimal.ZERO);
 
-    // Total Profit
-    metrics.add(
-        createMetricDto(
-            "base",
-            MetricI18nKeys.TOTAL_PROFIT,
-            currentMetricOpt.map(m -> m.getProfit().doubleValue()).orElse(0.0),
-            calculatePercentage(
-                currentMetricOpt.map(Metric::getProfit).orElse(BigDecimal.ZERO),
-                previousMetricOpt.map(Metric::getProfit).orElse(BigDecimal.ZERO))));
+    // Previous: Yesterday 00:00 to Today 00:00
+    Instant yesterdayStart = today.minusDays(1).atStartOfDay(zoneId).toInstant();
+    Instant yesterdayEnd = todayStart;
+    BigDecimal yesterdayRevenue =
+        Optional.ofNullable(
+                paymentRepository.calculateTotalSalesByStatusAndCreatedAtBetween(
+                    PaymentStatus.PAID, yesterdayStart, yesterdayEnd))
+            .orElse(BigDecimal.ZERO);
 
-    // Total Customers
     metrics.add(
-        createMetricDto(
-            "non-percentage",
-            MetricI18nKeys.TOTAL_CUSTOMERS,
-            currentMetricOpt.map(m -> m.getNewCustomersCount().doubleValue()).orElse(0.0),
-            null));
+        MetricResponseDto.builder()
+            .type("monetary")
+            .i18nKey(MetricI18nKeys.DAILY_REVENUE)
+            .value(dailyRevenue.doubleValue())
+            .percentage(calculatePercentage(dailyRevenue, yesterdayRevenue))
+            .build());
+
+    // 2. Monthly Revenue
+    LocalDate firstDayOfMonth = today.withDayOfMonth(1);
+    Instant monthStart = firstDayOfMonth.atStartOfDay(zoneId).toInstant();
+    Instant monthEnd = firstDayOfMonth.plusMonths(1).atStartOfDay(zoneId).toInstant();
+    BigDecimal monthlyRevenue =
+        Optional.ofNullable(
+                paymentRepository.calculateTotalSalesByStatusAndCreatedAtBetween(
+                    PaymentStatus.PAID, monthStart, monthEnd))
+            .orElse(BigDecimal.ZERO);
+
+    LocalDate firstDayOfLastMonth = firstDayOfMonth.minusMonths(1);
+    Instant lastMonthStart = firstDayOfLastMonth.atStartOfDay(zoneId).toInstant();
+    Instant lastMonthEnd = monthStart;
+    BigDecimal lastMonthRevenue =
+        Optional.ofNullable(
+                paymentRepository.calculateTotalSalesByStatusAndCreatedAtBetween(
+                    PaymentStatus.PAID, lastMonthStart, lastMonthEnd))
+            .orElse(BigDecimal.ZERO);
+
+    metrics.add(
+        MetricResponseDto.builder()
+            .type("monetary")
+            .i18nKey(MetricI18nKeys.MONTHLY_REVENUE)
+            .value(monthlyRevenue.doubleValue())
+            .percentage(calculatePercentage(monthlyRevenue, lastMonthRevenue))
+            .build());
+
+    // 3. Customers Count
+    metrics.add(
+        MetricResponseDto.builder()
+            .type("non-percentage")
+            .i18nKey(MetricI18nKeys.CUSTOMERS_COUNT)
+            .value((double) customerRepository.count())
+            .build());
+
+    // 4. Products Count
+    metrics.add(
+        MetricResponseDto.builder()
+            .type("non-percentage")
+            .i18nKey(MetricI18nKeys.PRODUCTS_COUNT)
+            .value((double) productRepository.count())
+            .build());
+
+    // 5. Employees Count
+    metrics.add(
+        MetricResponseDto.builder()
+            .type("non-percentage")
+            .i18nKey(MetricI18nKeys.EMPLOYEES_COUNT)
+            .value((double) employeeRepository.count())
+            .build());
 
     return metrics;
-  }
-
-  private MetricResponseDto createMetricDto(
-      String type, MetricI18nKeys key, Double value, Double percentage) {
-    return MetricResponseDto.builder()
-        .type(type)
-        .i18nKey(key)
-        .value(value)
-        .percentage(percentage)
-        .build();
   }
 
   private Double calculatePercentage(BigDecimal current, BigDecimal previous) {
@@ -181,8 +223,16 @@ public class DashboardService {
                     .customerId(p.getCustomer() != null ? p.getCustomer().getId() : null)
                     .value(p.getTotal())
                     .employeeName(p.getCreatedBy())
-                    .date(p.getCreatedAt().atZone(java.time.ZoneId.systemDefault()).toLocalDate().toString())
-                    .time(p.getCreatedAt().atZone(java.time.ZoneId.systemDefault()).toLocalTime().format(DateTimeFormatter.ofPattern("HH:mm")))
+                    .date(
+                        p.getCreatedAt()
+                            .atZone(java.time.ZoneId.systemDefault())
+                            .toLocalDate()
+                            .toString())
+                    .time(
+                        p.getCreatedAt()
+                            .atZone(java.time.ZoneId.systemDefault())
+                            .toLocalTime()
+                            .format(DateTimeFormatter.ofPattern("HH:mm")))
                     .build())
         .toList();
   }

@@ -45,10 +45,12 @@ public class DashboardIT {
           .andExpect(status().isOk())
           .andExpect(content().contentType(MediaType.APPLICATION_JSON))
           .andExpect(jsonPath("$").isArray())
-          .andExpect(jsonPath("$", hasSize(3)))
-          .andExpect(jsonPath("$[0].i18nKey").value(MetricI18nKeys.TOTAL_SALES.name()))
-          .andExpect(jsonPath("$[1].i18nKey").value(MetricI18nKeys.TOTAL_PROFIT.name()))
-          .andExpect(jsonPath("$[2].i18nKey").value(MetricI18nKeys.TOTAL_CUSTOMERS.name()));
+          .andExpect(jsonPath("$", hasSize(5)))
+          .andExpect(jsonPath("$[0].i18nKey").value(MetricI18nKeys.DAILY_REVENUE.name()))
+          .andExpect(jsonPath("$[1].i18nKey").value(MetricI18nKeys.MONTHLY_REVENUE.name()))
+          .andExpect(jsonPath("$[2].i18nKey").value(MetricI18nKeys.CUSTOMERS_COUNT.name()))
+          .andExpect(jsonPath("$[3].i18nKey").value(MetricI18nKeys.PRODUCTS_COUNT.name()))
+          .andExpect(jsonPath("$[4].i18nKey").value(MetricI18nKeys.EMPLOYEES_COUNT.name()));
     }
 
     @InventoryManagerTest

@@ -13,6 +13,8 @@ import br.com.threadstech.stockfy.enums.AuditI18nKeys;
 import br.com.threadstech.stockfy.enums.MetricI18nKeys;
 import br.com.threadstech.stockfy.enums.ProductType;
 import br.com.threadstech.stockfy.repository.AuditLogRepository;
+import br.com.threadstech.stockfy.repository.CustomerRepository;
+import br.com.threadstech.stockfy.repository.EmployeeRepository;
 import br.com.threadstech.stockfy.repository.MetricDailyRepository;
 import br.com.threadstech.stockfy.repository.MetricMonthlyRepository;
 import br.com.threadstech.stockfy.repository.MetricYearlyRepository;
@@ -49,26 +51,52 @@ public class DashboardServiceTest {
   @Mock private AuditLogRepository auditLogRepository;
   @Mock private ProductRepository productRepository;
 
+  @Mock private CustomerRepository customerRepository;
+  @Mock private EmployeeRepository employeeRepository;
+
   @InjectMocks private DashboardService dashboardService;
 
   @Test
-  @DisplayName("Should return metrics from monthly repository")
+  @DisplayName("Should return metrics from repositories")
   void shouldReturnMetrics() {
-    LocalDate now = LocalDate.now().withDayOfMonth(1);
-    MetricMonthly current = new MetricMonthly();
-    current.setTotalSales(new BigDecimal("1000.00"));
-    current.setProfit(new BigDecimal("200.00"));
-    current.setNewCustomersCount(10L);
-
-    when(metricMonthlyRepository.findByDate(now)).thenReturn(Optional.of(current));
-    when(metricMonthlyRepository.findByDate(now.minusMonths(1))).thenReturn(Optional.empty());
+    // Sequence: Today, Yesterday, ThisMonth, LastMonth
+    when(paymentRepository.calculateTotalSalesByStatusAndCreatedAtBetween(any(), any(), any()))
+        .thenReturn(new BigDecimal("500.00")) // 1. Today
+        .thenReturn(new BigDecimal("400.00")) // 2. Yesterday
+        .thenReturn(new BigDecimal("10000.00")) // 3. This Month
+        .thenReturn(new BigDecimal("8000.00")); // 4. Last Month
+    
+    when(customerRepository.count()).thenReturn(10L);
+    when(productRepository.count()).thenReturn(20L);
+    when(employeeRepository.count()).thenReturn(5L);
 
     List<MetricResponseDto> metrics = dashboardService.getMetrics();
 
-    assertThat(metrics).hasSize(3);
-    assertThat(metrics.get(0).getI18nKey()).isEqualTo(MetricI18nKeys.TOTAL_SALES);
-    assertThat(metrics.get(0).getValue()).isEqualTo(1000.0);
-    assertThat(metrics.get(0).getPercentage()).isEqualTo(100.0);
+    assertThat(metrics).hasSize(5);
+
+    // 1. Daily Revenue
+    assertThat(metrics.get(0).getI18nKey()).isEqualTo(MetricI18nKeys.DAILY_REVENUE);
+    assertThat(metrics.get(0).getValue()).isEqualTo(500.0);
+    // (500 - 400) / 400 = 0.25 * 100 = 25.0
+    assertThat(metrics.get(0).getPercentage()).isEqualTo(25.0);
+    
+    // 2. Monthly Revenue
+    assertThat(metrics.get(1).getI18nKey()).isEqualTo(MetricI18nKeys.MONTHLY_REVENUE);
+    assertThat(metrics.get(1).getValue()).isEqualTo(10000.0);
+    // (10000 - 8000) / 8000 = 0.25 * 100 = 25.0
+    assertThat(metrics.get(1).getPercentage()).isEqualTo(25.0);
+    
+    // 3. Customers
+    assertThat(metrics.get(2).getI18nKey()).isEqualTo(MetricI18nKeys.CUSTOMERS_COUNT);
+    assertThat(metrics.get(2).getValue()).isEqualTo(10.0);
+    
+    // 4. Products
+    assertThat(metrics.get(3).getI18nKey()).isEqualTo(MetricI18nKeys.PRODUCTS_COUNT);
+    assertThat(metrics.get(3).getValue()).isEqualTo(20.0);
+    
+    // 5. Employees
+    assertThat(metrics.get(4).getI18nKey()).isEqualTo(MetricI18nKeys.EMPLOYEES_COUNT);
+    assertThat(metrics.get(4).getValue()).isEqualTo(5.0);
   }
 
   @Test

@@ -69,3 +69,9 @@ owner:
     state: ${OWNER_ADDRESS_STATE}
     zip-code: ${OWNER_ADDRESS_ZIP_CODE}
     country: ${OWNER_ADDRESS_COUNTRY}
+
+# Scheduler
+scheduler:
+  metric:
+    cron: "0 0 0 * * *"
+
