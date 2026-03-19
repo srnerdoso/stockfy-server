@@ -20,6 +20,7 @@ import lombok.Setter;
 import lombok.ToString;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
+import org.hibernate.envers.Audited;
 
 @Entity
 @Getter
@@ -27,6 +28,7 @@ import org.hibernate.annotations.SQLRestriction;
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
+@Audited
 @Table(
     name = "products",
     uniqueConstraints = {
@@ -55,6 +57,9 @@ public class Product {
 
   @Column(name = "stock", nullable = false, precision = 10, scale = 3)
   private BigDecimal stock;
+
+  @Column(name = "min_stock", nullable = false, precision = 10, scale = 3)
+  private BigDecimal minStock = BigDecimal.ZERO;
 
   @Column(name = "price", nullable = false, precision = 10, scale = 2)
   private BigDecimal price;

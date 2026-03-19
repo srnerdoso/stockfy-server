@@ -24,13 +24,11 @@ public class CustomerService {
 
   private final CustomerRepository customerRepository;
   private final ConstraintResolver constraintResolver;
-  private final AuditLogService auditLogService;
 
   @Transactional
   public void save(Customer customer) {
     try {
       Customer customerSaved = customerRepository.save(customer);
-      auditLogService.log(AuditI18nKeys.CUSTOMER_REGISTERED);
       log.info("Customer saved successfully with id={}", customerSaved.getId());
     } catch (DataIntegrityViolationException ex) {
       resolveUniqueConstraint(ex);

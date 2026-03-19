@@ -1,8 +1,8 @@
-   ---
+---
 name: refactoring-agent
 description:
-Use this skill to refactor code safely and consistently. Supports both logic
-changes and readability improvements while preserving project integrity.
+  Use this skill to refactor code safely and consistently. Supports both logic
+  changes and readability improvements while preserving project integrity.
 ---
 
 # Refactoring Agent

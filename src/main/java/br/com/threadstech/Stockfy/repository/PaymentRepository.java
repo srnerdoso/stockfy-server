@@ -50,21 +50,6 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
 
   @Query(
       """
-      SELECT c.product.name, SUM(c.quantity)
-      FROM Payment p
-      JOIN p.cart c
-      WHERE p.paymentStatus = :status AND p.createdAt BETWEEN :start AND :end AND c.product.type = :type
-      GROUP BY c.product.name
-      ORDER BY SUM(c.quantity) DESC
-      """)
-  List<Object[]> findTopProductsByStatusAndCreatedAtBetween(
-      @Param("status") PaymentStatus status,
-      @Param("start") Instant start,
-      @Param("end") Instant end,
-      @Param("type") ProductType type);
-
-  @Query(
-      """
       SELECT p FROM Payment p
       LEFT JOIN FETCH p.customer
       ORDER BY p.createdAt DESC

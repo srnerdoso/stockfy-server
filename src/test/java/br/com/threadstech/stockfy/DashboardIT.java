@@ -71,16 +71,6 @@ public class DashboardIT {
   }
 
   @AdminTest
-  @DisplayName("Should return top products")
-  void shouldReturnTopProducts() throws Exception {
-    mockMvc
-        .perform(get(ApiPaths.DASHBOARD + "/top-products").param("type", "UNIT"))
-        .andExpect(status().isOk())
-        .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-        .andExpect(jsonPath("$").isArray());
-  }
-
-  @AdminTest
   @DisplayName("Should return last sales")
   void shouldReturnLastSales() throws Exception {
     mockMvc

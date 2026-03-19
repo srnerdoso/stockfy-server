@@ -7,7 +7,6 @@ import br.com.threadstech.stockfy.web.dto.AuditDto;
 import br.com.threadstech.stockfy.web.dto.LastSaleDto;
 import br.com.threadstech.stockfy.web.dto.MetricResponseDto;
 import br.com.threadstech.stockfy.web.dto.SalesGraphDto;
-import br.com.threadstech.stockfy.web.dto.TopProductDto;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
@@ -61,24 +60,6 @@ public interface DashboardControllerDoc {
       })
   ResponseEntity<List<SalesGraphDto>> getSalesGraph(@RequestParam(name = "filter") String filter);
 
-  @Operation(
-      summary = "Busca os produtos mais vendidos",
-      description = "Retorna uma lista dos produtos mais vendidos por tipo.",
-      security = @SecurityRequirement(name = "jwt - Cookie HttpOnly"),
-      parameters = {
-        @Parameter(name = "type", description = "Tipo do produto", schema = @Schema(implementation = ProductType.class))
-      },
-      responses = {
-        @ApiResponse(
-            responseCode = "200",
-            description = "Produtos mais vendidos encontrados com sucesso.",
-            content =
-                @Content(
-                    array = @ArraySchema(schema = @Schema(implementation = TopProductDto.class)))),
-        @ApiResponse(responseCode = "401", ref = SwaggerRefUtils.UNAUTHORIZED_RES),
-        @ApiResponse(responseCode = "403", ref = SwaggerRefUtils.FORBIDDEN_RES)
-      })
-  ResponseEntity<List<TopProductDto>> getTopProducts(@RequestParam(name = "type") ProductType type);
 
   @Operation(
       summary = "Busca as últimas vendas",

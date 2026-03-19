@@ -23,12 +23,17 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
+import org.hibernate.envers.AuditOverride;
+import org.hibernate.envers.Audited;
+import org.hibernate.envers.NotAudited;
+import org.hibernate.envers.RelationTargetAuditMode;
 
 @Entity
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Audited
 @Table(
     name = "customers",
     uniqueConstraints = {
@@ -51,9 +56,11 @@ public class Customer extends BaseAudit {
   @Column(nullable = false)
   private Long id;
 
+  @NotAudited
   @Column(name = "full_name", nullable = false, length = 255)
   private String fullName;
 
+  @NotAudited
   @Column(name = "cpf", nullable = false, unique = true, length = 255)
   private String cpf;
 
@@ -62,15 +69,19 @@ public class Customer extends BaseAudit {
 
   @ManyToOne(cascade = {CascadeType.PERSIST, CascadeType.REMOVE}, fetch = FetchType.LAZY)
   @JoinColumn(name = "customer_contact_id", nullable = false)
+  @NotAudited
   private CustomerContact contact;
 
   @ManyToOne(cascade = {CascadeType.PERSIST, CascadeType.REMOVE}, fetch = FetchType.LAZY)
   @JoinColumn(name = "customer_address_id", nullable = false)
+  @NotAudited
   private CustomerAddress address;
 
   @OneToMany(mappedBy = "customer")
+  @NotAudited
   private Set<Payment> payments;
 
+  @NotAudited
   @Column(name = "deleted", nullable = false)
   private boolean deleted = false;
 

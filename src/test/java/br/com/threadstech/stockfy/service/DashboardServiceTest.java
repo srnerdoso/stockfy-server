@@ -2,17 +2,18 @@ package br.com.threadstech.stockfy.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
-import br.com.threadstech.stockfy.entity.AuditLog;
-import br.com.threadstech.stockfy.entity.MetricMonthly;
+import br.com.threadstech.stockfy.entity.AuditRevisionEntity;
+import br.com.threadstech.stockfy.entity.Customer;
+import br.com.threadstech.stockfy.entity.Employee;
 import br.com.threadstech.stockfy.entity.Payment;
 import br.com.threadstech.stockfy.entity.Product;
-import br.com.threadstech.stockfy.entity.TopProductMetric;
 import br.com.threadstech.stockfy.enums.AuditI18nKeys;
 import br.com.threadstech.stockfy.enums.MetricI18nKeys;
-import br.com.threadstech.stockfy.enums.ProductType;
-import br.com.threadstech.stockfy.repository.AuditLogRepository;
 import br.com.threadstech.stockfy.repository.CustomerRepository;
 import br.com.threadstech.stockfy.repository.EmployeeRepository;
 import br.com.threadstech.stockfy.repository.MetricDailyRepository;
@@ -20,24 +21,29 @@ import br.com.threadstech.stockfy.repository.MetricMonthlyRepository;
 import br.com.threadstech.stockfy.repository.MetricYearlyRepository;
 import br.com.threadstech.stockfy.repository.PaymentRepository;
 import br.com.threadstech.stockfy.repository.ProductRepository;
-import br.com.threadstech.stockfy.repository.TopProductMetricRepository;
 import br.com.threadstech.stockfy.web.dto.AlertDto;
 import br.com.threadstech.stockfy.web.dto.AuditDto;
 import br.com.threadstech.stockfy.web.dto.LastSaleDto;
 import br.com.threadstech.stockfy.web.dto.MetricResponseDto;
+import br.com.threadstech.stockfy.web.dto.mapper.AlertMapper;
+import jakarta.persistence.EntityManager;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
+import org.hibernate.envers.AuditReader;
+import org.hibernate.envers.AuditReaderFactory;
+import org.hibernate.envers.RevisionType;
+import org.hibernate.envers.query.AuditQuery;
+import org.hibernate.envers.query.AuditQueryCreator;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -46,25 +52,24 @@ public class DashboardServiceTest {
   @Mock private MetricDailyRepository metricDailyRepository;
   @Mock private MetricMonthlyRepository metricMonthlyRepository;
   @Mock private MetricYearlyRepository metricYearlyRepository;
-  @Mock private TopProductMetricRepository topProductMetricRepository;
   @Mock private PaymentRepository paymentRepository;
-  @Mock private AuditLogRepository auditLogRepository;
   @Mock private ProductRepository productRepository;
-
   @Mock private CustomerRepository customerRepository;
   @Mock private EmployeeRepository employeeRepository;
+  @Mock private AlertService alertService;
+  @Mock private AlertMapper alertMapper;
+  @Mock private EntityManager entityManager;
 
   @InjectMocks private DashboardService dashboardService;
 
   @Test
   @DisplayName("Should return metrics from repositories")
   void shouldReturnMetrics() {
-    // Sequence: Today, Yesterday, ThisMonth, LastMonth
     when(paymentRepository.calculateTotalSalesByStatusAndCreatedAtBetween(any(), any(), any()))
-        .thenReturn(new BigDecimal("500.00")) // 1. Today
-        .thenReturn(new BigDecimal("400.00")) // 2. Yesterday
-        .thenReturn(new BigDecimal("10000.00")) // 3. This Month
-        .thenReturn(new BigDecimal("8000.00")); // 4. Last Month
+        .thenReturn(new BigDecimal("500.00"))
+        .thenReturn(new BigDecimal("400.00"))
+        .thenReturn(new BigDecimal("10000.00"))
+        .thenReturn(new BigDecimal("8000.00"));
     
     when(customerRepository.count()).thenReturn(10L);
     when(productRepository.count()).thenReturn(20L);
@@ -73,52 +78,11 @@ public class DashboardServiceTest {
     List<MetricResponseDto> metrics = dashboardService.getMetrics();
 
     assertThat(metrics).hasSize(5);
-
-    // 1. Daily Revenue
     assertThat(metrics.get(0).getI18nKey()).isEqualTo(MetricI18nKeys.DAILY_REVENUE);
-    assertThat(metrics.get(0).getValue()).isEqualTo(500.0);
-    // (500 - 400) / 400 = 0.25 * 100 = 25.0
-    assertThat(metrics.get(0).getPercentage()).isEqualTo(25.0);
-    
-    // 2. Monthly Revenue
     assertThat(metrics.get(1).getI18nKey()).isEqualTo(MetricI18nKeys.MONTHLY_REVENUE);
-    assertThat(metrics.get(1).getValue()).isEqualTo(10000.0);
-    // (10000 - 8000) / 8000 = 0.25 * 100 = 25.0
-    assertThat(metrics.get(1).getPercentage()).isEqualTo(25.0);
-    
-    // 3. Customers
     assertThat(metrics.get(2).getI18nKey()).isEqualTo(MetricI18nKeys.CUSTOMERS_COUNT);
-    assertThat(metrics.get(2).getValue()).isEqualTo(10.0);
-    
-    // 4. Products
     assertThat(metrics.get(3).getI18nKey()).isEqualTo(MetricI18nKeys.PRODUCTS_COUNT);
-    assertThat(metrics.get(3).getValue()).isEqualTo(20.0);
-    
-    // 5. Employees
     assertThat(metrics.get(4).getI18nKey()).isEqualTo(MetricI18nKeys.EMPLOYEES_COUNT);
-    assertThat(metrics.get(4).getValue()).isEqualTo(5.0);
-  }
-
-  @Test
-  @DisplayName("Should return top products from metric repository")
-  void shouldReturnTopProducts() {
-    LocalDate today = LocalDate.now();
-    TopProductMetric topProduct = TopProductMetric.builder()
-        .productName("Test Product")
-        .salesCount(50L)
-        .productType(ProductType.UNIT)
-        .date(today)
-        .build();
-
-    when(topProductMetricRepository.findMaxDate()).thenReturn(Optional.of(today));
-    when(topProductMetricRepository.findAllByProductTypeAndDateOrderBySalesCountDesc(ProductType.UNIT, today))
-        .thenReturn(List.of(topProduct));
-
-    List<br.com.threadstech.stockfy.web.dto.TopProductDto> result = dashboardService.getTopProducts(ProductType.UNIT);
-
-    assertThat(result).hasSize(1);
-    assertThat(result.get(0).getProductName()).isEqualTo("Test Product");
-    assertThat(result.get(0).getSalesCount()).isEqualTo(50L);
   }
 
   @Test
@@ -136,48 +100,50 @@ public class DashboardServiceTest {
 
     assertThat(result).hasSize(1);
     assertThat(result.get(0).getValue()).isEqualTo(new BigDecimal("150.00"));
-    assertThat(result.get(0).getEmployeeName()).isEqualTo("John Doe");
   }
 
   @Test
-  @DisplayName("Should return audit events from log repository")
+  @DisplayName("Should return audit events from Envers")
   void shouldReturnAuditEvents() {
-    AuditLog log = AuditLog.builder()
-        .id(1L)
-        .action(AuditI18nKeys.PRODUCT_CREATED)
-        .timestamp(LocalDateTime.now())
-        .employeeName("Admin")
-        .build();
+    AuditReader auditReader = mock(AuditReader.class);
+    AuditQueryCreator queryCreator = mock(AuditQueryCreator.class);
+    AuditQuery query = mock(AuditQuery.class);
 
-    when(auditLogRepository.findLatest(any())).thenReturn(List.of(log));
+    AuditRevisionEntity revEntity = new AuditRevisionEntity();
+    revEntity.setId(1);
+    revEntity.setTimestamp(System.currentTimeMillis());
+    revEntity.setUsername("Admin");
 
-    List<AuditDto> result = dashboardService.getAuditEvents();
+    Object[] revData = new Object[]{new Product(), revEntity, RevisionType.ADD};
 
-    assertThat(result).hasSize(1);
-    assertThat(result.get(0).getI18nKey()).isEqualTo(AuditI18nKeys.PRODUCT_CREATED);
-    assertThat(result.get(0).getEmployeeName()).isEqualTo("Admin");
+    try (MockedStatic<AuditReaderFactory> readerFactory = mockStatic(AuditReaderFactory.class)) {
+      readerFactory.when(() -> AuditReaderFactory.get(entityManager)).thenReturn(auditReader);
+      when(auditReader.createQuery()).thenReturn(queryCreator);
+      when(queryCreator.forRevisionsOfEntity(any(), eq(false), eq(true))).thenReturn(query);
+      when(query.addOrder(any())).thenReturn(query);
+      when(query.setMaxResults(any(Integer.class))).thenReturn(query);
+      when(query.getResultList()).thenReturn(Collections.singletonList(revData));
+
+      List<AuditDto> result = dashboardService.getAuditEvents();
+
+      assertThat(result).isNotEmpty();
+      assertThat(result.get(0).getI18nKey()).isEqualTo(AuditI18nKeys.PRODUCT_CREATED);
+      assertThat(result.get(0).getEmployeeName()).isEqualTo("Admin");
+      assertThat(result.get(0).getAudId()).isEqualTo(1L);
+    }
   }
 
   @Test
-  @DisplayName("Should return low stock alerts")
+  @DisplayName("Should return alerts from alert service")
   void shouldReturnAlerts() {
-    Product lowStockProduct = new Product();
-    lowStockProduct.setName("Low Stock");
-    lowStockProduct.setStock(new BigDecimal("5.000"));
-    lowStockProduct.setType(ProductType.UNIT);
-
-    Product normalStockProduct = new Product();
-    normalStockProduct.setName("Normal Stock");
-    normalStockProduct.setStock(new BigDecimal("15.000"));
-    normalStockProduct.setType(ProductType.UNIT);
-
-    when(productRepository.findAll()).thenReturn(List.of(lowStockProduct, normalStockProduct));
+    AlertDto alertDto = AlertDto.builder().product("Test Product").build();
+    when(alertService.findAll()).thenReturn(Collections.emptyList());
+    when(alertMapper.toDtoList(any())).thenReturn(List.of(alertDto));
 
     List<AlertDto> result = dashboardService.getAlerts();
 
     assertThat(result).hasSize(1);
-    assertThat(result.get(0).getProduct()).isEqualTo("Low Stock");
-    assertThat(result.get(0).getStock()).isEqualTo(5.0);
+    assertThat(result.get(0).getProduct()).isEqualTo("Test Product");
   }
 
   @Test

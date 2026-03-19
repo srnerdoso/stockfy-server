@@ -25,14 +25,14 @@ public class ProductService {
 
   private final ProductRepository productRepository;
   private final ConstraintResolver constraintResolver;
-  private final AuditLogService auditLogService;
+  private final AlertService alertService;
 
   @Transactional
   public void save(Product product) {
     log.info("Saving product: {}", product.getName());
     try {
       productRepository.save(product);
-      auditLogService.log(AuditI18nKeys.PRODUCT_CREATED);
+      alertService.processProductStock(product);
     } catch (DataIntegrityViolationException ex) {
       resolveUniqueConstraint(ex);
     }
@@ -73,7 +73,7 @@ public class ProductService {
       Product product = findById(id);
       productMapper.updateProduct(productDto, product);
       productRepository.save(product);
-      auditLogService.log(AuditI18nKeys.PRODUCT_UPDATED);
+      alertService.processProductStock(product);
     } catch (DataIntegrityViolationException ex) {
       resolveUniqueConstraint(ex);
     }
@@ -83,7 +83,6 @@ public class ProductService {
   public void deleteById(Long id) {
     log.info("Deleting product by id: {}...", id);
     productRepository.deleteById(id);
-    auditLogService.log(AuditI18nKeys.PRODUCT_DELETED);
     log.info("Deleted product successfully!");
   }
 

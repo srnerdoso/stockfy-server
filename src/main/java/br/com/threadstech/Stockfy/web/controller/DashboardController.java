@@ -9,7 +9,6 @@ import br.com.threadstech.stockfy.web.dto.AuditDto;
 import br.com.threadstech.stockfy.web.dto.LastSaleDto;
 import br.com.threadstech.stockfy.web.dto.MetricResponseDto;
 import br.com.threadstech.stockfy.web.dto.SalesGraphDto;
-import br.com.threadstech.stockfy.web.dto.TopProductDto;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -36,13 +35,6 @@ public class DashboardController implements DashboardControllerDoc {
   public ResponseEntity<List<SalesGraphDto>> getSalesGraph(
       @RequestParam(name = "filter", defaultValue = "days") String filter) {
     return ResponseEntity.ok(dashboardService.getSalesGraph(filter));
-  }
-
-  @Override
-  @GetMapping("/top-products")
-  public ResponseEntity<List<TopProductDto>> getTopProducts(
-      @RequestParam(name = "type", defaultValue = "UNIT") ProductType type) {
-    return ResponseEntity.ok(dashboardService.getTopProducts(type));
   }
 
   @Override

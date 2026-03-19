@@ -1,14 +1,16 @@
 package br.com.threadstech.stockfy.service;
 
-import br.com.threadstech.stockfy.entity.AuditLog;
+import br.com.threadstech.stockfy.entity.AuditRevisionEntity;
+import br.com.threadstech.stockfy.entity.Customer;
+import br.com.threadstech.stockfy.entity.Employee;
 import br.com.threadstech.stockfy.entity.Metric;
 import br.com.threadstech.stockfy.entity.MetricMonthly;
 import br.com.threadstech.stockfy.entity.Payment;
-import br.com.threadstech.stockfy.entity.TopProductMetric;
+import br.com.threadstech.stockfy.entity.Product;
+import br.com.threadstech.stockfy.enums.AuditI18nKeys;
 import br.com.threadstech.stockfy.enums.MetricI18nKeys;
 import br.com.threadstech.stockfy.enums.PaymentStatus;
 import br.com.threadstech.stockfy.enums.ProductType;
-import br.com.threadstech.stockfy.repository.AuditLogRepository;
 import br.com.threadstech.stockfy.repository.CustomerRepository;
 import br.com.threadstech.stockfy.repository.EmployeeRepository;
 import br.com.threadstech.stockfy.repository.MetricDailyRepository;
@@ -16,24 +18,31 @@ import br.com.threadstech.stockfy.repository.MetricMonthlyRepository;
 import br.com.threadstech.stockfy.repository.MetricYearlyRepository;
 import br.com.threadstech.stockfy.repository.PaymentRepository;
 import br.com.threadstech.stockfy.repository.ProductRepository;
-import br.com.threadstech.stockfy.repository.TopProductMetricRepository;
 import br.com.threadstech.stockfy.web.dto.AlertDto;
+import br.com.threadstech.stockfy.web.dto.mapper.AlertMapper;
 import br.com.threadstech.stockfy.web.dto.AuditDto;
 import br.com.threadstech.stockfy.web.dto.LastSaleDto;
 import br.com.threadstech.stockfy.web.dto.MetricResponseDto;
 import br.com.threadstech.stockfy.web.dto.SalesGraphDto;
-import br.com.threadstech.stockfy.web.dto.TopProductDto;
+import jakarta.persistence.EntityManager;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
+import org.hibernate.envers.AuditReader;
+import org.hibernate.envers.AuditReaderFactory;
+import org.hibernate.envers.RevisionType;
+import org.hibernate.envers.query.AuditEntity;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -45,12 +54,13 @@ public class DashboardService {
   private final MetricDailyRepository metricDailyRepository;
   private final MetricMonthlyRepository metricMonthlyRepository;
   private final MetricYearlyRepository metricYearlyRepository;
-  private final TopProductMetricRepository topProductMetricRepository;
   private final PaymentRepository paymentRepository;
-  private final AuditLogRepository auditLogRepository;
   private final ProductRepository productRepository;
   private final CustomerRepository customerRepository;
   private final EmployeeRepository employeeRepository;
+  private final AlertService alertService;
+  private final AlertMapper alertMapper;
+  private final EntityManager entityManager;
 
   @Transactional(readOnly = true)
   public List<MetricResponseDto> getMetrics() {
@@ -193,24 +203,6 @@ public class DashboardService {
     return result;
   }
 
-  @Transactional(readOnly = true)
-  public List<TopProductDto> getTopProducts(ProductType type) {
-    return topProductMetricRepository
-        .findMaxDate()
-        .map(
-            date ->
-                topProductMetricRepository
-                    .findAllByProductTypeAndDateOrderBySalesCountDesc(type, date)
-                    .stream()
-                    .map(
-                        m ->
-                            TopProductDto.builder()
-                                .productName(m.getProductName())
-                                .salesCount(m.getSalesCount())
-                                .build())
-                    .toList())
-        .orElse(Collections.emptyList());
-  }
 
   @Transactional(readOnly = true)
   public List<LastSaleDto> getLastSales() {
@@ -239,32 +231,77 @@ public class DashboardService {
 
   @Transactional(readOnly = true)
   public List<AuditDto> getAuditEvents() {
-    List<AuditLog> logs = auditLogRepository.findLatest(PageRequest.of(0, 20));
-    return logs.stream()
-        .map(
-            l ->
-                AuditDto.builder()
-                    .actionId(l.getId())
-                    .i18nKey(l.getAction())
-                    .timestamp(l.getTimestamp().format(DateTimeFormatter.ISO_DATE_TIME))
-                    .employeeName(l.getEmployeeName())
-                    .build())
+    AuditReader reader = AuditReaderFactory.get(entityManager);
+
+    List<AuditDto> productAudits = getRevisions(reader, Product.class);
+    List<AuditDto> paymentAudits = getRevisions(reader, Payment.class);
+    List<AuditDto> employeeAudits = getRevisions(reader, Employee.class);
+    List<AuditDto> customerAudits = getRevisions(reader, Customer.class);
+
+    return Stream.of(productAudits, paymentAudits, employeeAudits, customerAudits)
+        .flatMap(List::stream)
+        .sorted(Comparator.comparing(AuditDto::getTimestamp).reversed())
+        .limit(20)
         .toList();
+  }
+
+  @SuppressWarnings("unchecked")
+  private <T> List<AuditDto> getRevisions(AuditReader reader, Class<T> clazz) {
+    List<Object[]> revisions = reader.createQuery()
+        .forRevisionsOfEntity(clazz, false, true)
+        .addOrder(AuditEntity.revisionNumber().desc())
+        .setMaxResults(20)
+        .getResultList();
+
+    return revisions.stream()
+        .map(rev -> {
+          AuditRevisionEntity revEntity = (AuditRevisionEntity) rev[1];
+          RevisionType type = (RevisionType) rev[2];
+
+          return AuditDto.builder()
+              .audId((long) revEntity.getId())
+              .i18nKey(mapToI18nKey(clazz, type))
+              .timestamp(LocalDateTime.ofInstant(
+                      Instant.ofEpochMilli(revEntity.getTimestamp()),
+                      ZoneId.systemDefault())
+                  .format(DateTimeFormatter.ISO_DATE_TIME))
+              .employeeName(revEntity.getUsername())
+              .build();
+        })
+        .toList();
+  }
+
+  private AuditI18nKeys mapToI18nKey(Class<?> clazz, RevisionType type) {
+    if (clazz == Product.class) {
+      return switch (type) {
+        case ADD -> AuditI18nKeys.PRODUCT_CREATED;
+        case MOD -> AuditI18nKeys.PRODUCT_UPDATED;
+        case DEL -> AuditI18nKeys.PRODUCT_DELETED;
+      };
+    } else if (clazz == Payment.class) {
+      return switch (type) {
+        case ADD -> AuditI18nKeys.SALE_COMPLETED;
+        case MOD -> AuditI18nKeys.SALE_UPDATED;
+        case DEL -> AuditI18nKeys.SALE_DELETED;
+      };
+    } else if (clazz == Employee.class) {
+      return switch (type) {
+        case ADD -> AuditI18nKeys.EMPLOYEE_CREATED;
+        case MOD -> AuditI18nKeys.EMPLOYEE_UPDATED;
+        case DEL -> AuditI18nKeys.EMPLOYEE_DELETED;
+      };
+    } else if (clazz == Customer.class) {
+      return switch (type) {
+        case ADD -> AuditI18nKeys.CUSTOMER_CREATED;
+        case MOD -> AuditI18nKeys.CUSTOMER_UPDATED;
+        case DEL -> AuditI18nKeys.CUSTOMER_DELETED;
+      };
+    }
+    throw new IllegalArgumentException("Unknown entity class: " + clazz.getName());
   }
 
   @Transactional(readOnly = true)
   public List<AlertDto> getAlerts() {
-    // Low stock alerts: stock < 10
-    return productRepository.findAll().stream()
-        .filter(p -> p.getStock().compareTo(BigDecimal.valueOf(10)) < 0)
-        .map(
-            p ->
-                AlertDto.builder()
-                    .type("low-stock")
-                    .product(p.getName())
-                    .productType(p.getType())
-                    .stock(p.getStock().doubleValue())
-                    .build())
-        .toList();
+    return alertMapper.toDtoList(alertService.findAll());
   }
 }

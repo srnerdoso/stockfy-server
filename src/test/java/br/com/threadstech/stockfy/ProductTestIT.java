@@ -62,6 +62,7 @@ public class ProductTestIT {
       assertThat(productSaved.getBarCode()).isEqualTo(productDto.getBarCode());
       assertThat(productSaved.getName()).isEqualTo(productDto.getName());
       assertThat(productSaved.getStock()).isEqualTo(productDto.getStock());
+      assertThat(productSaved.getMinStock()).isEqualTo(productDto.getMinStock());
       assertThat(productSaved.getPrice()).isEqualTo(productDto.getPrice());
       assertThat(productSaved.getCost()).isEqualTo(productDto.getCost());
       assertThat(productSaved.getProfit()).isEqualTo(productDto.getProfit());
@@ -277,6 +278,7 @@ public class ProductTestIT {
       assertThat(updatedProduct.getBarCode()).isEqualTo(productUpdateDto.getBarCode());
       assertThat(updatedProduct.getName()).isEqualTo(productUpdateDto.getName());
       assertThat(updatedProduct.getStock()).isEqualTo(productUpdateDto.getStock());
+      assertThat(updatedProduct.getMinStock()).isEqualTo(productUpdateDto.getMinStock());
       assertThat(updatedProduct.getPrice()).isEqualTo(productUpdateDto.getPrice());
       assertThat(updatedProduct.getCost()).isEqualTo(productUpdateDto.getCost());
       assertThat(updatedProduct.getProfit()).isEqualTo(productUpdateDto.getProfit());

@@ -33,6 +33,9 @@ public class ProductCreateDto {
   @Positive(message = "{Positive.productDto.stock}")
   private BigDecimal stock;
 
+  @PositiveOrZero(message = "{PositiveOrZero.productDto.minStock}")
+  private BigDecimal minStock;
+
   @Positive(message = "{Positive.productDto.price}")
   private BigDecimal price;
 

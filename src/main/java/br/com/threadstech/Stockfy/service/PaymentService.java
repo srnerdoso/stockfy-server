@@ -33,7 +33,7 @@ public class PaymentService {
   private final PaymentRepository paymentRepository;
   private final ProductRepository productRepository;
   private final PaymentPropertiesConfig properties;
-  private final AuditLogService auditLogService;
+  private final AlertService alertService;
 
   @Transactional
   public void save(Payment payment) {
@@ -42,11 +42,9 @@ public class PaymentService {
       BigDecimal productStock = product.getStock();
       BigDecimal quantity = cart.getQuantity();
       product.setStock(productStock.subtract(quantity));
+      alertService.processProductStock(product);
     }
     paymentRepository.save(payment);
-    if (payment.getPaymentStatus() == PaymentStatus.PAID) {
-      auditLogService.log(AuditI18nKeys.SALE_COMPLETED);
-    }
     log.info("Payment successfully: {}", payment);
   }
 
@@ -72,9 +70,9 @@ public class PaymentService {
       BigDecimal productStock = product.getStock();
       BigDecimal quantity = cart.getQuantity();
       product.setStock(productStock.add(quantity));
+      alertService.processProductStock(product);
     }
     payment.setPaymentStatus(PaymentStatus.REFUNDED);
-    auditLogService.log(AuditI18nKeys.SALE_CANCELLED);
     log.info("Payment refunded successfully: {}", payment);
     log.info("Payment refunded successfully: {}", payment.getPaymentStatus());
   }

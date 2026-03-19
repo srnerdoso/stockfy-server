@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class AuditDto {
-  private Long actionId;
+  private Long audId;
   private AuditI18nKeys i18nKey;
   private String timestamp;
   private String employeeName;

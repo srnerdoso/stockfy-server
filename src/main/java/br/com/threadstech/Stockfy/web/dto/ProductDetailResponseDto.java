@@ -19,6 +19,7 @@ public class ProductDetailResponseDto {
   private String barCode;
   private String name;
   private BigDecimal stock;
+  private BigDecimal minStock;
   private BigDecimal price;
   private BigDecimal cost;
   private BigDecimal profit;
