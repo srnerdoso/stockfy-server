@@ -35,7 +35,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 @RestController
 @RequiredArgsConstructor
-@RequestMapping(ApiPaths.AUTH)
+@RequestMapping(ApiPaths.AUTH_V1)
 public class AuthController implements AuthControllerDoc {
 
   private final JwtUtils jwtUtils;

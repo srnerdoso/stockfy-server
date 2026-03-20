@@ -51,7 +51,7 @@ public class ProductTestIT {
       ProductCreateDto productDto = ProductTestsUtils.validProductCreateDto();
       mockMvc
           .perform(
-              post(ApiPaths.PRODUCT)
+              post(ApiPaths.PRODUCT_V1)
                   .contentType(MediaType.APPLICATION_JSON)
                   .content(DataGenUtils.toJson(productDto)))
           .andExpect(status().isCreated());
@@ -76,9 +76,9 @@ public class ProductTestIT {
     void shouldCreateProductWithReturnStatusConflict() throws Exception {
       String product = ProductTestsUtils.validProductCreateJson();
       mockMvc.perform(
-          post(ApiPaths.PRODUCT).contentType(MediaType.APPLICATION_JSON).content(product));
+          post(ApiPaths.PRODUCT_V1).contentType(MediaType.APPLICATION_JSON).content(product));
       mockMvc
-          .perform(post(ApiPaths.PRODUCT).contentType(MediaType.APPLICATION_JSON).content(product))
+          .perform(post(ApiPaths.PRODUCT_V1).contentType(MediaType.APPLICATION_JSON).content(product))
           .andExpect(status().isConflict());
     }
 
@@ -88,11 +88,11 @@ public class ProductTestIT {
       String invalidProduct = ProductTestsUtils.invalidSizeProductCreateJson();
       mockMvc
           .perform(
-              post(ApiPaths.PRODUCT).contentType(MediaType.APPLICATION_JSON).content(nullFields))
+              post(ApiPaths.PRODUCT_V1).contentType(MediaType.APPLICATION_JSON).content(nullFields))
           .andExpect(status().isBadRequest());
       mockMvc
           .perform(
-              post(ApiPaths.PRODUCT)
+              post(ApiPaths.PRODUCT_V1)
                   .contentType(MediaType.APPLICATION_JSON)
                   .content(invalidProduct))
           .andExpect(status().isBadRequest());
@@ -102,7 +102,7 @@ public class ProductTestIT {
     void shouldCreateProductWithReturnStatusUnauthorized() throws Exception {
       mockMvc
           .perform(
-              post(ApiPaths.PRODUCT)
+              post(ApiPaths.PRODUCT_V1)
                   .contentType(MediaType.APPLICATION_JSON)
                   .content(ProductTestsUtils.validProductCreateJson()))
           .andExpect(status().isUnauthorized());
@@ -129,7 +129,7 @@ public class ProductTestIT {
     void shouldFindAllProductsWithReturnStatusOk() throws Exception {
       String response =
           mockMvc
-              .perform(get(ApiPaths.PRODUCT))
+              .perform(get(ApiPaths.PRODUCT_V1))
               .andDo(print())
               .andExpect(status().isOk())
               .andExpect(content().contentType(MediaType.APPLICATION_JSON))
@@ -190,7 +190,7 @@ public class ProductTestIT {
       }
       String response =
           mockMvc
-              .perform(get(ApiPaths.PRODUCT + "/autocomplete?name=" + productName))
+              .perform(get(ApiPaths.PRODUCT_V1 + "/autocomplete?name=" + productName))
               .andDo(print())
               .andExpect(status().isOk())
               .andExpect(content().contentType(MediaType.APPLICATION_JSON))
@@ -207,7 +207,7 @@ public class ProductTestIT {
     @Test
     void shouldFindProductWithNotAuthenticatedUserWithReturnStatusUnauthorized() throws Exception {
       Product product = saveProduct();
-      mockMvc.perform(get(ApiPaths.PRODUCT)).andExpect(status().isUnauthorized());
+      mockMvc.perform(get(ApiPaths.PRODUCT_V1)).andExpect(status().isUnauthorized());
       mockMvc
           .perform(get(getByBarCodePath(product.getBarCode())))
           .andDo(print())
@@ -329,7 +329,7 @@ public class ProductTestIT {
   }
 
   private String getPatternPathResource(String pathVar, String resource) {
-    return ApiPaths.PRODUCT + "/" + pathVar + "/" + resource;
+    return ApiPaths.PRODUCT_V1 + "/" + pathVar + "/" + resource;
   }
 
   private String getByBarCodePath(String barCode) {

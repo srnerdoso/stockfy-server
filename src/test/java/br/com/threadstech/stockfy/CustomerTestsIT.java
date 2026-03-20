@@ -58,7 +58,7 @@ public class CustomerTestsIT {
 
       mockMvc
           .perform(
-              post(ApiPaths.CUSTOMER)
+              post(ApiPaths.CUSTOMER_V1)
                   .contentType(MediaType.APPLICATION_JSON)
                   .content(DataGenUtils.toJson(customerDto)))
           .andExpect(status().isCreated());
@@ -115,21 +115,21 @@ public class CustomerTestsIT {
     void shouldCreateCustomerWithReturnStatusBadRequest() throws Exception {
       mockMvc
           .perform(
-              post(ApiPaths.CUSTOMER)
+              post(ApiPaths.CUSTOMER_V1)
                   .contentType(MediaType.APPLICATION_JSON)
                   .content(CustomerTestsUtils.invalidCustomerCreateJson()))
           .andExpect(status().isBadRequest());
 
       mockMvc
           .perform(
-              post(ApiPaths.CUSTOMER)
+              post(ApiPaths.CUSTOMER_V1)
                   .contentType(MediaType.APPLICATION_JSON)
                   .content(CustomerTestsUtils.nullFieldsCustomerCreateJson()))
           .andExpect(status().isBadRequest());
 
       mockMvc
           .perform(
-              post(ApiPaths.CUSTOMER)
+              post(ApiPaths.CUSTOMER_V1)
                   .contentType(MediaType.APPLICATION_JSON)
                   .content(CustomerTestsUtils.addressContactNullFieldsCustomerCreateDto()))
           .andExpect(status().isBadRequest());
@@ -137,14 +137,14 @@ public class CustomerTestsIT {
 
     @Test
     void shouldCreateCustomerWithReturnStatusUnauthorized() throws Exception {
-      mockMvc.perform(post(ApiPaths.CUSTOMER)).andExpect(status().isUnauthorized());
+      mockMvc.perform(post(ApiPaths.CUSTOMER_V1)).andExpect(status().isUnauthorized());
     }
 
     @SalesAttendantTest
     void shouldCreateCustomerWithSalesAttendantWithReturnStatusForbidden() throws Exception {
       mockMvc
           .perform(
-              post(ApiPaths.CUSTOMER)
+              post(ApiPaths.CUSTOMER_V1)
                   .contentType(MediaType.APPLICATION_JSON)
                   .content(CustomerTestsUtils.validCustomerCreateJson()))
           .andDo(print())
@@ -155,7 +155,7 @@ public class CustomerTestsIT {
     void shouldCreateCustomerWithInventoryManagerWithReturnStatusForbidden() throws Exception {
       mockMvc
           .perform(
-              post(ApiPaths.CUSTOMER)
+              post(ApiPaths.CUSTOMER_V1)
                   .contentType(MediaType.APPLICATION_JSON)
                   .content(CustomerTestsUtils.validCustomerCreateJson()))
           .andDo(print())
@@ -167,13 +167,13 @@ public class CustomerTestsIT {
       CustomerCreateDto customerDto = CustomerTestsUtils.validCustomerCreateDto();
 
       mockMvc.perform(
-          post(ApiPaths.CUSTOMER)
+          post(ApiPaths.CUSTOMER_V1)
               .contentType(MediaType.APPLICATION_JSON)
               .content(DataGenUtils.toJson(customerDto)));
 
       mockMvc
           .perform(
-              post(ApiPaths.CUSTOMER)
+              post(ApiPaths.CUSTOMER_V1)
                   .contentType(MediaType.APPLICATION_JSON)
                   .content(DataGenUtils.toJson(customerDto)))
           .andExpect(status().isConflict());
@@ -204,7 +204,7 @@ public class CustomerTestsIT {
 
       String response =
           mockMvc
-              .perform(get(ApiPaths.CUSTOMER))
+              .perform(get(ApiPaths.CUSTOMER_V1))
               .andExpect(status().isOk())
               .andExpect(content().contentType(MediaType.APPLICATION_JSON))
               .andExpect(jsonPath("$.content").isArray())
@@ -219,17 +219,17 @@ public class CustomerTestsIT {
 
     @Test
     void shouldFindAllCustomersWithReturnStatusUnauthorized() throws Exception {
-      mockMvc.perform(get(ApiPaths.CUSTOMER)).andExpect(status().isUnauthorized());
+      mockMvc.perform(get(ApiPaths.CUSTOMER_V1)).andExpect(status().isUnauthorized());
     }
 
     @InventoryManagerTest
     void shouldFindAllCustomersWithInventoryManagerWithReturnStatusForbidden() throws Exception {
-      mockMvc.perform(get(ApiPaths.CUSTOMER)).andExpect(status().isForbidden());
+      mockMvc.perform(get(ApiPaths.CUSTOMER_V1)).andExpect(status().isForbidden());
     }
 
     @SalesAttendantTest
     void shouldFindAllCustomersWithSalesAttendantWithReturnStatusForbidden() throws Exception {
-      mockMvc.perform(get(ApiPaths.CUSTOMER)).andExpect(status().isForbidden());
+      mockMvc.perform(get(ApiPaths.CUSTOMER_V1)).andExpect(status().isForbidden());
     }
 
     @AdminTest
@@ -513,11 +513,11 @@ public class CustomerTestsIT {
   }
 
   private String patternPath(String path, String resource) {
-    return ApiPaths.CUSTOMER + "/" + path + "/" + resource;
+    return ApiPaths.CUSTOMER_V1 + "/" + path + "/" + resource;
   }
 
   private String patternPath(String path) {
-    return ApiPaths.CUSTOMER + "/" + path;
+    return ApiPaths.CUSTOMER_V1 + "/" + path;
   }
 
   private String patternPath(Long path) {

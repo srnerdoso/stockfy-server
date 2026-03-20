@@ -41,7 +41,7 @@ public class DashboardIT {
     @DisplayName("Should return dashboard metrics")
     void shouldReturnMetrics() throws Exception {
       mockMvc
-          .perform(get(ApiPaths.DASHBOARD + "/metrics"))
+          .perform(get(ApiPaths.DASHBOARD_V1 + "/metrics"))
           .andExpect(status().isOk())
           .andExpect(content().contentType(MediaType.APPLICATION_JSON))
           .andExpect(jsonPath("$").isArray())
@@ -57,7 +57,7 @@ public class DashboardIT {
     @DisplayName("Should return 403 Forbidden for inventory manager")
     void shouldReturnForbiddenForInventoryManager() throws Exception {
       mockMvc
-          .perform(get(ApiPaths.DASHBOARD + "/metrics"))
+          .perform(get(ApiPaths.DASHBOARD_V1 + "/metrics"))
           .andExpect(status().isForbidden());
     }
 
@@ -65,7 +65,7 @@ public class DashboardIT {
     @DisplayName("Should return 403 Forbidden for sales attendant")
     void shouldReturnForbiddenForSalesAttendant() throws Exception {
       mockMvc
-          .perform(get(ApiPaths.DASHBOARD + "/metrics"))
+          .perform(get(ApiPaths.DASHBOARD_V1 + "/metrics"))
           .andExpect(status().isForbidden());
     }
   }
@@ -74,7 +74,7 @@ public class DashboardIT {
   @DisplayName("Should return last sales")
   void shouldReturnLastSales() throws Exception {
     mockMvc
-        .perform(get(ApiPaths.DASHBOARD + "/last-sales"))
+        .perform(get(ApiPaths.DASHBOARD_V1 + "/last-sales"))
         .andExpect(status().isOk())
         .andExpect(content().contentType(MediaType.APPLICATION_JSON))
         .andExpect(jsonPath("$").isArray());
@@ -84,7 +84,7 @@ public class DashboardIT {
   @DisplayName("Should return audit events")
   void shouldReturnAuditEvents() throws Exception {
     mockMvc
-        .perform(get(ApiPaths.DASHBOARD + "/audit"))
+        .perform(get(ApiPaths.DASHBOARD_V1 + "/audit"))
         .andExpect(status().isOk())
         .andExpect(content().contentType(MediaType.APPLICATION_JSON))
         .andExpect(jsonPath("$").isArray());
@@ -94,7 +94,7 @@ public class DashboardIT {
   @DisplayName("Should return alerts")
   void shouldReturnAlerts() throws Exception {
     mockMvc
-        .perform(get(ApiPaths.DASHBOARD + "/alerts"))
+        .perform(get(ApiPaths.DASHBOARD_V1 + "/alerts"))
         .andExpect(status().isOk())
         .andExpect(content().contentType(MediaType.APPLICATION_JSON))
         .andExpect(jsonPath("$").isArray());
@@ -104,7 +104,7 @@ public class DashboardIT {
   @DisplayName("Should return sales graph")
   void shouldReturnSalesGraph() throws Exception {
     mockMvc
-        .perform(get(ApiPaths.DASHBOARD + "/sales").param("filter", "days"))
+        .perform(get(ApiPaths.DASHBOARD_V1 + "/sales").param("filter", "days"))
         .andExpect(status().isOk())
         .andExpect(content().contentType(MediaType.APPLICATION_JSON))
         .andExpect(jsonPath("$").isArray());

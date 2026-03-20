@@ -45,11 +45,11 @@ public class PaymentTestUtils {
   }
 
   public static String patternPath(String path) {
-    return ApiPaths.PAYMENT + "/" + path;
+    return ApiPaths.PAYMENT_V1 + "/" + path;
   }
 
   public static String patternPath(String path, String resource) {
-    return ApiPaths.PAYMENT + "/" + path + "/" + resource;
+    return ApiPaths.PAYMENT_V1 + "/" + path + "/" + resource;
   }
 
   public static String payPath() {

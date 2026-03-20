@@ -28,7 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
 // TODO: Adicionar método get para pagamentos pendentes
 
 @RestController
-@RequestMapping(ApiPaths.CUSTOMER)
+@RequestMapping(ApiPaths.CUSTOMER_V1)
 @RequiredArgsConstructor
 public class CustomerController implements CustomerControllerDoc {
 

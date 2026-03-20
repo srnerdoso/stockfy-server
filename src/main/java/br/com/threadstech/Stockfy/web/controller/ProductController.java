@@ -29,7 +29,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping(ApiPaths.PRODUCT)
+@RequestMapping(ApiPaths.PRODUCT_V1)
 @RequiredArgsConstructor
 public class ProductController implements ProductControllerDoc {
 

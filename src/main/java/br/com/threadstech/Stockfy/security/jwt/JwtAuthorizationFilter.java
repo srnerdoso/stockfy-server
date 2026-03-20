@@ -30,7 +30,7 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
 
     log.info("JWT Filter - Request URI: {}", request.getRequestURI());
 
-    if (request.getRequestURI().contains(ApiPaths.AUTH)) {
+    if (request.getRequestURI().contains(ApiPaths.AUTH_V1)) {
       log.info("JWT Filter - Request URI public. No authentication required.");
       filterChain.doFilter(request, response);
       return;

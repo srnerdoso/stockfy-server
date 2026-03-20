@@ -69,7 +69,7 @@ public class EmployeeTestsIT {
 
       mockMvc
           .perform(
-              post(ApiPaths.EMPLOYEE)
+              post(ApiPaths.EMPLOYEE_V1)
                   .contentType(MediaType.APPLICATION_JSON)
                   .content(DataGenUtils.toJson(employeeDto)))
           .andExpect(status().isCreated());
@@ -126,21 +126,21 @@ public class EmployeeTestsIT {
     void shouldCreateEmployeeWithReturnStatusBadRequest() throws Exception {
       mockMvc
           .perform(
-              post(ApiPaths.EMPLOYEE)
+              post(ApiPaths.EMPLOYEE_V1)
                   .contentType(MediaType.APPLICATION_JSON)
                   .content(EmployeeTestsUtils.invalidEmployeeCreateJson()))
           .andExpect(status().isBadRequest());
 
       mockMvc
           .perform(
-              post(ApiPaths.EMPLOYEE)
+              post(ApiPaths.EMPLOYEE_V1)
                   .contentType(MediaType.APPLICATION_JSON)
                   .content(EmployeeTestsUtils.nullFieldsEmployeeCreateJson()))
           .andExpect(status().isBadRequest());
 
       mockMvc
           .perform(
-              post(ApiPaths.EMPLOYEE)
+              post(ApiPaths.EMPLOYEE_V1)
                   .contentType(MediaType.APPLICATION_JSON)
                   .content(EmployeeTestsUtils.addressContactNullFieldsEmployeeCreateDto()))
           .andExpect(status().isBadRequest());
@@ -148,14 +148,14 @@ public class EmployeeTestsIT {
 
     @Test
     void shouldCreateEmployeeWithReturnStatusUnauthorized() throws Exception {
-      mockMvc.perform(post(ApiPaths.EMPLOYEE)).andExpect(status().isUnauthorized());
+      mockMvc.perform(post(ApiPaths.EMPLOYEE_V1)).andExpect(status().isUnauthorized());
     }
 
     @SalesAttendantTest
     void shouldCreateEmployeeWithSalesAttendantWithReturnStatusForbidden() throws Exception {
       mockMvc
           .perform(
-              post(ApiPaths.EMPLOYEE)
+              post(ApiPaths.EMPLOYEE_V1)
                   .contentType(MediaType.APPLICATION_JSON)
                   .content(EmployeeTestsUtils.validEmployeeCreateJson()))
           .andDo(print())
@@ -166,7 +166,7 @@ public class EmployeeTestsIT {
     void shouldCreateEmployeeWithInventoryManagerWithReturnStatusForbidden() throws Exception {
       mockMvc
           .perform(
-              post(ApiPaths.EMPLOYEE)
+              post(ApiPaths.EMPLOYEE_V1)
                   .contentType(MediaType.APPLICATION_JSON)
                   .content(EmployeeTestsUtils.validEmployeeCreateJson()))
           .andDo(print())
@@ -178,13 +178,13 @@ public class EmployeeTestsIT {
       EmployeeCreateDto employeeDto = EmployeeTestsUtils.validEmployeeCreateDto();
 
       mockMvc.perform(
-          post(ApiPaths.EMPLOYEE)
+          post(ApiPaths.EMPLOYEE_V1)
               .contentType(MediaType.APPLICATION_JSON)
               .content(DataGenUtils.toJson(employeeDto)));
 
       mockMvc
           .perform(
-              post(ApiPaths.EMPLOYEE)
+              post(ApiPaths.EMPLOYEE_V1)
                   .contentType(MediaType.APPLICATION_JSON)
                   .content(DataGenUtils.toJson(employeeDto)))
           .andExpect(status().isConflict());
@@ -215,7 +215,7 @@ public class EmployeeTestsIT {
 
       String response =
           mockMvc
-              .perform(get(ApiPaths.EMPLOYEE))
+              .perform(get(ApiPaths.EMPLOYEE_V1))
               .andExpect(status().isOk())
               .andExpect(content().contentType(MediaType.APPLICATION_JSON))
               .andExpect(jsonPath("$.content").isArray())
@@ -230,17 +230,17 @@ public class EmployeeTestsIT {
 
     @Test
     void shouldFindAllEmployeesWithReturnStatusUnauthorized() throws Exception {
-      mockMvc.perform(get(ApiPaths.EMPLOYEE)).andExpect(status().isUnauthorized());
+      mockMvc.perform(get(ApiPaths.EMPLOYEE_V1)).andExpect(status().isUnauthorized());
     }
 
     @InventoryManagerTest
     void shouldFindAllEmployeesWithInventoryManagerWithReturnStatusForbidden() throws Exception {
-      mockMvc.perform(get(ApiPaths.EMPLOYEE)).andExpect(status().isForbidden());
+      mockMvc.perform(get(ApiPaths.EMPLOYEE_V1)).andExpect(status().isForbidden());
     }
 
     @SalesAttendantTest
     void shouldFindAllEmployeesWithSalesAttendantWithReturnStatusForbidden() throws Exception {
-      mockMvc.perform(get(ApiPaths.EMPLOYEE)).andExpect(status().isForbidden());
+      mockMvc.perform(get(ApiPaths.EMPLOYEE_V1)).andExpect(status().isForbidden());
     }
 
     @AdminTest
@@ -568,11 +568,11 @@ public class EmployeeTestsIT {
   }
 
   private String patternPath(String path, String resource) {
-    return ApiPaths.EMPLOYEE + "/" + path + "/" + resource;
+    return ApiPaths.EMPLOYEE_V1 + "/" + path + "/" + resource;
   }
 
   private String patternPath(String path) {
-    return ApiPaths.EMPLOYEE + "/" + path;
+    return ApiPaths.EMPLOYEE_V1 + "/" + path;
   }
 
   private String patternPath(Long path) {

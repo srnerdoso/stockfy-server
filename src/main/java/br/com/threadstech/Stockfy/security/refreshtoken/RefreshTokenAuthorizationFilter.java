@@ -33,7 +33,7 @@ public class RefreshTokenAuthorizationFilter extends OncePerRequestFilter {
     log.info("Refresh Token Filter - Request URI: {}", requestUri);
 
     List<String> unauthenticatedPaths =
-        List.of(ApiPaths.AUTH + "/login", ApiPaths.AUTH + "/logout", ApiPaths.AUTH + "/refresh");
+        List.of(ApiPaths.AUTH_V1 + "/login", ApiPaths.AUTH_V1 + "/logout", ApiPaths.AUTH_V1 + "/refresh");
     if (unauthenticatedPaths.contains(requestUri)) {
       log.info("Refresh Token Filter - Request URI public. No authentication required.");
       filterChain.doFilter(request, response);

@@ -54,6 +54,6 @@ public class AuthTestUtils {
   }
 
   private static String patternPath(String path) {
-    return ApiPaths.AUTH + "/" + path;
+    return ApiPaths.AUTH_V1 + "/" + path;
   }
 }

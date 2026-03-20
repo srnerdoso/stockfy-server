@@ -1,7 +1,6 @@
 package br.com.threadstech.stockfy.web.controller;
 
 import br.com.threadstech.stockfy.api.ApiPaths;
-import br.com.threadstech.stockfy.enums.ProductType;
 import br.com.threadstech.stockfy.service.DashboardService;
 import br.com.threadstech.stockfy.web.doc.DashboardControllerDoc;
 import br.com.threadstech.stockfy.web.dto.AlertDto;
@@ -18,7 +17,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping(ApiPaths.DASHBOARD)
+@RequestMapping(ApiPaths.DASHBOARD_V1)
 @RequiredArgsConstructor
 public class DashboardController implements DashboardControllerDoc {
 
