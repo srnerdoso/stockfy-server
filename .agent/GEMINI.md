@@ -1,6 +1,12 @@
 # Project: Stockfy
 
-## Architecture
+## DEPRECATED ARCHITECTURE NOTICE
+
+This document describes a legacy layered, single-module architecture.
+Sections marked with [LEGACY] do not apply to the modular architecture.
+New features must follow the modular architecture guidelines.
+
+## Architecture [LEGACY]
 
 - Layered Architecture
 - Single module application
@@ -11,9 +17,33 @@
 - Entities in `/entity`
 - Packages can access services from other features (e.g. purchase features may access user services)
 
-There is **no separation*- between domain, application, and infrastructure layers.
+There is **no separation** between domain, application, and infrastructure layers.
 
-## Directory Structure
+## Architecture
+
+- Single application with multiple isolated feature modules.
+- Package-by-feature organization.
+- Each module contains:
+
+    - Controllers
+    - Services (simple business rules)
+    - Use Cases (complex or cross-module rules; prefer switch/case over if)
+    - Repositories
+    - Entities / Domain models
+
+- Separate directories (service, entity, repository, controller) only if multiple classes of the same type exist (e.g.,
+  DTOs, Use Cases) to avoid clutter.
+- Modules are self-contained and independent.
+- Direct module access is restricted; communication via events only.
+
+### Architecture Traits
+
+- Clear separation of domain, application, infrastructure layers within modules.
+- High cohesion within modules, low coupling between modules.
+- Shared code minimized; placed in core/shared modules.
+- Improves maintainability, scalability, testability without distributed system complexity.
+
+## Directory Structure [LEGACY]
 
 Current project structure:
 
@@ -55,6 +85,49 @@ Rules:
 - MapStruct mappers are located in `/web/dto/mapper`.
 - Entities are located in `/entity`.
 
+## Directory Structure
+
+Corrected project structure following modular monolithic architecture:
+
+```
+br/com/threadstech/stockfy
+├─ api
+├─ components
+├─ config
+│  ├─ constraints
+│  └─ properties
+├─ core
+│  ├─ enums
+│  ├─ exception
+│  ├─ utils
+│  └─ validation
+├─ modules
+│  └─ example
+│     ├─ ExampleController.java
+│     ├─ ExampleService.java
+│     ├─ ExampleRepository.java
+│     ├─ Example.java
+│     ├─ ExampleControllerDoc.java
+│     ├─ usecase       # only if there are multiple use cases
+│     │  ├─ CreateExampleUseCase.java
+│     │  └─ UpdateExampleUseCase.java
+│     └─ dto           # only if there are multiple Dtos
+│        ├─ ExampleDto.java
+│        └─ ExampleSummaryDto.java
+├─ security
+│  ├─ jwt
+│  └─ refreshtoken
+└─ web
+   └─ exception
+```
+
+Rules:
+
+* Features are **isolated in their own module packages** inside `/modules`.
+* Controller, Service, Repository, Entity, and ControllerDoc are **single files per module**.
+* Shared code (utils, enums, validation, exceptions) is placed in `/core`.
+* `web/exception` is for global exceptions only.
+
 ## Controllers
 
 - Controllers return **DTOs**.
@@ -71,7 +144,8 @@ Validation and errors:
 ## Services
 
 - Services contain business logic and application orchestration.
-- There is **no separation between service and use case layers**.
+- There is **no separation between service and use case layers** [LEGACY].
+- There is a **separation between services and use cases**.
 - Services directly call repositories.
 - Services **do not use interfaces**.
 
@@ -79,7 +153,8 @@ Validation and errors:
 
 - ORM: Spring Data JPA
 - Entities map directly to database tables.
-- There is **no separation between entity and domain model**.
+- There is **no separation between entity and domain model** [LEGACY].
+- There is a **separation between the entity and domain models**.
 
 Query rules:
 
@@ -154,19 +229,16 @@ shouldCreateProductReturnCreated
 
 ## Additional Patterns
 
-- Standard Spring project structure
-- No event-driven architecture
+- Standard Spring project structure [LEGACY]
+- No event-driven architecture [LEGACY]
+- Modular Architecture
+- Event-driven architecture
 
 Background processes:
 
-- Schedulers exist in `/service/scheduler`
+- Schedulers exist in `/service/scheduler` [LEGACY]
 - Bootstrapping logic exists for initial admin user creation
-- Schedulers update system metrics
-
-Future features:
-
-- Metrics system
-- Audit logging system
+- Schedulers update system metrics [LEGACY]
 
 ## Project Conventions
 
@@ -268,7 +340,7 @@ Rule:
 
 ### Logging
 
-- Application logs are stored in a **database table**.
+- Application logs are stored in a Hibernate Envers tables.
 
 ### Metrics
 
@@ -285,8 +357,7 @@ Rule:
 
 ### Audit
 
-- Audit implemented using `AuditorAware`.
-- Audit logs are stored in a **database table**.
+- Audit implemented using `AuditorAware` and `Hibernate Envers`.
 
 Current implementation status:
 
