@@ -47,6 +47,7 @@ This skill guides the agent exclusively in the creation of automated tests.
 - Do not perform refactoring.
 - Do not fix bugs.
 - Focus exclusively on test creation.
+- Implement tests faithfully according to the real implementation of the feature once it exists.
 
 ## Expected Output
 
