@@ -119,3 +119,34 @@ Responsibilities:
 * Controllers must only implement the logic and extend the documentation interface.
 
 This approach keeps **documentation separated from implementation**, improving readability and maintainability.
+
+## 8. Rate Limiting
+
+The agent must ensure that all newly created endpoints are compatible with the application's rate limiting strategy.
+
+Rules:
+
+* Rate limiting must be enforced using **Bucket4j**, following the project's security context.
+* The agent must not implement custom rate limiting logic outside the established pattern.
+* Client identification must use:
+  * **Hashed IP** for public endpoints
+  * **Authenticated user identifier** for protected endpoints
+* The agent must not use raw IP addresses; hashing (e.g., SHA-256) is required before generating the rate limit key.
+
+Integration Requirements:
+
+* Rate limiting must be applied via the existing **filter or interceptor layer**.
+* The agent must not embed rate limiting logic directly inside controllers or services.
+* If integration requires modifying existing filters/interceptors, the agent must request user permission.
+
+Behavior:
+
+* When the rate limit is exceeded, the API must return:
+  * HTTP status **429 (Too Many Requests)**
+* The response must follow the project's standard response structure and message resolution via **MessageSource**.
+
+Testing:
+
+* Integration tests must validate:
+  * Correct behavior under normal request limits
+  * Proper response (HTTP 429) when limits are exceeded

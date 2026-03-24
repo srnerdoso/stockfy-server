@@ -42,6 +42,8 @@ New features must follow the modular architecture guidelines.
     - Define endpoints in `ApiPaths.java` following the project's naming conventions;
     - Use the `V1_1` suffix for versioning.
 
+- Use rate limiting;
+
 ## [LEGACY] Architecture
 
 - Layered Architecture
@@ -225,6 +227,56 @@ Controllers:
 
 - `AuthController` handles authentication
 - `UserController` / `EmployeeController` handle user management
+
+### Rules
+
+- Security tests must be created **only after the feature is fully implemented**
+- All **unit and integration tests must pass before creating security tests**
+- Security tests must be treated as **integration tests**, not unit tests
+- Security tests must validate the system with the **real security configuration loaded (ApplicationContext)**
+
+### Rate Limiting
+
+Rate limiting will be applied to protect endpoints against abuse, brute-force attacks, and system overload.
+
+#### Strategy
+
+- Rate limiting by IP for public endpoints (using a hashed IP)
+- Rate limiting by authenticated user for protected endpoints
+- Different limits per endpoint type (e.g., stricter limits for authentication)
+- HTTP 429 (Too Many Requests) responses when the limit is exceeded
+
+#### Client Identification
+
+- The IP address **will not be used in its raw form**
+- A **hash (e.g., SHA-256)** will be applied before using it as the rate limit key
+- The hash will be the key used by Bucket4j to manage buckets
+- Objective: reduce exposure of personal data and mitigate risks in case of data leaks
+
+#### Dependency
+
+The following library will be used:
+
+- `bucket4j-core`
+
+#### Justification
+
+- Token bucket–based implementation (efficient and predictable)
+- Compatible with Spring Boot
+- Allows fine-grained control of limits (by key: hashed IP, user, endpoint)
+- Supports distributed storage (e.g., Redis) for future scalability
+
+#### Possible Stack
+
+- `bucket4j-core`
+- `bucket4j-redis` (if horizontal scaling becomes necessary)
+
+#### Notes
+
+- Initial configuration will be in-memory
+- It can be migrated to Redis later without impacting business logic
+- Rate limiting logic should be applied via a filter or interceptor in Spring
+- Bucket4j does not perform hashing automatically; the key must be defined manually by the application
 
 ## Configuration
 
