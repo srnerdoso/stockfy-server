@@ -6,7 +6,43 @@ This document describes a legacy layered, single-module architecture.
 Sections marked with [LEGACY] do not apply to the modular architecture.
 New features must follow the modular architecture guidelines.
 
-## Architecture [LEGACY]
+### Migration Instructions
+
+- The user must explicitly specify the target module. **Restricted permission:** read, create, update, and delete
+  operations are allowed **only within the specified module**.
+
+- **Test-first is mandatory:**
+
+    - Create 100% of automated tests before any implementation;
+    - Tests must not be modified after creation.
+
+- **Continuous test execution:**
+
+    - Run the module's tests after each implementation;
+    - Fix any failures and re-run the tests until all tests pass.
+
+- **Legacy code:** read-only access only.
+
+- **Database:**
+
+    - Use Flyway migrations;
+    - Direct creation or modification of tables in entities is prohibited.
+
+- **Scope restrictions:**
+
+    - Do not implement anything marked as `[LEGACY]`.
+
+- **Module quality:**
+
+    - The module must be delivered fully functional and compliant with business rules.
+
+- **Versioning and endpoints:**
+
+    - Use the `/api/v1_1` prefix for new modules;
+    - Define endpoints in `ApiPaths.java` following the project's naming conventions;
+    - Use the `V1_1` suffix for versioning.
+
+## [LEGACY] Architecture
 
 - Layered Architecture
 - Single module application
@@ -43,7 +79,7 @@ There is **no separation** between domain, application, and infrastructure layer
 - Shared code minimized; placed in core/shared modules.
 - Improves maintainability, scalability, testability without distributed system complexity.
 
-## Directory Structure [LEGACY]
+## [LEGACY] Directory Structure
 
 Current project structure:
 
@@ -108,10 +144,13 @@ br/com/threadstech/stockfy
 │     ├─ ExampleRepository.java
 │     ├─ Example.java
 │     ├─ ExampleControllerDoc.java
+│     ├─ ExampleMapper.java
 │     ├─ usecase       # only if there are multiple use cases
 │     │  ├─ CreateExampleUseCase.java
 │     │  └─ UpdateExampleUseCase.java
 │     └─ dto           # only if there are multiple Dtos
+│        ├─ mapper
+│        │  └─ ExampleMapper.java
 │        ├─ ExampleDto.java
 │        └─ ExampleSummaryDto.java
 ├─ security
@@ -123,10 +162,12 @@ br/com/threadstech/stockfy
 
 Rules:
 
-* Features are **isolated in their own module packages** inside `/modules`.
-* Controller, Service, Repository, Entity, and ControllerDoc are **single files per module**.
-* Shared code (utils, enums, validation, exceptions) is placed in `/core`.
-* `web/exception` is for global exceptions only.
+- Features are **isolated in their own modules** within `/modules`.
+- Controller, Service, Repository, Entity, and ControllerDoc are **single files per module**.
+- Shared code (utils, enums, validations, exceptions) is placed in `/core`.
+- `web/exception` is for global exceptions only.
+- Module-specific exceptions must be placed within the module’s `exception` package. Example:
+  `product.exception.ProductInvalidException`
 
 ## Controllers
 
@@ -144,7 +185,7 @@ Validation and errors:
 ## Services
 
 - Services contain business logic and application orchestration.
-- There is **no separation between service and use case layers** [LEGACY].
+- [LEGACY] There is **no separation between service and use case layers**.
 - There is a **separation between services and use cases**.
 - Services directly call repositories.
 - Services **do not use interfaces**.
@@ -165,7 +206,8 @@ Query rules:
 
 - DTOs are used for both request and response.
 - Mapping is implemented with **MapStruct**.
-- Mappers are located in `/web/dto/mapper`.
+- [LEGACY] Mappers are located in `/web/dto/mapper`.
+- Mappers are located within the module’s `dto.mapper` package. Example: `product.dto.mapper.ProductMapper`
 
 ## Transactions
 
@@ -359,11 +401,6 @@ Rule:
 
 - Audit implemented using `AuditorAware` and `Hibernate Envers`.
 
-Current implementation status:
-
-- `AuditorAware` implemented
-- Full audit logging still pending
-
 ## Restrictions (What the Agent Must NOT Do)
 
 - The agent must NOT modify or remove any content inside the .agent directory (CRITICAL).
@@ -378,3 +415,4 @@ Current implementation status:
   `application-prod.yaml` and/or `application-dev.yaml` must remain isolated to those profiles and must not be
   duplicated in `application.yaml`.
 - Do not add comments to the code unless explicitly requested by the user.
+- NEVER use hardcoded values for environment variables, API keys, secrets, etc. (CRITICAL)

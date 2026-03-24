@@ -103,7 +103,6 @@ All endpoints must be documented using **Swagger OpenAPI** through dedicated doc
 
 Rules:
 
-* The agent must create a **public interface** inside the directory `/web/doc`.
 * This interface is responsible **only for endpoint documentation**.
 * Controllers must **extend the corresponding documentation interface**.
 
