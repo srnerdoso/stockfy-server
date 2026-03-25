@@ -79,9 +79,33 @@ public class ErrorMessage {
     this.errors = new HashMap<>();
     var locale = LocaleContextHolder.getLocale();
     for (FieldError fieldError : result.getFieldErrors()) {
-      String code = fieldError.getCodes()[0];
-      String message = messageSource.getMessage(code, fieldError.getArguments(), locale);
+      String message = resolveMessage(fieldError, messageSource, locale);
       this.errors.put(fieldError.getField(), message);
     }
+  }
+
+  private String resolveMessage(FieldError fieldError, MessageSource messageSource, java.util.Locale locale) {
+    String defaultMessage = fieldError.getDefaultMessage();
+    
+    // If the default message is a key like {NotBlank.productDto.name}, try to resolve it
+    if (defaultMessage != null && defaultMessage.startsWith("{") && defaultMessage.endsWith("}")) {
+      String key = defaultMessage.substring(1, defaultMessage.length() - 1);
+      try {
+        return messageSource.getMessage(key, fieldError.getArguments(), locale);
+      } catch (org.springframework.context.NoSuchMessageException e) {
+        // Fallback to searching through fieldError.getCodes()
+      }
+    }
+
+    // Try standard Spring validation codes
+    for (String code : fieldError.getCodes()) {
+      try {
+        return messageSource.getMessage(code, fieldError.getArguments(), locale);
+      } catch (org.springframework.context.NoSuchMessageException e) {
+        // Continue to next code
+      }
+    }
+
+    return defaultMessage;
   }
 }

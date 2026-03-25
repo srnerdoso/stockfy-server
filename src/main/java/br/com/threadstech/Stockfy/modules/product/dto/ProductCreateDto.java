@@ -28,22 +28,22 @@ public class ProductCreateDto {
   private String name;
 
   @NotBlank(message = "{NotBlank.productDto.barCode}")
-  @Barcode
+  @Barcode(message = "{Barcode.productDto.barCode}")
   private String barcode;
 
-  @NotNull
+  @NotNull(message = "{NotNull.productDto.stock}")
   @Positive(message = "{Positive.productDto.stock}")
   private BigDecimal stockQuantity;
 
-  @NotNull
+  @NotNull(message = "{NotNull.productDto.minStock}")
   @PositiveOrZero(message = "{PositiveOrZero.productDto.minStock}")
   private BigDecimal minimumStock;
 
-  @NotNull
+  @NotNull(message = "{NotNull.productDto.price}")
   @Positive(message = "{Positive.productDto.price}")
   private BigDecimal price;
 
-  @NotNull
+  @NotNull(message = "{NotNull.productDto.cost}")
   @Positive(message = "{Positive.productDto.cost}")
   private BigDecimal cost;
 
@@ -51,6 +51,6 @@ public class ProductCreateDto {
   private BigDecimal discount;
 
   @NotNull(message = "{NotNull.productDto.type}")
-  @UnitType
+  @UnitType(message = "{UnitType.productDto.type}")
   private String unitType;
 }

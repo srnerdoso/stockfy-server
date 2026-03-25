@@ -33,8 +33,9 @@ public class ApiExceptionHandler {
   @ExceptionHandler(MethodArgumentNotValidException.class)
   public ResponseEntity<ErrorMessage> methodArgumentNotValidException(
       MethodArgumentNotValidException ex, HttpServletRequest request, BindingResult result) {
+    String message = messageSource.getMessage("validation.error.payload", null, locale);
     return ResponseEntity.badRequest()
-        .body(new ErrorMessage(request, HttpStatus.BAD_REQUEST, ex.getMessage(), result));
+        .body(new ErrorMessage(request, result, HttpStatus.BAD_REQUEST, message, messageSource));
   }
 
   @ExceptionHandler(EntityNotFoundException.class)
