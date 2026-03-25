@@ -5,8 +5,10 @@ public class ApiPaths {
   private ApiPaths() {}
 
   public static final String API_BASE_V1 = "/api/v1";
+  public static final String API_BASE_V1_1 = "/api/v1_1";
 
   public static final String PRODUCT_V1 = API_BASE_V1 + "/products";
+  public static final String PRODUCT_V1_1 = API_BASE_V1_1 + "/products";
 
   public static final String PAYMENT_V1 = API_BASE_V1 + "/payments";
 
