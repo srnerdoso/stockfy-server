@@ -1,5 +1,15 @@
 # Project: Stockfy
 
+## Project Overview
+
+Stockfy is an ERP system designed for small retail businesses, focused on sales and inventory management, while also
+supporting customer management, employee management, and business dashboards for analytics and insights.
+
+### Technologies
+
+- Java 25
+- Spring Boot 4.0.0
+
 ## DEPRECATED ARCHITECTURE NOTICE
 
 This document describes a legacy layered, single-module architecture.
@@ -467,4 +477,6 @@ Rule:
   `application-prod.yaml` and/or `application-dev.yaml` must remain isolated to those profiles and must not be
   duplicated in `application.yaml`.
 - Do not add comments to the code unless explicitly requested by the user.
-- NEVER use hardcoded values for environment variables, API keys, secrets, etc. (CRITICAL)
+- (CRITICAL) NEVER use hardcoded values for environment variables, API keys, secrets, etc.
+- The agent must NOT downgrade the framework version.
+- The agent must NOT modify the `pom.xml` file unless explicitly requested by the user.
