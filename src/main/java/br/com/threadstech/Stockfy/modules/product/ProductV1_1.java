@@ -28,9 +28,11 @@ import lombok.ToString;
 @AllArgsConstructor
 // FIXME: Tabelas devem ser criadas com FlyWay isto deve ser corrigido para evitar tabelas
 //        duplicadas. Manter ddl-auto=update por enquanto, depois corrigir para ddl-auto=none.
-// FIXME: Nomes de constraints devem ser atualizados.
+// FIXME: Nomes de constraints devem ser atualizados. (Isto deve ser corrigido apenas após a
+//        migração completa de arquitetura do módulo product)
 // FIXME: Nomes das classes não devem ser versionados.
 // FIXME: Deleção de produtos deve ser com soft delete.
+// FIXME: Adicionar auditoria.
 @Table(
     name = "products_v1_1",
     uniqueConstraints = {

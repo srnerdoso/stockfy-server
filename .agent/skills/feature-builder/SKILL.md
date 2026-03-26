@@ -30,6 +30,8 @@ Integration tests must validate:
 * Full response body structure
 * Explicit verification of **all response fields**
 * Database persistence
+* Message source integration: Verify that error messages are correctly resolved from the message source for the current
+  locale, including parameterized messages and fallback behavior for missing keys
 
 Tests must ensure that:
 
@@ -95,7 +97,8 @@ Rules:
 * Message keys must be defined in the project's message resource files
 * The agent must reference the message key instead of embedding literal strings in the code
 
-This ensures that all responses support proper **internationalization (i18n)** and maintain consistency across the application.
+This ensures that all responses support proper **internationalization (i18n)** and maintain consistency across the
+application.
 
 ## 7. OpenAPI Documentation
 
@@ -115,7 +118,8 @@ Naming convention:
 
 Responsibilities:
 
-* The documentation interface must contain all **OpenAPI annotations** (`@Operation`, `@ApiResponse`, `@Parameter`, etc.).
+* The documentation interface must contain all **OpenAPI annotations** (`@Operation`, `@ApiResponse`, `@Parameter`,
+  etc.).
 * Controllers must only implement the logic and extend the documentation interface.
 
 This approach keeps **documentation separated from implementation**, improving readability and maintainability.
@@ -129,8 +133,8 @@ Rules:
 * Rate limiting must be enforced using **Bucket4j**, following the project's security context.
 * The agent must not implement custom rate limiting logic outside the established pattern.
 * Client identification must use:
-  * **Hashed IP** for public endpoints
-  * **Authenticated user identifier** for protected endpoints
+    * **Hashed IP** for public endpoints
+    * **Authenticated user identifier** for protected endpoints
 * The agent must not use raw IP addresses; hashing (e.g., SHA-256) is required before generating the rate limit key.
 
 Integration Requirements:
@@ -142,11 +146,11 @@ Integration Requirements:
 Behavior:
 
 * When the rate limit is exceeded, the API must return:
-  * HTTP status **429 (Too Many Requests)**
+    * HTTP status **429 (Too Many Requests)**
 * The response must follow the project's standard response structure and message resolution via **MessageSource**.
 
 Testing:
 
 * Integration tests must validate:
-  * Correct behavior under normal request limits
-  * Proper response (HTTP 429) when limits are exceeded
+    * Correct behavior under normal request limits
+    * Proper response (HTTP 429) when limits are exceeded
