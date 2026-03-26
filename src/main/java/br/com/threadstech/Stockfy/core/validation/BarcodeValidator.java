@@ -3,6 +3,7 @@ package br.com.threadstech.stockfy.core.validation;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 
+// FIXME: Implementar validação de barcode
 public class BarcodeValidator implements ConstraintValidator<Barcode, String> {
   @Override
   public void initialize(Barcode constraintAnnotation) {

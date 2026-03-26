@@ -1,6 +1,7 @@
 package br.com.threadstech.stockfy.modules.product;
 
 import br.com.threadstech.stockfy.components.ConstraintResolver;
+import br.com.threadstech.stockfy.exception.EntityNotFoundException;
 import br.com.threadstech.stockfy.modules.product.exception.ProductUniqueViolationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,6 +26,14 @@ public class ProductV1_1Service {
       resolveUniqueConstraint(ex);
       throw ex;
     }
+  }
+
+  @Transactional(readOnly = true)
+  public ProductV1_1 findById(Long id) {
+    log.info("Finding product by id: {}", id);
+    return productRepository
+        .findById(id)
+        .orElseThrow(() -> new EntityNotFoundException(id.toString()));
   }
 
   private void resolveUniqueConstraint(DataIntegrityViolationException ex) {
