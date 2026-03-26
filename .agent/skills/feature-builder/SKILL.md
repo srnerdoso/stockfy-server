@@ -154,3 +154,18 @@ Testing:
 * Integration tests must validate:
     * Correct behavior under normal request limits
     * Proper response (HTTP 429) when limits are exceeded
+
+## 9. Test Class Reuse Rule
+
+When creating new features, the agent **must not create new test classes** unless explicitly requested by the user.
+
+Rules:
+
+* If the module/resource already has existing tests (e.g., `product`), the agent must **add new tests to the corresponding existing test class**.
+* Tests must be added according to their type:
+
+  * **Integration tests** → existing integration test class of the module
+  * **Unit tests** → existing unit test class
+  * **E2E tests** → existing E2E test class
+* If a test class for a specific type **does not exist**, the agent is allowed to create it.
+* The agent must **avoid duplication of test structure** and keep tests centralized per module and type.
