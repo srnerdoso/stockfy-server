@@ -29,11 +29,11 @@ public class ProductV1_1Service {
   }
 
   @Transactional(readOnly = true)
-  public ProductV1_1 findById(Long id) {
-    log.info("Finding product by id: {}", id);
+  public ProductV1_1 findByBarcode(String barcode) {
+    log.info("Finding product by barcode: {}", barcode);
     return productRepository
-        .findById(id)
-        .orElseThrow(() -> new EntityNotFoundException(id.toString()));
+        .findByBarcode(barcode)
+        .orElseThrow(() -> new EntityNotFoundException(barcode));
   }
 
   private void resolveUniqueConstraint(DataIntegrityViolationException ex) {

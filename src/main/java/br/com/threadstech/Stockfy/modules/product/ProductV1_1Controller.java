@@ -33,9 +33,9 @@ public class ProductV1_1Controller implements ProductV1_1ControllerDoc {
   }
 
   @Override
-  @GetMapping("/{id}/id")
+  @GetMapping("/{barcode}/barcode")
   @PreAuthorize("hasAnyRole('ADMIN', 'INVENTORY_MANAGER', 'SALES_ATTENDANT')")
-  public ResponseEntity<ProductDetailsDto> getById(@PathVariable Long id) {
-    return ResponseEntity.ok(productMapper.toProductDetailsDto(productService.findById(id)));
+  public ResponseEntity<ProductDetailsDto> getByBarcode(@PathVariable String barcode) {
+    return ResponseEntity.ok(productMapper.toProductDetailsDto(productService.findByBarcode(barcode)));
   }
 }

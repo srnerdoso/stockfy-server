@@ -147,18 +147,19 @@ public class ProductIT {
   }
 
   @Nested
-  @DisplayName("Find Product By Id V1.1")
-  class FindProductById {
+  @DisplayName("Find Product By Barcode V1.1")
+  class FindProductByBarcode {
 
     @AdminTest
-    void shouldFindProductByIdSucceedWithAdmin() throws Exception {
+    void shouldFindProductByBarcodeSucceedWithAdmin() throws Exception {
       ProductV1_1 product = saveProductEntity();
 
       String response =
           mockMvc
-              .perform(get(ApiPaths.PRODUCT_V1_1 + "/" + product.getId() + "/id"))
+              .perform(get(ApiPaths.PRODUCT_V1_1 + "/" + product.getBarcode() + "/barcode"))
               .andExpect(status().isOk())
               .andExpect(jsonPath("$.id").doesNotExist())
+              .andExpect(jsonPath("$.barcode").value(product.getBarcode()))
               .andReturn()
               .getResponse()
               .getContentAsString();
@@ -187,43 +188,49 @@ public class ProductIT {
     }
 
     @InventoryManagerTest
-    void shouldFindProductByIdSucceedWithInventoryManager() throws Exception {
+    void shouldFindProductByBarcodeSucceedWithInventoryManager() throws Exception {
       ProductV1_1 product = saveProductEntity();
 
       mockMvc
-          .perform(get(ApiPaths.PRODUCT_V1_1 + "/" + product.getId() + "/id"))
-          .andExpect(status().isOk());
+          .perform(get(ApiPaths.PRODUCT_V1_1 + "/" + product.getBarcode() + "/barcode"))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.barcode").value(product.getBarcode()));
     }
 
     @SalesAttendantTest
-    void shouldFindProductByIdSucceedWithSalesAttendant() throws Exception {
+    void shouldFindProductByBarcodeSucceedWithSalesAttendant() throws Exception {
       ProductV1_1 product = saveProductEntity();
 
       mockMvc
-          .perform(get(ApiPaths.PRODUCT_V1_1 + "/" + product.getId() + "/id"))
-          .andExpect(status().isOk());
+          .perform(get(ApiPaths.PRODUCT_V1_1 + "/" + product.getBarcode() + "/barcode"))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.barcode").value(product.getBarcode()));
     }
 
     @ProductClerkTest
-    void shouldFindProductByIdFailWithProductClerk() throws Exception {
+    void shouldFindProductByBarcodeFailWithProductClerk() throws Exception {
       ProductV1_1 product = saveProductEntity();
 
       mockMvc
-          .perform(get(ApiPaths.PRODUCT_V1_1 + "/" + product.getId() + "/id"))
+          .perform(get(ApiPaths.PRODUCT_V1_1 + "/" + product.getBarcode() + "/barcode"))
           .andExpect(status().isForbidden());
     }
 
     @AdminTest
     void shouldReturn404WhenProductNotFound() throws Exception {
+      String nonExistentBarcode = "9999999999999";
       mockMvc
-          .perform(get(ApiPaths.PRODUCT_V1_1 + "/99999/id"))
+          .perform(get(ApiPaths.PRODUCT_V1_1 + "/" + nonExistentBarcode + "/barcode"))
           .andExpect(status().isNotFound())
-          .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("99999")));
+          .andExpect(
+              jsonPath("$.message").value(org.hamcrest.Matchers.containsString(nonExistentBarcode)));
     }
 
     @Test
     void shouldReturn401WhenUnauthenticated() throws Exception {
-      mockMvc.perform(get(ApiPaths.PRODUCT_V1_1 + "/1/id")).andExpect(status().isUnauthorized());
+      mockMvc
+          .perform(get(ApiPaths.PRODUCT_V1_1 + "/1234567890123/barcode"))
+          .andExpect(status().isUnauthorized());
     }
   }
 

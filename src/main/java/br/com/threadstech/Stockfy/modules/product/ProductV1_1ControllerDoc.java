@@ -35,7 +35,7 @@ public interface ProductV1_1ControllerDoc {
   ResponseEntity<Void> save(@Valid @RequestBody ProductCreateDto productDto);
 
   @Operation(
-      summary = "Busca um produto por id",
+      summary = "Busca um produto por código de barras",
       security = @SecurityRequirement(name = "jwt - Cookie HttpOnly"),
       responses = {
         @ApiResponse(
@@ -46,5 +46,5 @@ public interface ProductV1_1ControllerDoc {
         @ApiResponse(responseCode = "403", ref = SwaggerRefUtils.FORBIDDEN_RES),
         @ApiResponse(responseCode = "404", ref = SwaggerRefUtils.NOT_FOUND_RES)
       })
-  ResponseEntity<ProductDetailsDto> getById(@PathVariable Long id);
+  ResponseEntity<ProductDetailsDto> getByBarcode(@PathVariable String barcode);
 }
