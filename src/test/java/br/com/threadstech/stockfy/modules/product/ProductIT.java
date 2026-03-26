@@ -234,6 +234,76 @@ public class ProductIT {
     }
   }
 
+  @Nested
+  @DisplayName("Find All Products V1.1")
+  class FindAllProducts {
+
+    @AdminTest
+    void shouldFindAllProductsSucceedWithAdmin() throws Exception {
+      saveProductEntity();
+      saveProductEntity();
+
+      mockMvc
+          .perform(get(ApiPaths.PRODUCT_V1_1))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.content").isArray())
+          .andExpect(jsonPath("$.content.length()").value(2))
+          .andExpect(jsonPath("$.content[0].id").exists())
+          .andExpect(jsonPath("$.content[0].name").exists())
+          .andExpect(jsonPath("$.content[0].price").exists())
+          .andExpect(jsonPath("$.totalElements").value(2));
+    }
+
+    @AdminTest
+    void shouldFindAllProductsWithNameFilterSucceed() throws Exception {
+      ProductV1_1 p1 = saveProductEntityWithName("Special Notebook");
+      saveProductEntityWithName("Smartphone");
+
+      mockMvc
+          .perform(get(ApiPaths.PRODUCT_V1_1).param("name", "notebook"))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.content.length()").value(1))
+          .andExpect(jsonPath("$.content[0].name").value(p1.getName()));
+    }
+
+    @AdminTest
+    void shouldFindAllProductsWithPaginationSucceed() throws Exception {
+      for (int i = 0; i < 5; i++) {
+        saveProductEntity();
+      }
+
+      mockMvc
+          .perform(get(ApiPaths.PRODUCT_V1_1).param("page", "0").param("size", "2"))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.content.length()").value(2))
+          .andExpect(jsonPath("$.totalElements").value(5))
+          .andExpect(jsonPath("$.totalPages").value(3));
+    }
+
+    @InventoryManagerTest
+    void shouldFindAllProductsSucceedWithInventoryManager() throws Exception {
+      saveProductEntity();
+      mockMvc.perform(get(ApiPaths.PRODUCT_V1_1)).andExpect(status().isOk());
+    }
+
+    @SalesAttendantTest
+    void shouldFindAllProductsSucceedWithSalesAttendant() throws Exception {
+      saveProductEntity();
+      mockMvc.perform(get(ApiPaths.PRODUCT_V1_1)).andExpect(status().isOk());
+    }
+
+    @ProductClerkTest
+    void shouldFindAllProductsFailWithProductClerk() throws Exception {
+      saveProductEntity();
+      mockMvc.perform(get(ApiPaths.PRODUCT_V1_1)).andExpect(status().isForbidden());
+    }
+
+    @Test
+    void shouldFindAllProductsFailWhenUnauthenticated() throws Exception {
+      mockMvc.perform(get(ApiPaths.PRODUCT_V1_1)).andExpect(status().isUnauthorized());
+    }
+  }
+
   // FIXME: Alguns métodos não estão verificando se as mensagens de erro retornadas estão corretas
   @Nested
   @DisplayName("Product Validation Tests")
@@ -371,6 +441,20 @@ public class ProductIT {
     return productRepository.save(
         ProductV1_1.builder()
             .name(DataGenUtils.faker.commerce().productName())
+            .barcode(DataGenUtils.faker.number().digits(13))
+            .stockQuantity(new BigDecimal("10.000"))
+            .minimumStock(new BigDecimal("2.000"))
+            .price(new BigDecimal("100.00"))
+            .cost(new BigDecimal("50.00"))
+            .discount(new BigDecimal("5.00"))
+            .unitType(UnitType.UNIT)
+            .build());
+  }
+
+  private ProductV1_1 saveProductEntityWithName(String name) {
+    return productRepository.save(
+        ProductV1_1.builder()
+            .name(name)
             .barcode(DataGenUtils.faker.number().digits(13))
             .stockQuantity(new BigDecimal("10.000"))
             .minimumStock(new BigDecimal("2.000"))

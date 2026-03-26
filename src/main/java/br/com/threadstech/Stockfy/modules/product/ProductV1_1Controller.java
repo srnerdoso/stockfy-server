@@ -3,9 +3,13 @@ package br.com.threadstech.stockfy.modules.product;
 import br.com.threadstech.stockfy.api.ApiPaths;
 import br.com.threadstech.stockfy.modules.product.dto.ProductCreateDto;
 import br.com.threadstech.stockfy.modules.product.dto.ProductDetailsDto;
+import br.com.threadstech.stockfy.modules.product.dto.ProductSummaryDto;
 import br.com.threadstech.stockfy.modules.product.dto.mapper.ProductV1_1Mapper;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -14,6 +18,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -23,6 +28,15 @@ public class ProductV1_1Controller implements ProductV1_1ControllerDoc {
 
   private final ProductV1_1Service productService;
   private final ProductV1_1Mapper productMapper;
+
+  // TODO: Implementar tipos de retorno com discrimination
+  @Override
+  @GetMapping
+  @PreAuthorize("hasAnyRole('ADMIN', 'INVENTORY_MANAGER', 'SALES_ATTENDANT')")
+  public ResponseEntity<Page<ProductSummaryDto>> findAll(
+      @RequestParam(required = false) String name, @PageableDefault Pageable pageable) {
+    return ResponseEntity.ok(productService.findProducts(name, pageable));
+  }
 
   @Override
   @PostMapping
