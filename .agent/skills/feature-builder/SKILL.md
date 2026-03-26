@@ -32,6 +32,8 @@ Integration tests must validate:
 * Database persistence
 * Message source integration: Verify that error messages are correctly resolved from the message source for the current
   locale, including parameterized messages and fallback behavior for missing keys
+* Security tests: Validate access with **authorized roles** and **unauthorized roles**, ensuring proper permission
+  enforcement and expected HTTP responses (e.g., 200, 403, 401)
 
 Tests must ensure that:
 
@@ -161,11 +163,12 @@ When creating new features, the agent **must not create new test classes** unles
 
 Rules:
 
-* If the module/resource already has existing tests (e.g., `product`), the agent must **add new tests to the corresponding existing test class**.
+* If the module/resource already has existing tests (e.g., `product`), the agent must **add new tests to the
+  corresponding existing test class**.
 * Tests must be added according to their type:
 
-  * **Integration tests** → existing integration test class of the module
-  * **Unit tests** → existing unit test class
-  * **E2E tests** → existing E2E test class
+    * **Integration tests** → existing integration test class of the module
+    * **Unit tests** → existing unit test class
+    * **E2E tests** → existing E2E test class
 * If a test class for a specific type **does not exist**, the agent is allowed to create it.
 * The agent must **avoid duplication of test structure** and keep tests centralized per module and type.
