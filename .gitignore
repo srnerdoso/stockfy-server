@@ -38,4 +38,4 @@ build/
 .vscode/
 
 ### TODOS (Arquivo de tarefas local) ###
-TODOS.md
+.todos
