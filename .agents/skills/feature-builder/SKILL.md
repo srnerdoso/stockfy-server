@@ -41,6 +41,8 @@ Tests must ensure that:
 * Every response field is explicitly asserted
 * The expected data is persisted in the database
 
+All tests must strictly follow `references/testing-guidelines.md`.
+
 ### 2. Define Expected Behavior
 
 From the integration test, define:
@@ -82,93 +84,22 @@ If the feature requires any of the following, the agent must ask the user first:
 
 The agent must never perform these actions automatically.
 
-## 6. Internationalization and Messages
+## Compliance and Standards
 
-The agent **must not use hardcoded string values** in API responses, including but not limited to:
+All implementations must comply with the project's technical standards and guidelines.
 
-* Error messages
-* Validation messages
-* Success messages
-* Any user-facing response text
+### Standards
 
-All response messages must be retrieved using **Spring's MessageSource**.
+The agent must strictly follow:
 
-Rules:
+- `references/internationalization.md`: Defines rules for message externalization using MessageSource. Prohibits hardcoded strings and enforces i18n across all API responses.
 
-* Always resolve messages through `MessageSource`
-* Message keys must be defined in the project's message resource files
-* The agent must reference the message key instead of embedding literal strings in the code
+- `references/openapi-guidelines.md`: Defines how endpoints must be documented using OpenAPI via dedicated documentation interfaces, enforcing separation between documentation and implementation.
 
-This ensures that all responses support proper **internationalization (i18n)** and maintain consistency across the
-application.
+- `references/rate-limiting.md`: Defines the rate limiting strategy using Bucket4j, including client identification, infrastructure integration, and expected behavior (HTTP 429).
 
-## 7. OpenAPI Documentation
+These standards must be applied before and during implementation.
 
-All endpoints must be documented using **Swagger OpenAPI** through dedicated documentation interfaces.
+The agent must not implement or expose any endpoint that violates these rules.
 
-Rules:
-
-* This interface is responsible **only for endpoint documentation**.
-* Controllers must **extend the corresponding documentation interface**.
-
-Naming convention:
-
-* Documentation interfaces must follow the pattern: `<Resource>ControllerDoc`
-* Examples:
-    * `AuthControllerDoc`
-    * `UserControllerDoc`
-
-Responsibilities:
-
-* The documentation interface must contain all **OpenAPI annotations** (`@Operation`, `@ApiResponse`, `@Parameter`,
-  etc.).
-* Controllers must only implement the logic and extend the documentation interface.
-
-This approach keeps **documentation separated from implementation**, improving readability and maintainability.
-
-## 8. Rate Limiting
-
-The agent must ensure that all newly created endpoints are compatible with the application's rate limiting strategy.
-
-Rules:
-
-* Rate limiting must be enforced using **Bucket4j**, following the project's security context.
-* The agent must not implement custom rate limiting logic outside the established pattern.
-* Client identification must use:
-    * **Hashed IP** for public endpoints
-    * **Authenticated user identifier** for protected endpoints
-* The agent must not use raw IP addresses; hashing (e.g., SHA-256) is required before generating the rate limit key.
-
-Integration Requirements:
-
-* Rate limiting must be applied via the existing **filter or interceptor layer**.
-* The agent must not embed rate limiting logic directly inside controllers or services.
-* If integration requires modifying existing filters/interceptors, the agent must request user permission.
-
-Behavior:
-
-* When the rate limit is exceeded, the API must return:
-    * HTTP status **429 (Too Many Requests)**
-* The response must follow the project's standard response structure and message resolution via **MessageSource**.
-
-Testing:
-
-* Integration tests must validate:
-    * Correct behavior under normal request limits
-    * Proper response (HTTP 429) when limits are exceeded
-
-## 9. Test Class Reuse Rule
-
-When creating new features, the agent **must not create new test classes** unless explicitly requested by the user.
-
-Rules:
-
-* If the module/resource already has existing tests (e.g., `product`), the agent must **add new tests to the
-  corresponding existing test class**.
-* Tests must be added according to their type:
-
-    * **Integration tests** → existing integration test class of the module
-    * **Unit tests** → existing unit test class
-    * **E2E tests** → existing E2E test class
-* If a test class for a specific type **does not exist**, the agent is allowed to create it.
-* The agent must **avoid duplication of test structure** and keep tests centralized per module and type.
+Any modification to existing infrastructure (e.g., filters, interceptors, or rate limiting configuration) requires explicit user permission.
