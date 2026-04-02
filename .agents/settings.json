@@ -1,5 +1,8 @@
 {
   "experimental": {
     "enableAgents": true
+  },
+  "context": {
+    "fileName": ["AGENTS.md", "CONTEXT.md", "GEMINI.md"]
   }
 }

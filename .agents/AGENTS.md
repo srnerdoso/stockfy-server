@@ -52,8 +52,6 @@ New features must follow the modular architecture guidelines.
     - Define endpoints in `ApiPaths.java` following the project's naming conventions;
     - Use the `V1_1` suffix for versioning.
 
-- Use rate limiting;
-
 ## [LEGACY] Architecture
 
 - Layered Architecture
@@ -480,3 +478,48 @@ Rule:
 - (CRITICAL) NEVER use hardcoded values for environment variables, API keys, secrets, etc.
 - The agent must NOT downgrade the framework version.
 - The agent must NOT modify the `pom.xml` file unless explicitly requested by the user.
+
+## Agents & Skill Mapping
+
+Defines the strict mapping between agents and the skills they are allowed to use. Each agent must operate only within
+its designated responsibilities.
+
+- **backend-engineer**
+
+    - Feature development → `feature-builder`
+    - Code refactoring → `refactor-code`
+    - Bug fixing → `bug-fixer`
+
+- **reviewer**
+
+    - Code review → `code-review-process`
+
+- **security-auditor**
+
+    - Security auditing (read-only) → `security-audit-process`
+
+- **qa-engineer**
+
+    - Test creation → `test-builder`
+
+### Mandatory Rules for Any Workflow
+
+- Always create a new branch before starting any task
+
+    - Branch name must follow this pattern: `<current-date>-<short-description>`
+    - The description must be concise and directly reflect the task
+
+- Retrieve the current date using the Windows shell:
+
+    - `Get-Date`
+
+- Create and switch to the new branch using:
+
+    - `git checkout -b <branch-name>`
+
+### Rules
+
+- Agents must not use skills outside their assigned scope.
+- Skills define execution behavior; agents define responsibility.
+- Cross-responsibility actions are strictly prohibited.
+- Security audits are read-only and must never modify code.

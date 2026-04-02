@@ -26,6 +26,7 @@ This skill guides the agent exclusively in the creation of automated tests.
 
 - **Unit**: Test isolated logic.
 - **Integration**: Test interactions between components.
+- **E2E**: Test end-to-end flows.
 
 ### 4. Write the Tests
 

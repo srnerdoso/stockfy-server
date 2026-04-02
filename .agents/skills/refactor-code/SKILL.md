@@ -1,11 +1,11 @@
 ---
-name: refactoring-agent
+name: refactor-code
 description:
   Use this skill to refactor code safely and consistently. Supports both logic
   changes and readability improvements while preserving project integrity.
 ---
 
-# Refactoring Agent
+# Refactor Code
 
 This skill guides the agent in performing controlled and predictable code refactoring.
 
