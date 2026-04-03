@@ -18,14 +18,14 @@ Before writing any code, analyze the requirements to determine inputs, outputs, 
 Create integration and unit tests that serve as behavioral specifications before implementation.
 
 * **Flow:** Define positive, negative, and edge scenarios without modifying production code.
-* **Reference:** `/references/testing-guidelines.md` .
+* **Reference:** [testing-guidelines](./references/testing-guidelines.md).
 
 ### 3. Feature Implementation
 
 Develop the minimal code required to satisfy the tests, following the project's architecture.
 
 * **Flow:** Add new files as needed, respecting existing code integrity.
-* **Reference:** `/references/write-code-guidelines.md`.
+* **Reference:** [write-code-guidelines](./references/write-code-guidelines.md).
 
 ### 4. Test Execution and Validation
 
@@ -33,7 +33,8 @@ Run the test suite.
 
 * **If tests fail:** Trigger the bug-fixing workflow to identify the root cause and apply minimal corrections.
 
-    * **Reference:** `/references/bug-fixer.md`.
+    * **Reference:** [bug-fixer](./references/bug-fixer.md).
+
 * **If tests pass:** Proceed to the Security step.
 
 ### 5. Security Audit
@@ -42,7 +43,7 @@ Conduct a strict scan for vulnerabilities (injection, data exposure, auth flaws)
 
 * **Flow:** Identify risks without modifying code. If issues are found, return to the correction step and
   repeat tests.
-* **Reference:** `/references/security-audit-process.md`.
+* **Reference:** [security-audit-process](./references/security-audit-process.md).
 
 ### 6. Code Review
 
@@ -50,15 +51,16 @@ With functional and secure code, validate adherence to standards, naming convent
 
 * **Flow:** Identify convention deviations and suggest readability improvements.
 * If code does not pass review: Apply refactoring rules and improvement guidelines as defined in
-  `/references/refactoring-guidelines.md`.
-* **Reference:** `/references/code-review-process.md`, `/references/refactoring-guidelines.md`.
+  [refactoring-guidelines](./references/refactoring-guidelines.md).
+* **Reference:**
+  [code-review-process](./references/code-review-process.md), [refactoring-guidelines](./references/refactoring-guidelines.md).
 
 ### 7. Correction Cycle and Finalization (PR)
 
 * **If code is rejected in review:** Fix the highlighted points. **Important:** After each correction, you must
   re-run security checks (Step 5) and code review (Step 6).
 * **If accepted:** Generate a professional Pull Request description including context, changes, and risks.
-* **Reference:** `/references/code-review-process.md`.
+* **Reference:** [code-review-process](./references/code-review-process.md).
 
 ---
 
@@ -72,11 +74,11 @@ With functional and secure code, validate adherence to standards, naming convent
 
 ## Related Reference Files
 
-| Skill               | Location                                |
-|:--------------------|:----------------------------------------|
-| **Bug Fixer**       | `/references/bug-fixer.md`              |
-| **Code Review**     | `/references/code-review-process.md`    |
-| **Feature Builder** | `/references/write-code-guidelines.md`  |
-| **Refactor Code**   | `/references/refactoring-guidelines.md` |
-| **Security Audit**  | `/references/security-audit-process.md` |
-| **Test Builder**    | `/references/testing-guidelines.md`     |
+| Skill               | Location                                                         |
+|:--------------------|:-----------------------------------------------------------------|
+| **Bug Fixer**       | [bug-fixer](./references/bug-fixer.md)                           |
+| **Code Review**     | [code-review-process](./references/code-review-process.md)       |
+| **Feature Builder** | [write-code-guidelines](./references/write-code-guidelines.md)   |
+| **Refactor Code**   | [refactoring-guidelines](./references/refactoring-guidelines.md) |
+| **Security Audit**  | [security-audit-process](./references/security-audit-process.md) |
+| **Test Builder**    | [testing-guidelines](./references/testing-guidelines.md)         |
