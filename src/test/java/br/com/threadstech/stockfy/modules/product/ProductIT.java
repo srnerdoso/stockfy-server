@@ -239,19 +239,48 @@ public class ProductIT {
   class FindAllProducts {
 
     @AdminTest
-    void shouldFindAllProductsSucceedWithAdmin() throws Exception {
+    void shouldFindAllProductsSummarySucceedWithAdmin() throws Exception {
       saveProductEntity();
       saveProductEntity();
 
       mockMvc
-          .perform(get(ApiPaths.PRODUCT_V1_1))
+          .perform(get(ApiPaths.PRODUCT_V1_1).param("type", "SUMMARY"))
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.content").isArray())
           .andExpect(jsonPath("$.content.length()").value(2))
-          .andExpect(jsonPath("$.content[0].id").exists())
+          .andExpect(jsonPath("$.content[0].barcode").exists())
+          .andExpect(jsonPath("$.content[0].name").exists())
+          .andExpect(jsonPath("$.content[0].stockQuantity").exists())
+          .andExpect(jsonPath("$.content[0].stockStatus").exists())
+          .andExpect(jsonPath("$.content[0].price").exists())
+          .andExpect(jsonPath("$.content[0].id").doesNotExist())
+          .andExpect(jsonPath("$.totalElements").value(2));
+    }
+
+    @AdminTest
+    void shouldFindAllProductsSearchSucceedWithAdmin() throws Exception {
+      saveProductEntity();
+
+      mockMvc
+          .perform(get(ApiPaths.PRODUCT_V1_1).param("type", "SEARCH"))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.content[0].name").exists())
+          .andExpect(jsonPath("$.content[0].barcode").exists())
+          .andExpect(jsonPath("$.content[0].price").doesNotExist())
+          .andExpect(jsonPath("$.content[0].stockQuantity").doesNotExist());
+    }
+
+    @AdminTest
+    void shouldFindAllProductsSaleSucceedWithAdmin() throws Exception {
+      saveProductEntity();
+
+      mockMvc
+          .perform(get(ApiPaths.PRODUCT_V1_1).param("type", "SALE"))
+          .andExpect(status().isOk())
           .andExpect(jsonPath("$.content[0].name").exists())
           .andExpect(jsonPath("$.content[0].price").exists())
-          .andExpect(jsonPath("$.totalElements").value(2));
+          .andExpect(jsonPath("$.content[0].barcode").exists())
+          .andExpect(jsonPath("$.content[0].stockQuantity").doesNotExist());
     }
 
     @AdminTest
@@ -260,10 +289,45 @@ public class ProductIT {
       saveProductEntityWithName("Smartphone");
 
       mockMvc
-          .perform(get(ApiPaths.PRODUCT_V1_1).param("name", "notebook"))
+          .perform(get(ApiPaths.PRODUCT_V1_1).param("type", "SUMMARY").param("name", "notebook"))
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.content.length()").value(1))
           .andExpect(jsonPath("$.content[0].name").value(p1.getName()));
+    }
+
+    @AdminTest
+    void shouldReturnBadRequestWhenTypeIsMissing() throws Exception {
+      mockMvc.perform(get(ApiPaths.PRODUCT_V1_1)).andExpect(status().isBadRequest());
+    }
+
+    @AdminTest
+    void shouldReturnOutOfStockWhenQuantityIsZeroOrLess() throws Exception {
+      saveProductEntityWithStock(new BigDecimal("0.000"), new BigDecimal("10.000"));
+
+      mockMvc
+          .perform(get(ApiPaths.PRODUCT_V1_1).param("type", "SUMMARY"))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.content[0].stockStatus").value("OUT_OF_STOCK"));
+    }
+
+    @AdminTest
+    void shouldReturnLowStockWhenQuantityIsBetweenZeroAndMinimum() throws Exception {
+      saveProductEntityWithStock(new BigDecimal("5.000"), new BigDecimal("10.000"));
+
+      mockMvc
+          .perform(get(ApiPaths.PRODUCT_V1_1).param("type", "SUMMARY"))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.content[0].stockStatus").value("LOW_STOCK"));
+    }
+
+    @AdminTest
+    void shouldReturnInStockWhenQuantityIsAboveMinimum() throws Exception {
+      saveProductEntityWithStock(new BigDecimal("15.000"), new BigDecimal("10.000"));
+
+      mockMvc
+          .perform(get(ApiPaths.PRODUCT_V1_1).param("type", "SUMMARY"))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.content[0].stockStatus").value("IN_STOCK"));
     }
 
     @AdminTest
@@ -273,7 +337,8 @@ public class ProductIT {
       }
 
       mockMvc
-          .perform(get(ApiPaths.PRODUCT_V1_1).param("page", "0").param("size", "2"))
+          .perform(
+              get(ApiPaths.PRODUCT_V1_1).param("type", "SUMMARY").param("page", "0").param("size", "2"))
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.content.length()").value(2))
           .andExpect(jsonPath("$.totalElements").value(5))
@@ -283,19 +348,25 @@ public class ProductIT {
     @InventoryManagerTest
     void shouldFindAllProductsSucceedWithInventoryManager() throws Exception {
       saveProductEntity();
-      mockMvc.perform(get(ApiPaths.PRODUCT_V1_1)).andExpect(status().isOk());
+      mockMvc
+          .perform(get(ApiPaths.PRODUCT_V1_1).param("type", "SUMMARY"))
+          .andExpect(status().isOk());
     }
 
     @SalesAttendantTest
     void shouldFindAllProductsSucceedWithSalesAttendant() throws Exception {
       saveProductEntity();
-      mockMvc.perform(get(ApiPaths.PRODUCT_V1_1)).andExpect(status().isOk());
+      mockMvc
+          .perform(get(ApiPaths.PRODUCT_V1_1).param("type", "SUMMARY"))
+          .andExpect(status().isOk());
     }
 
     @ProductClerkTest
     void shouldFindAllProductsFailWithProductClerk() throws Exception {
       saveProductEntity();
-      mockMvc.perform(get(ApiPaths.PRODUCT_V1_1)).andExpect(status().isForbidden());
+      mockMvc
+          .perform(get(ApiPaths.PRODUCT_V1_1).param("type", "SUMMARY"))
+          .andExpect(status().isForbidden());
     }
 
     @Test
@@ -308,6 +379,7 @@ public class ProductIT {
   @Nested
   @DisplayName("Product Validation Tests")
   class ValidationTests {
+// ... rest of file (ValidationTests class content unchanged)
 
     @Test
     @AdminTest
@@ -458,6 +530,20 @@ public class ProductIT {
             .barcode(DataGenUtils.faker.number().digits(13))
             .stockQuantity(new BigDecimal("10.000"))
             .minimumStock(new BigDecimal("2.000"))
+            .price(new BigDecimal("100.00"))
+            .cost(new BigDecimal("50.00"))
+            .discount(new BigDecimal("5.00"))
+            .unitType(UnitType.UNIT)
+            .build());
+  }
+
+  private ProductV1_1 saveProductEntityWithStock(BigDecimal quantity, BigDecimal minimumStock) {
+    return productRepository.save(
+        ProductV1_1.builder()
+            .name(DataGenUtils.faker.commerce().productName())
+            .barcode(DataGenUtils.faker.number().digits(13))
+            .stockQuantity(quantity)
+            .minimumStock(minimumStock)
             .price(new BigDecimal("100.00"))
             .cost(new BigDecimal("50.00"))
             .discount(new BigDecimal("5.00"))

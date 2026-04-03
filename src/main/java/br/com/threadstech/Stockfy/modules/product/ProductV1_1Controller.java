@@ -3,8 +3,9 @@ package br.com.threadstech.stockfy.modules.product;
 import br.com.threadstech.stockfy.api.ApiPaths;
 import br.com.threadstech.stockfy.modules.product.dto.ProductCreateDto;
 import br.com.threadstech.stockfy.modules.product.dto.ProductDetailsDto;
-import br.com.threadstech.stockfy.modules.product.dto.ProductSummaryDto;
+import br.com.threadstech.stockfy.modules.product.dto.ProductResponseV1_1;
 import br.com.threadstech.stockfy.modules.product.dto.mapper.ProductV1_1Mapper;
+import br.com.threadstech.stockfy.modules.product.enums.ProductResponseType;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -26,16 +27,19 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class ProductV1_1Controller implements ProductV1_1ControllerDoc {
 
+  // FIXME: Métodos find devem permitir acesso de PRODUCT_CLERK também
+
   private final ProductV1_1Service productService;
   private final ProductV1_1Mapper productMapper;
 
-  // TODO: Implementar tipos de retorno com discrimination
   @Override
   @GetMapping
   @PreAuthorize("hasAnyRole('ADMIN', 'INVENTORY_MANAGER', 'SALES_ATTENDANT')")
-  public ResponseEntity<Page<ProductSummaryDto>> findAll(
-      @RequestParam(required = false) String name, @PageableDefault Pageable pageable) {
-    return ResponseEntity.ok(productService.findProducts(name, pageable));
+  public ResponseEntity<Page<? extends ProductResponseV1_1>> findAll(
+      @RequestParam(required = false) String name,
+      @RequestParam ProductResponseType type,
+      @PageableDefault Pageable pageable) {
+    return ResponseEntity.ok(productService.findProducts(name, type, pageable));
   }
 
   @Override

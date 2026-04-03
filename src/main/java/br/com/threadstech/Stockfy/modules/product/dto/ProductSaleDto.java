@@ -1,6 +1,5 @@
 package br.com.threadstech.stockfy.modules.product.dto;
 
-import br.com.threadstech.stockfy.modules.product.enums.StockStatus;
 import java.math.BigDecimal;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -13,10 +12,8 @@ import lombok.Setter;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ProductSummaryDto implements ProductResponseV1_1 {
-  private String barcode;
+public class ProductSaleDto implements ProductResponseV1_1 {
   private String name;
-  private BigDecimal stockQuantity;
-  private StockStatus stockStatus;
   private BigDecimal price;
+  private String barcode;
 }
