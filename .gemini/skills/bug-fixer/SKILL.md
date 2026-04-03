@@ -24,6 +24,7 @@ This skill guides the agent in fixing bugs using a strict, reproducible workflow
 - If the bug cannot be reproduced:
     - STOP
     - Request more information
+- Create tests to verify the issue
 
 ---
 
@@ -43,7 +44,7 @@ This skill guides the agent in fixing bugs using a strict, reproducible workflow
     - stack traces
     - code inspection
 
-> Fixing only symptoms leads to recurring bugs :contentReference[oaicite:0]{index=0}
+> Fixing only symptoms leads to recurring bugs
 
 ---
 
@@ -84,6 +85,9 @@ This skill guides the agent in fixing bugs using a strict, reproducible workflow
     - scope is minimal
     - no unrelated changes were introduced
     - The entire global scope of testing must pass successfully
+
+> Important: Most tests in the modules package within the test scope will fail, and this is expected. So if these
+> specific tests fail when running all tests, do not attempt to fix them.
 
 ---
 
