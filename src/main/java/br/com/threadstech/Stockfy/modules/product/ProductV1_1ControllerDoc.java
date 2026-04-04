@@ -47,7 +47,10 @@ public interface ProductV1_1ControllerDoc {
             description = "Lista de produtos paginada encontrada com sucesso.",
             content =
                 @Content(
-                    array = @ArraySchema(schema = @Schema(implementation = ProductResponseV1_1.class)))),
+                    array =
+                        @ArraySchema(
+                            schema = @Schema(implementation = ProductResponseV1_1.class)))),
+        @ApiResponse(responseCode = "400", ref = SwaggerRefUtils.BAD_REQUEST_RES),
         @ApiResponse(responseCode = "401", ref = SwaggerRefUtils.UNAUTHORIZED_RES),
         @ApiResponse(responseCode = "403", ref = SwaggerRefUtils.FORBIDDEN_RES),
       })
