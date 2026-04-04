@@ -7,11 +7,7 @@ import br.com.threadstech.stockfy.exception.InvalidPasswordException;
 import br.com.threadstech.stockfy.exception.ProductUniqueViolationException;
 import br.com.threadstech.stockfy.exception.UnavailableFromRefundException;
 import jakarta.servlet.http.HttpServletRequest;
-
-import java.util.Arrays;
 import java.util.Locale;
-import java.util.stream.Collectors;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.MessageSource;
