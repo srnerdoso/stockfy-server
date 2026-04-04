@@ -223,7 +223,8 @@ public class ProductIT {
           .perform(get(ApiPaths.PRODUCT_V1_1 + "/" + nonExistentBarcode + "/barcode"))
           .andExpect(status().isNotFound())
           .andExpect(
-              jsonPath("$.message").value(org.hamcrest.Matchers.containsString(nonExistentBarcode)));
+              jsonPath("$.message")
+                  .value(org.hamcrest.Matchers.containsString(nonExistentBarcode)));
     }
 
     @Test
@@ -338,7 +339,10 @@ public class ProductIT {
 
       mockMvc
           .perform(
-              get(ApiPaths.PRODUCT_V1_1).param("type", "SUMMARY").param("page", "0").param("size", "2"))
+              get(ApiPaths.PRODUCT_V1_1)
+                  .param("type", "SUMMARY")
+                  .param("page", "0")
+                  .param("size", "2"))
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.content.length()").value(2))
           .andExpect(jsonPath("$.totalElements").value(5))
@@ -369,6 +373,18 @@ public class ProductIT {
           .andExpect(status().isForbidden());
     }
 
+    @AdminTest
+    void shouldFindAllProductsFailWithInvalidTypeReturnBadRequest() throws Exception {
+      saveProductEntity();
+      mockMvc
+          .perform(get(ApiPaths.PRODUCT_V1_1).param("type", "INVALID_TYPE"))
+          .andExpect(status().isBadRequest())
+          .andExpect(
+              jsonPath("$.message")
+                  .value(
+                      "O valor fornecido para o parâmetro type é inválido. Tipo(s) esperado(s): [SUMMARY, SEARCH, SALE]."));
+    }
+
     @Test
     void shouldFindAllProductsFailWhenUnauthenticated() throws Exception {
       mockMvc.perform(get(ApiPaths.PRODUCT_V1_1)).andExpect(status().isUnauthorized());
@@ -379,7 +395,7 @@ public class ProductIT {
   @Nested
   @DisplayName("Product Validation Tests")
   class ValidationTests {
-// ... rest of file (ValidationTests class content unchanged)
+    // ... rest of file (ValidationTests class content unchanged)
 
     @Test
     @AdminTest
