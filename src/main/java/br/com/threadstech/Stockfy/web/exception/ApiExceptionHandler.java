@@ -18,6 +18,7 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 // TODO: Separar os handlers em classes diferentes e criar métodos base para construir cada método
 //       sem repetição de código
@@ -97,5 +98,16 @@ public class ApiExceptionHandler {
         messageSource.getMessage("exception.employeeUniqueViolationException", params, locale);
     return ResponseEntity.status(HttpStatus.CONFLICT)
         .body(new ErrorMessage(request, HttpStatus.CONFLICT, message));
+  }
+
+  @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+  public ResponseEntity<ErrorMessage> methodArgumentTypeMismatchException(
+      MethodArgumentTypeMismatchException ex, HttpServletRequest request) {
+    String expectedType = ApiExceptionHandlerUtils.getExpectedTypeForMethodArgumentTypeMismatch(ex);
+    Object[] params = new Object[] {ex.getName(), expectedType};
+    String message =
+        messageSource.getMessage("exception.methodArgumentTypeMismatchException", params, locale);
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+        .body(new ErrorMessage(request, HttpStatus.BAD_REQUEST, message));
   }
 }

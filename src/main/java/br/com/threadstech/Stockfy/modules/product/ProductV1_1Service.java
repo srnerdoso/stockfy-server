@@ -2,9 +2,12 @@ package br.com.threadstech.stockfy.modules.product;
 
 import br.com.threadstech.stockfy.components.ConstraintResolver;
 import br.com.threadstech.stockfy.exception.EntityNotFoundException;
-import br.com.threadstech.stockfy.modules.product.dto.ProductSummaryDto;
+import br.com.threadstech.stockfy.modules.product.dto.ProductResponseV1_1;
 import br.com.threadstech.stockfy.modules.product.dto.mapper.ProductV1_1Mapper;
+import br.com.threadstech.stockfy.modules.product.enums.ProductResponseType;
 import br.com.threadstech.stockfy.modules.product.exception.ProductUniqueViolationException;
+import java.util.EnumMap;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -15,23 +18,45 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class ProductV1_1Service {
 
   private final ProductV1_1Repository productRepository;
   private final ProductV1_1Mapper productMapper;
   private final ConstraintResolver constraintResolver;
+  private final Map<ProductResponseType, ProductResponseTypeStrategy> strategies;
+
+  public ProductV1_1Service(
+      ProductV1_1Repository productRepository,
+      ProductV1_1Mapper productMapper,
+      ConstraintResolver constraintResolver) {
+    this.productRepository = productRepository;
+    this.productMapper = productMapper;
+    this.constraintResolver = constraintResolver;
+    this.strategies = new EnumMap<>(ProductResponseType.class);
+    this.initializeStrategies();
+  }
+
+  private void initializeStrategies() {
+    strategies.put(ProductResponseType.SUMMARY, productMapper::toProductSummaryDtoPage);
+    strategies.put(ProductResponseType.SEARCH, productMapper::toProductSearchDtoPage);
+    strategies.put(ProductResponseType.SALE, productMapper::toProductSaleDtoPage);
+  }
 
   @Transactional(readOnly = true)
-  public Page<ProductSummaryDto> findProducts(String name, Pageable pageable) {
-    log.info("Finding products with name: {} and pagination: {}", name, pageable);
-    Page<ProductV1_1> productPage;
+  public Page<? extends ProductResponseV1_1> findProducts(
+      String name, ProductResponseType type, Pageable pageable) {
+    log.info("Finding products with name: {}, type: {} and pagination: {}", name, type, pageable);
+
+    Page<ProductV1_1> productPage = fetchProducts(name, pageable);
+
+    return strategies.get(type).map(productPage);
+  }
+
+  private Page<ProductV1_1> fetchProducts(String name, Pageable pageable) {
     if (name != null && !name.isBlank()) {
-      productPage = productRepository.findByNameContainingIgnoreCase(name, pageable);
-    } else {
-      productPage = productRepository.findAll(pageable);
+      return productRepository.findByNameContainingIgnoreCase(name, pageable);
     }
-    return productMapper.toProductSummaryDtoPage(productPage);
+    return productRepository.findAll(pageable);
   }
 
   @Transactional
@@ -58,5 +83,10 @@ public class ProductV1_1Service {
     if (constraint != null) {
       throw new ProductUniqueViolationException(constraint);
     }
+  }
+
+  @FunctionalInterface
+  private interface ProductResponseTypeStrategy {
+    Page<? extends ProductResponseV1_1> map(Page<ProductV1_1> productPage);
   }
 }
