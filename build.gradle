@@ -28,7 +28,6 @@ dependencies {
 	implementation 'org.flywaydb:flyway-core'
 	implementation 'org.flywaydb:flyway-database-postgresql'
 	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.16'
-	implementation 'com.puppycrawl.tools:checkstyle:13.4.0'
 	implementation 'com.bucket4j:bucket4j_jdk17-core:8.18.0'
 	implementation 'org.mapstruct:mapstruct:1.6.3'
 	compileOnly 'org.projectlombok:lombok'
@@ -51,4 +50,8 @@ dependencies {
 
 tasks.named('test') {
 	useJUnitPlatform()
+}
+
+checkstyle {
+	toolVersion = '13.4.0'
 }
