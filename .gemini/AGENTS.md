@@ -512,6 +512,7 @@ src/
 - Ignoring test or build failures
 - Using in-memory databases for integration tests
 - Returning sensitive data (e.g., passwords)
+- Logging sensitive data
 - Executing undocumented git commands
 - Modifying `.gitignore` without authorization
 - Creating branches outside the defined pattern
