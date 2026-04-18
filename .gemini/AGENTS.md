@@ -8,6 +8,7 @@ exposure.
 
 - Do not explain basic concepts unless the user explicitly requests it.
 - Always respond in a concise, technical, and direct tone.
+- Write the code only in English. Comments and documentation in Portuguese.
 
 ## Stack
 
@@ -48,7 +49,7 @@ Architectural structure includes:
 - Internal communication via interfaces and ports (Ports & Adapters)
 - Controlled inbound flow: API → Application → Domain → Persistence
 
-**Objective**:  
+**Objective**:
 Prevent unintended coupling, centralize business rules in the domain, and reduce inconsistent design decisions
 throughout development.
 
@@ -229,58 +230,58 @@ src/
 
 ## Commands
 
-- Run application (dev):  
+- Run application (dev):
   ./gradlew bootRun
 
-- Run application with specific profile:  
+- Run application with specific profile:
   ./gradlew bootRun --args='--spring.profiles.active=dev'
 
-- Build project:  
+- Build project:
   ./gradlew clean build
 
-- Build without tests:  
+- Build without tests:
   ./gradlew clean build -x test
 
-- Run tests:  
+- Run tests:
   ./gradlew test
 
-- Run a specific test:  
+- Run a specific test:
   ./gradlew test --tests TestClassName
 
-- Run more than one specific test:  
+- Run more than one specific test:
   ./gradlew test --tests TestClassName --tests TestClassName2
 
-- Run tests by method:  
+- Run tests by method:
   ./gradlew test --tests TestClassName.methodName
 
-- Start infrastructure (Docker):  
+- Start infrastructure (Docker):
   docker compose up -d
 
-- Stop infrastructure:  
+- Stop infrastructure:
   docker compose down
 
-- View Docker logs:  
+- View Docker logs:
   docker compose logs -f
 
-- Run migrations (Flyway via app):  
+- Run migrations (Flyway via app):
   automatic when starting the application
 
-- Generate OpenAPI documentation:  
+- Generate OpenAPI documentation:
   ./gradlew generateOpenApiDocs
 
-- Validate style (Checkstyle):  
+- Validate style (Checkstyle):
   ./gradlew checkstyleMain checkstyleTest
 
-- Generate package (JAR):  
+- Generate package (JAR):
   ./gradlew bootJar
 
-- Run JAR:  
+- Run JAR:
   java -jar build/libs/*.jar
 
-- Clean build:  
+- Clean build:
   ./gradlew clean
 
-- Create and switch branch:  
+- Create and switch branch:
   git checkout -b branch-name
 
 ## Testing
@@ -315,11 +316,11 @@ src/
 - Priority:
     - Tests define the expected behavior (source of truth).
 
-- Naming Pattern:  
+- Naming Pattern:
   `ClassNameTest`  
   `method_whenCondition_thenExpectedResult`
 
-- Structure:  
+- Structure:
   `src/test/java/...` mirrors `src/main/java/...` structure.
 
 - Mocks:
