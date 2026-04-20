@@ -380,14 +380,6 @@ src/
     - Validate Checkstyle
     - Start application locally if necessary
 
-- Integration (Pull Request):
-    - PR must target the origin branch (memorized base branch)
-    - Never assume `main` as default
-    - Example:
-        - Current branch: `dev-nerdoso`
-        - New branch: `17042026-products`
-        - PR → `dev-nerdoso`
-
 - Review:
     - Code must respect architecture (DDD + Hexagonal)
     - No business rules outside the domain
