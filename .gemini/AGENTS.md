@@ -392,7 +392,7 @@ src/
 - Centralize business rules in the domain (entities, VOs, domain services)
 - Enforce invariants inside entities
 - Model aggregates with clear boundaries and transactional consistency
-- Use Use Cases exclusively for flow orchestration
+- Use `Use Cases` exclusively for flow orchestration
 - Communicate between modules only via interfaces (ports)
 - Completely isolate domain from infrastructure
 - Use Ports & Adapters for any external dependency
@@ -407,7 +407,7 @@ src/
 - Name classes, methods, and variables explicitly and unambiguously
 - Follow defined naming conventions (UseCase, Event, Request/Response, etc.)
 - Maintain low coupling between modules and high cohesion within modules
-- Prefer composition over inheritance
+- Prefer composition to inheritance
 - Use MapStruct for mapping between layers
 - Use Lombok to reduce boilerplate
 - Apply `@Transactional` only at method level
@@ -431,7 +431,7 @@ src/
 - Always follow project naming conventions
 - Always start implementation from the domain layer
 - Always ensure business rules remain in the domain
-- Always use Use Cases only for orchestration
+- Always use `Use Cases` only for orchestration
 - Always access external dependencies via interfaces (ports)
 - Always maintain module isolation
 - Always validate inputs in the Application layer
