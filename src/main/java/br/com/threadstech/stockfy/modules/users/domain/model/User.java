@@ -1,7 +1,11 @@
 package br.com.threadstech.stockfy.modules.users.domain.model;
 
-import lombok.*;
 import java.util.UUID;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Getter
 @Setter
@@ -9,34 +13,32 @@ import java.util.UUID;
 @AllArgsConstructor
 @NoArgsConstructor
 public class User {
-    private UUID id;
-    private String name;
-    private Email email;
-    private Password password;
-    private UserRole role;
-    
-    @Builder.Default
-    private UserStatus status = UserStatus.ACTIVE;
-    
-    @Builder.Default
-    private boolean active = true;
+  private UUID id;
+  private String name;
+  private Email email;
+  private Password password;
+  private UserRole role;
 
-    private String resetPasswordCodeHash;
-    private java.time.LocalDateTime resetPasswordExpiresAt;
+  @Builder.Default private UserStatus status = UserStatus.ACTIVE;
 
-    public void lock() {
-        this.status = UserStatus.LOCKED;
-    }
+  @Builder.Default private boolean active = true;
 
-    public void unlock() {
-        this.status = UserStatus.ACTIVE;
-    }
+  private String resetPasswordCodeHash;
+  private java.time.LocalDateTime resetPasswordExpiresAt;
 
-    public void deactivate() {
-        this.active = false;
-    }
+  public void lock() {
+    this.status = UserStatus.LOCKED;
+  }
 
-    public void activate() {
-        this.active = true;
-    }
+  public void unlock() {
+    this.status = UserStatus.ACTIVE;
+  }
+
+  public void deactivate() {
+    this.active = false;
+  }
+
+  public void activate() {
+    this.active = true;
+  }
 }

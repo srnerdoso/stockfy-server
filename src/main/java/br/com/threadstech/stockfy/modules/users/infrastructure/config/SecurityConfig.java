@@ -20,28 +20,37 @@ import org.springframework.security.web.SecurityFilterChain;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final RateLimitFilter rateLimitFilter;
-    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+  private final RateLimitFilter rateLimitFilter;
+  private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http
-            .csrf(AbstractHttpConfigurer::disable)
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .addFilterBefore(rateLimitFilter, org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class)
-            .addFilterAfter(jwtAuthenticationFilter, RateLimitFilter.class)
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/auth/sessions/**").permitAll()
-                .requestMatchers(org.springframework.http.HttpMethod.PATCH, "/api/v1/users/password").permitAll()
-                .requestMatchers("/api/v1/**").authenticated()
-                .anyRequest().permitAll()
-            );
-        
-        return http.build();
-    }
+  @Bean
+  public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    http.csrf(AbstractHttpConfigurer::disable)
+        .sessionManagement(
+            session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+        .addFilterBefore(
+            rateLimitFilter,
+            org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
+                .class)
+        .addFilterAfter(jwtAuthenticationFilter, RateLimitFilter.class)
+        .authorizeHttpRequests(
+            auth ->
+                auth.requestMatchers(
+                        org.springframework.http.HttpMethod.POST, "/api/v1/auth/sessions/**")
+                    .permitAll()
+                    .requestMatchers(
+                        org.springframework.http.HttpMethod.PATCH, "/api/v1/users/password")
+                    .permitAll()
+                    .requestMatchers("/api/v1/**")
+                    .authenticated()
+                    .anyRequest()
+                    .permitAll());
 
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
+    return http.build();
+  }
+
+  @Bean
+  public PasswordEncoder passwordEncoder() {
+    return new BCryptPasswordEncoder();
+  }
 }
