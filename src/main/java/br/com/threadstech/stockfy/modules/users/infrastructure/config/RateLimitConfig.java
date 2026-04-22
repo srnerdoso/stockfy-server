@@ -2,7 +2,6 @@ package br.com.threadstech.stockfy.modules.users.infrastructure.config;
 
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
-import io.github.bucket4j.Refill;
 import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -19,7 +18,11 @@ public class RateLimitConfig {
         key,
         k ->
             Bucket.builder()
-                .addLimit(Bandwidth.classic(15, Refill.greedy(15, Duration.ofMinutes(1))))
+                .addLimit(
+                    Bandwidth.builder()
+                        .capacity(15)
+                        .refillGreedy(15, Duration.ofMinutes(1))
+                        .build())
                 .build());
   }
 
@@ -28,7 +31,11 @@ public class RateLimitConfig {
         key,
         k ->
             Bucket.builder()
-                .addLimit(Bandwidth.classic(10, Refill.greedy(10, Duration.ofMinutes(1))))
+                .addLimit(
+                    Bandwidth.builder()
+                        .capacity(10)
+                        .refillGreedy(10, Duration.ofMinutes(1))
+                        .build())
                 .build());
   }
 }

@@ -82,6 +82,7 @@ class AuthenticationTest {
     when(userRepository.findByEmail(any())).thenReturn(Optional.of(user));
     when(passwordEncoder.matches(any(), any())).thenReturn(false);
 
+    @SuppressWarnings("unchecked")
     ValueOperations<String, String> valueOperations = mock(ValueOperations.class);
     when(redisTemplate.opsForValue()).thenReturn(valueOperations);
 
