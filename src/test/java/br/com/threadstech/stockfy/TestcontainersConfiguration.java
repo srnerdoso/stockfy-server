@@ -9,23 +9,23 @@ import org.testcontainers.containers.RabbitMQContainer;
 import org.testcontainers.utility.DockerImageName;
 
 @TestConfiguration(proxyBeanMethods = false)
-class TestcontainersConfiguration {
+public class TestcontainersConfiguration {
 
 	@Bean
 	@ServiceConnection
-	PostgreSQLContainer<?> postgresContainer() {
+	public PostgreSQLContainer<?> postgresContainer() {
 		return new PostgreSQLContainer<>(DockerImageName.parse("postgres:latest"));
 	}
 
 	@Bean
 	@ServiceConnection
-	RabbitMQContainer rabbitContainer() {
+	public RabbitMQContainer rabbitContainer() {
 		return new RabbitMQContainer(DockerImageName.parse("rabbitmq:latest"));
 	}
 
 	@Bean
 	@ServiceConnection(name = "redis")
-	GenericContainer<?> redisContainer() {
+	public GenericContainer<?> redisContainer() {
 		return new GenericContainer<>(DockerImageName.parse("redis:latest")).withExposedPorts(6379);
 	}
 

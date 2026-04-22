@@ -1,0 +1,61 @@
+package br.com.threadstech.stockfy.modules.users.infrastructure.persistence;
+
+import br.com.threadstech.stockfy.TestcontainersConfiguration;
+import br.com.threadstech.stockfy.modules.users.domain.model.*;
+import br.com.threadstech.stockfy.modules.users.domain.repository.UserRepository;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.UUID;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+@SpringBootTest
+@Import(TestcontainersConfiguration.class)
+@Transactional
+class UserRepositoryIT {
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Test
+    @DisplayName("Should find users by name filter")
+    void shouldFindUsersByNameFilter() {
+        userRepository.save(createUser("Alice", "alice@example.com"));
+        userRepository.save(createUser("Bob", "bob@example.com"));
+
+        var results = userRepository.findAll("Ali");
+        assertEquals(1, results.size());
+        assertEquals("Alice", results.get(0).getName());
+    }
+
+    @Test
+    @DisplayName("Should update user status")
+    void shouldUpdateUserStatus() {
+        User user = createUser("Status Test", "status@example.com");
+        userRepository.save(user);
+
+        user.lock();
+        userRepository.update(user);
+
+        var updated = userRepository.findById(user.getId());
+        assertTrue(updated.isPresent());
+        assertEquals(UserStatus.LOCKED, updated.get().getStatus());
+    }
+
+    private User createUser(String name, String email) {
+        return User.builder()
+                .id(UUID.randomUUID())
+                .name(name)
+                .email(new Email(email))
+                .password(new Password("password123"))
+                .role(UserRole.USER)
+                .status(UserStatus.ACTIVE)
+                .active(true)
+                .build();
+    }
+}
