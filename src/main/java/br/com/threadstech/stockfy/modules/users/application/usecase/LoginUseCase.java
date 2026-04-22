@@ -20,6 +20,7 @@ public class LoginUseCase {
     private final JwtService jwtService;
     private final TokenService tokenService;
     private final org.springframework.data.redis.core.StringRedisTemplate redisTemplate;
+    private final br.com.threadstech.stockfy.modules.users.infrastructure.messaging.RabbitMQEventPublisher eventPublisher;
 
     private static final int MAX_FAILED_ATTEMPTS = 15;
     private static final String FAILED_ATTEMPTS_KEY = "login_attempts:";
@@ -53,7 +54,8 @@ public class LoginUseCase {
         if (attempts != null && attempts >= MAX_FAILED_ATTEMPTS) {
             user.lock();
             userRepository.update(user);
-            // Trigger Domain Event in Task 11
+            eventPublisher.publish(new br.com.threadstech.stockfy.modules.users.domain.event.AccountLockedEvent(
+                    user.getId(), user.getEmail().value(), "Max failed attempts exceeded"));
         }
     }
 
