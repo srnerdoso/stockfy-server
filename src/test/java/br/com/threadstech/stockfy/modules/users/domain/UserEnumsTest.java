@@ -1,13 +1,12 @@
 package br.com.threadstech.stockfy.modules.users.domain;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import br.com.threadstech.stockfy.modules.users.domain.model.UserRole;
 import br.com.threadstech.stockfy.modules.users.domain.model.UserStatus;
+import java.util.Arrays;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-
-import java.util.Arrays;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class UserEnumsTest {
 

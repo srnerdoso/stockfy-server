@@ -1,11 +1,19 @@
 package br.com.threadstech.stockfy.modules.users.presentation.controller;
 
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 import br.com.threadstech.stockfy.TestcontainersConfiguration;
 import br.com.threadstech.stockfy.modules.users.domain.model.Email;
 import br.com.threadstech.stockfy.modules.users.domain.model.User;
 import br.com.threadstech.stockfy.modules.users.domain.model.UserRole;
 import br.com.threadstech.stockfy.modules.users.domain.model.UserStatus;
 import br.com.threadstech.stockfy.modules.users.domain.repository.UserRepository;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,15 +25,6 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.web.servlet.MockMvc;
-
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-
-import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
 @AutoConfigureMockMvc

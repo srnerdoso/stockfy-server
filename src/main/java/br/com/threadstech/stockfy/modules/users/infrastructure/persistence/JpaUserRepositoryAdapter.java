@@ -3,12 +3,11 @@ package br.com.threadstech.stockfy.modules.users.infrastructure.persistence;
 import br.com.threadstech.stockfy.modules.users.domain.model.Email;
 import br.com.threadstech.stockfy.modules.users.domain.model.User;
 import br.com.threadstech.stockfy.modules.users.domain.repository.UserRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
-
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor

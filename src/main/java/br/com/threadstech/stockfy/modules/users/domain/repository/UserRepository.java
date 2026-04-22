@@ -2,7 +2,6 @@ package br.com.threadstech.stockfy.modules.users.domain.repository;
 
 import br.com.threadstech.stockfy.modules.users.domain.model.Email;
 import br.com.threadstech.stockfy.modules.users.domain.model.User;
-
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;

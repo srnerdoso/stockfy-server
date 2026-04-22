@@ -3,11 +3,10 @@ package br.com.threadstech.stockfy.modules.users.infrastructure.config;
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
 import io.github.bucket4j.Refill;
-import org.springframework.context.annotation.Configuration;
-
 import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class RateLimitConfig {

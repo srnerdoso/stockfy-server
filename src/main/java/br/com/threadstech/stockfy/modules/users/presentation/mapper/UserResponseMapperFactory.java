@@ -2,11 +2,10 @@ package br.com.threadstech.stockfy.modules.users.presentation.mapper;
 
 import br.com.threadstech.stockfy.modules.users.application.dto.UserResponse;
 import br.com.threadstech.stockfy.modules.users.domain.model.User;
+import java.util.UUID;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
-
-import java.util.UUID;
 
 @Component
 public class UserResponseMapperFactory {
