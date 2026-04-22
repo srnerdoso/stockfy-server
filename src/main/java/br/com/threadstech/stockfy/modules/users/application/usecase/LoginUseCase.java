@@ -19,20 +19,45 @@ public class LoginUseCase {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final TokenService tokenService;
+    private final org.springframework.data.redis.core.StringRedisTemplate redisTemplate;
+
+    private static final int MAX_FAILED_ATTEMPTS = 15;
+    private static final String FAILED_ATTEMPTS_KEY = "login_attempts:";
 
     public AuthResponse execute(String email, String password) {
         User user = userRepository.findByEmail(new Email(email))
-                .filter(u -> u.isActive() && u.getStatus() == UserStatus.ACTIVE)
-                .orElseThrow(() -> new IllegalArgumentException("Invalid credentials or account locked"));
+                .orElseThrow(() -> new IllegalArgumentException("Invalid credentials"));
+
+        if (!user.isActive() || user.getStatus() == UserStatus.LOCKED) {
+            throw new IllegalArgumentException("Account is locked or inactive");
+        }
 
         if (!passwordEncoder.matches(password, user.getPassword().value())) {
-            // Note: Rate limit check and lock logic will be in Task 10
+            handleFailedLogin(user);
             throw new IllegalArgumentException("Invalid credentials");
         }
 
+        resetFailedAttempts(email);
+        
         String accessToken = jwtService.generateToken(user.getId(), user.getRole().name());
         String refreshToken = tokenService.generateRefreshToken(user.getId());
 
         return new AuthResponse(accessToken, refreshToken);
+    }
+
+    private void handleFailedLogin(User user) {
+        String key = FAILED_ATTEMPTS_KEY + user.getEmail().value();
+        Long attempts = redisTemplate.opsForValue().increment(key);
+        redisTemplate.expire(key, java.time.Duration.ofMinutes(1));
+
+        if (attempts != null && attempts >= MAX_FAILED_ATTEMPTS) {
+            user.lock();
+            userRepository.update(user);
+            // Trigger Domain Event in Task 11
+        }
+    }
+
+    private void resetFailedAttempts(String email) {
+        redisTemplate.delete(FAILED_ATTEMPTS_KEY + email);
     }
 }
