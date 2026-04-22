@@ -4,10 +4,11 @@ import br.com.threadstech.stockfy.modules.users.domain.model.Email;
 import br.com.threadstech.stockfy.modules.users.domain.model.Password;
 import br.com.threadstech.stockfy.modules.users.domain.model.User;
 import br.com.threadstech.stockfy.modules.users.domain.repository.UserRepository;
-import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor

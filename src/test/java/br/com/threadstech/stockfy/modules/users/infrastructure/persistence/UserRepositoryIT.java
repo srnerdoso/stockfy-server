@@ -1,17 +1,23 @@
 package br.com.threadstech.stockfy.modules.users.infrastructure.persistence;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 import br.com.threadstech.stockfy.TestcontainersConfiguration;
-import br.com.threadstech.stockfy.modules.users.domain.model.*;
+import br.com.threadstech.stockfy.modules.users.domain.model.Email;
+import br.com.threadstech.stockfy.modules.users.domain.model.Password;
+import br.com.threadstech.stockfy.modules.users.domain.model.User;
+import br.com.threadstech.stockfy.modules.users.domain.model.UserRole;
+import br.com.threadstech.stockfy.modules.users.domain.model.UserStatus;
 import br.com.threadstech.stockfy.modules.users.domain.repository.UserRepository;
-import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.UUID;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)

@@ -5,9 +5,10 @@ import br.com.threadstech.stockfy.modules.users.domain.model.User;
 import br.com.threadstech.stockfy.modules.users.domain.repository.UserRepository;
 import br.com.threadstech.stockfy.modules.users.infrastructure.security.JwtService;
 import br.com.threadstech.stockfy.modules.users.infrastructure.security.TokenService;
-import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor

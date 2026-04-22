@@ -1,13 +1,11 @@
 package br.com.threadstech.stockfy.modules.users.application.usecase;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
-
-import br.com.threadstech.stockfy.modules.users.domain.model.*;
+import br.com.threadstech.stockfy.modules.users.domain.model.Email;
+import br.com.threadstech.stockfy.modules.users.domain.model.Password;
+import br.com.threadstech.stockfy.modules.users.domain.model.User;
+import br.com.threadstech.stockfy.modules.users.domain.model.UserRole;
+import br.com.threadstech.stockfy.modules.users.domain.model.UserStatus;
 import br.com.threadstech.stockfy.modules.users.domain.repository.UserRepository;
-import java.util.Optional;
-import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -16,6 +14,16 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
+
+import java.util.Optional;
+import java.util.UUID;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class UserManagementTest {

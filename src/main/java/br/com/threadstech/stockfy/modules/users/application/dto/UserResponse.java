@@ -2,9 +2,10 @@ package br.com.threadstech.stockfy.modules.users.application.dto;
 
 import br.com.threadstech.stockfy.modules.users.domain.model.UserRole;
 import br.com.threadstech.stockfy.modules.users.domain.model.UserStatus;
+import lombok.Builder;
+
 import java.time.LocalDateTime;
 import java.util.UUID;
-import lombok.Builder;
 
 @Builder
 public record UserResponse(

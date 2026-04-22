@@ -2,9 +2,10 @@ package br.com.threadstech.stockfy.modules.users.application.usecase;
 
 import br.com.threadstech.stockfy.modules.users.domain.model.User;
 import br.com.threadstech.stockfy.modules.users.domain.repository.UserRepository;
-import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor

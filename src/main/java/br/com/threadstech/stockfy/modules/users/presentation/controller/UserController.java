@@ -1,18 +1,31 @@
 package br.com.threadstech.stockfy.modules.users.presentation.controller;
 
 import br.com.threadstech.stockfy.modules.users.application.dto.UserResponse;
-import br.com.threadstech.stockfy.modules.users.application.usecase.*;
+import br.com.threadstech.stockfy.modules.users.application.usecase.DeleteUserUseCase;
+import br.com.threadstech.stockfy.modules.users.application.usecase.GenerateResetCodeUseCase;
+import br.com.threadstech.stockfy.modules.users.application.usecase.RegisterUserUseCase;
+import br.com.threadstech.stockfy.modules.users.application.usecase.ResetPasswordUseCase;
+import br.com.threadstech.stockfy.modules.users.application.usecase.UpdateProfileUseCase;
 import br.com.threadstech.stockfy.modules.users.domain.model.UserRole;
 import br.com.threadstech.stockfy.modules.users.domain.repository.UserRepository;
 import br.com.threadstech.stockfy.modules.users.presentation.mapper.UserResponseMapperFactory;
-import java.util.List;
-import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/users")
