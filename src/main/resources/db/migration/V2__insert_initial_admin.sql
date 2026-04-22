@@ -3,7 +3,7 @@ VALUES (
     '00000000-0000-0000-0000-000000000001',
     'Administrator',
     'admin@stockfy.com',
-    '$2a$10$8.UnVuG9HHgffUDAlk8q2OuVGkqEnLPzS4.N9LSpfWJp1I.YF./nu',
+    '$2a$10$tjf5Men0533uijkc8hk1cut4PNaoXn26gfE5TylOYlDxwj4sG5cku',
     'ADMIN',
     'ACTIVE',
     TRUE,
