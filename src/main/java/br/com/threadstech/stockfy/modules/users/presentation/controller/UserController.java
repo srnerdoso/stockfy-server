@@ -23,6 +23,8 @@ public class UserController {
     private final RegisterUserUseCase registerUserUseCase;
     private final UpdateProfileUseCase updateProfileUseCase;
     private final DeleteUserUseCase deleteUserUseCase;
+    private final GenerateResetCodeUseCase generateResetCodeUseCase;
+    private final ResetPasswordUseCase resetPasswordUseCase;
     private final UserRepository userRepository;
     private final UserResponseMapperFactory mapperFactory;
 
@@ -31,6 +33,19 @@ public class UserController {
     public ResponseEntity<Void> register(@RequestBody RegisterRequest request) {
         registerUserUseCase.execute(request.name(), request.email(), request.password(), request.role());
         return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
+
+    @PostMapping("/{id}/password-reset-codes")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ResetCodeResponse> generateResetCode(@PathVariable UUID id) {
+        String code = generateResetCodeUseCase.execute(id);
+        return ResponseEntity.status(HttpStatus.CREATED).body(new ResetCodeResponse(code));
+    }
+
+    @PatchMapping("/password")
+    public ResponseEntity<Void> resetPassword(@RequestBody ResetPasswordRequest request) {
+        resetPasswordUseCase.execute(request.email(), request.code(), request.newPassword());
+        return ResponseEntity.ok().build();
     }
 
     @GetMapping("/me")
@@ -75,4 +90,6 @@ public class UserController {
 
     public record RegisterRequest(String name, String email, String password, UserRole role) {}
     public record UpdateProfileRequest(String name, String email) {}
+    public record ResetCodeResponse(String code) {}
+    public record ResetPasswordRequest(String email, String code, String newPassword) {}
 }

@@ -21,6 +21,9 @@ public class User {
     @Builder.Default
     private boolean active = true;
 
+    private String resetPasswordCodeHash;
+    private java.time.LocalDateTime resetPasswordExpiresAt;
+
     public void lock() {
         this.status = UserStatus.LOCKED;
     }

@@ -16,6 +16,8 @@ public interface UserPersistenceMapper {
     @Mapping(target = "createdBy", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "updatedBy", ignore = true)
+    @Mapping(target = "resetPasswordCodeHash", ignore = true)
+    @Mapping(target = "resetPasswordExpiresAt", ignore = true)
     UserJpaEntity toEntity(User user);
 
     @Mapping(target = "password", source = "passwordHash", qualifiedByName = "toPassword")
