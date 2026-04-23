@@ -8,7 +8,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-public class RateLimitConfig {
+public class UserRateLimitConfig {
 
   private final Map<String, Bucket> loginBuckets = new ConcurrentHashMap<>();
   private final Map<String, Bucket> generalBuckets = new ConcurrentHashMap<>();

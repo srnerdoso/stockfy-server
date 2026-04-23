@@ -1,6 +1,6 @@
 package br.com.threadstech.stockfy.modules.users.infrastructure.security;
 
-import br.com.threadstech.stockfy.modules.users.infrastructure.config.RateLimitConfig;
+import br.com.threadstech.stockfy.modules.users.infrastructure.config.UserRateLimitConfig;
 import io.github.bucket4j.Bucket;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -16,7 +16,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 @RequiredArgsConstructor
 public class RateLimitFilter extends OncePerRequestFilter {
 
-  private final RateLimitConfig rateLimitConfig;
+  private final UserRateLimitConfig rateLimitConfig;
 
   @Override
   protected void doFilterInternal(

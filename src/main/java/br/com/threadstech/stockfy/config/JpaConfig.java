@@ -1,4 +1,4 @@
-package br.com.threadstech.stockfy.modules.users.infrastructure.config;
+package br.com.threadstech.stockfy.config;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;

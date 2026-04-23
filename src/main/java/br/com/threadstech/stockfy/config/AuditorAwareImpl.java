@@ -1,4 +1,4 @@
-package br.com.threadstech.stockfy.modules.users.infrastructure.config;
+package br.com.threadstech.stockfy.config;
 
 import java.util.Optional;
 import java.util.UUID;
