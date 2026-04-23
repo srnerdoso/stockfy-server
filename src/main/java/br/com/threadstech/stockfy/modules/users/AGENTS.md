@@ -1,28 +1,37 @@
-# Module: Users
+# Users Module - Context & Rules
 
-The `Users` module is the central authority for Identity and Access Management (IAM) in Stockfy. It handles authentication, authorization, auditing, and security-related rate limiting.
+## Core Responsibilities
+- Identity and Access Management (IAM): Authentication, Authorization, Auditing, Rate Limiting.
 
-## Key Technical Decisions
+## Technical Stack & Decisions
+- **Authentication:** JWT (HttpOnly Cookies), Redis for Refresh Tokens.
+- **Authorization:** RBAC (ADMIN, USER) with granular permissions.
+- **Auditing:** Hibernate Envers + AuditorAware.
+- **Rate Limiting:** Bucket4j (Login: 5-15 req/min; General API: 10 req/min).
+- **Data Integrity:** Soft delete (`active` field) mandatory for entities. Permanent deletion prohibited.
+- **Eventing:** Security alerts via RabbitMQ (EDA).
 
-- **Authentication**: JWT-based with tokens stored in **HttpOnly Cookies**. **Redis** is used to manage Refresh Tokens and session invalidation.
-- **Authorization**: **RBAC (Role-Based Access Control)** with roles (`ADMIN`, `USER`) and granular permissions.
-- **Auditing**: Full entity auditing using **Hibernate Envers** and `AuditorAware` for transparency.
-- **Rate Limiting**: **Bucket4j** implementation.
-  - Login/Auth: 5-15 req/min.
-  - General API: 10 req/min.
-- **Soft Delete**: Entities use an `active` boolean field; permanent deletion is prohibited for audit integrity.
-- **EDA**: Security alerts (e.g., multiple failed logins, unauthorized access attempts) are published via **RabbitMQ**.
+## Module Standards
+- **Security:**
+    - Passwords must **never** be returned in DTOs or used in logs.
+    - User IDs *may* be returned in DTOs only when explicitly requested by the user.
+- **Auditing:** All service-level mutations must be audited.
+- **Rate Limiting:** Validate rate limits in integration tests.
+- **Entity Design:** All entities must implement the `active` field for soft delete.
 
-## Architectural Standards
+## API Endpoints
 
-- **Hexagonal Architecture**: Strictly separate Domain, Application, and Infrastructure layers.
-- **DDD**: Centralize all security invariants within the Domain layer.
-- **TDD**: Write tests for all security rules and rate-limiting logic before implementation.
-- **Security**: Never expose sensitive data (passwords, internal IDs) in DTOs. Use MapStruct for safe mapping.
+### Authentication (`/api/v1/auth/sessions`)
+- `POST /`: Login user. Request: `LoginRequest`. Response: `AuthResponse` (Factory pattern used for DTOs). Sets HttpOnly cookies.
+- `POST /refresh`: Refresh JWT tokens. Request: `refreshToken` (cookie). Response: `AuthResponse` (Factory pattern used for DTOs). Sets HttpOnly cookies.
+- `DELETE /current`: Logout user. Request: `refreshToken` (cookie). Clears HttpOnly cookies.
 
-## Guidelines for AI Agents
-
-- Ensure every new entity in this module implements the `active` field for soft delete.
-- All service-level mutations must be audited.
-- Cross-module communication must happen via interfaces/events, never by direct repository access.
-- Validate rate limits in integration tests.
+### User Management (`/api/v1/users`)
+- `POST /`: Register a new user. Request: `RegisterRequest`. Response: `Void` (HTTP 201 Created). Requires ADMIN role.
+- `POST /{id}/password-reset-codes`: Generate password reset code for a user. Request: `id` (path). Response: `ResetCodeResponse` (code). Requires ADMIN role.
+- `PATCH /password`: Reset user password using code. Request: `ResetPasswordRequest`. Response: `Void`.
+- `GET /me`: Retrieve the current authenticated user's profile. Returns `UserResponse` (Factory pattern used for DTOs).
+- `GET /{id}`: Retrieve a specific user by ID. User ID is returned in DTO only if explicitly requested. Returns `UserResponse` (Factory pattern used for DTOs).
+- `GET /`: Find all users, optionally filtered by name. Returns `List<UserResponse>` (Factory pattern used for DTOs). Requires ADMIN role.
+- `PATCH /me`: Update the current authenticated user's profile. Request: `UpdateProfileRequest`. Response: `Void`.
+- `DELETE /{id}`: Soft delete a user by ID. Response: `Void`. Requires ADMIN role.
