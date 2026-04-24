@@ -68,9 +68,21 @@ modules/example-module/
 - **Dependency Direction:** Dependencies always point toward the domain.
 - **Events:** Use selectively for inter-module side effects. Avoid using for simple synchronous flows.
 - **Consistency:** Maintain aggregate transactional boundaries.
+- **Security**: Never return stack traces or passwords in response bodies
 
 ## Inter-Module Communication
 - **Isolation:** Exclusively via interfaces (ports).
 - **Forbidden:** Never direct access to entities, repositories, or services of another module.
 - **Integration:** Use Application Services as contracts or Domain Events for asynchronous state changes.
 - **Impact:** Always review cross-module impact before changes.
+
+## Caching
+- Do not cache domain entities or JPA entities.
+- Do not cache objects tied to persistence context (lazy-loaded, proxies).
+- Cache only data used for read operations.
+
+## Exception Handling
+- **Forbidden:** Usage of generic exceptions (e.g., IllegalArgumentException, RuntimeException, etc.) for business errors.
+- Always use **specific custom exceptions** that represent the business context.
+    - Example: `InvalidPasswordException` instead of `IllegalArgumentException`.
+- Custom exceptions must be **explicit and meaningful**, reflecting the exact failure.
