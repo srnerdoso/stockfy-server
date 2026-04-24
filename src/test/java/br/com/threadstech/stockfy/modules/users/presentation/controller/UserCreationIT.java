@@ -93,7 +93,7 @@ class UserCreationIT {
     String jsonNull = "{ \"email\": \"john@example.com\", \"password\": \"password123\", \"role\": \"USER\" }";
 
     var result = mockMvc.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(jsonNull));
-    assertBadRequestError(result, "name", "must not be blank");
+    assertBadRequestError(result, "name", "não deve estar em branco");
     assertFalse(userRepository.findByEmail(new Email("john@example.com")).isPresent());
   }
 
@@ -104,8 +104,8 @@ class UserCreationIT {
     String jsonNull = "{ \"name\": \"John\", \"password\": \"password123\", \"role\": \"USER\" }";
     String jsonInvalid = "{ \"name\": \"John\", \"email\": \"invalid-email\", \"password\": \"password123\", \"role\": \"USER\" }";
 
-    assertBadRequestError(mockMvc.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(jsonNull)), "email", "must not be blank");
-    assertBadRequestError(mockMvc.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(jsonInvalid)), "email", "must be a well-formed email address");
+    assertBadRequestError(mockMvc.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(jsonNull)), "email", "não deve estar em branco");
+    assertBadRequestError(mockMvc.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(jsonInvalid)), "email", "deve ser um endereço de e-mail bem formado");
     assertFalse(userRepository.findByEmail(new Email("john@example.com")).isPresent());
   }
 
@@ -116,8 +116,8 @@ class UserCreationIT {
     String jsonNull = "{ \"name\": \"John\", \"email\": \"john@example.com\", \"role\": \"USER\" }";
     String jsonBlank = "{ \"name\": \"John\", \"email\": \"john@example.com\", \"password\": \" \", \"role\": \"USER\" }";
 
-    assertBadRequestError(mockMvc.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(jsonNull)), "password", "must not be blank");
-    assertBadRequestError(mockMvc.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(jsonBlank)), "password", "must not be blank");
+    assertBadRequestError(mockMvc.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(jsonNull)), "password", "não deve estar em branco");
+    assertBadRequestError(mockMvc.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(jsonBlank)), "password", "não deve estar em branco");
     assertFalse(userRepository.findByEmail(new Email("john@example.com")).isPresent());
   }
 
@@ -128,13 +128,13 @@ class UserCreationIT {
     String jsonMissing = "{ \"name\": \"John\", \"email\": \"john@example.com\", \"password\": \"password123\" }";
     String jsonInvalid = "{ \"name\": \"John\", \"email\": \"john@example.com\", \"password\": \"password123\", \"role\": \"INVALID\" }";
 
-    assertBadRequestError(mockMvc.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(jsonMissing)), "role", "must not be null");
-    assertBadRequestError(mockMvc.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(jsonInvalid)), "role", "must not be null");
+    assertBadRequestError(mockMvc.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(jsonMissing)), "role", "não deve ser nulo");
+    assertBadRequestError(mockMvc.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(jsonInvalid)), "role", "não deve ser nulo");
     assertFalse(userRepository.findByEmail(new Email("john@example.com")).isPresent());
   }
 
   @Test
-  @DisplayName("Deve retornar 422 quando as senhas não coincidem")
+  @DisplayName("Não deve persistir usuário e deve retornar 422 quando as senhas não coincidem")
   @WithMockUser(roles = "ADMIN")
   void registerUser_whenPasswordsDoNotMatch_thenReturns422() throws Exception {
     String json = """
@@ -147,8 +147,17 @@ class UserCreationIT {
             }
             """;
 
-    mockMvc.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(json))
-        .andExpect(status().isUnprocessableEntity());
+    var result = mockMvc.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(json));
+
+    result.andExpect(status().isUnprocessableEntity())
+          .andExpect(jsonPath("$.type").value("about:blank"))
+          .andExpect(jsonPath("$.title").value("Unprocessable Entity"))
+          .andExpect(jsonPath("$.status").value(422))
+          .andExpect(jsonPath("$.detail").value("As senhas não coincidem."))
+          .andExpect(jsonPath("$.fieldErrors[0].field").value("confirmPassword"))
+          .andExpect(jsonPath("$.fieldErrors[0].message").value("passwords.mismatch"));
+
+    assertFalse(userRepository.findByEmail(new Email("test@example.com")).isPresent());
   }
 
   @Test
