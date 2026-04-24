@@ -68,7 +68,7 @@ class UserCreationIT {
   }
 
   @Test
-  @DisplayName("Deve retornar 403 quando o usuário autenticado for um USER")
+  @DisplayName("Não deve persistir usuário e deve retornar 403 quando o usuário autenticado for um USER")
   @WithMockUser(roles = "USER")
   void registerUser_whenUserRole_thenReturns403() throws Exception {
     String json = """
@@ -82,6 +82,8 @@ class UserCreationIT {
 
     mockMvc.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(json))
         .andExpect(status().isForbidden());
+    
+    assertFalse(userRepository.findByEmail(new Email("user@example.com")).isPresent());
   }
 
   @Test
