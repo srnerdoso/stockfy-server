@@ -5,19 +5,21 @@ Each module must follow the standard layered structure:
 ```txt
 modules/example-module/
 ├── application/
-│   ├── usecase/    # Flow orchestration
-│   ├── dto/        # Request/Response records
-│   └── port/       # Interfaces for external dependencies
+│   ├── usecase/                # Flow orchestration
+│   ├── dto/                    # Request/Response records
+│   └── port/                   # Interfaces for external dependencies
+│   └── exception/              # Custom exceptions
 ├── domain/
-│   ├── model/      # Aggregates, Entities, Value Objects
-│   ├── service/    # Domain Services
-│   └── event/      # Domain Events
+│   ├── model/                  # Aggregates, Entities, Value Objects
+│   ├── service/                # Domain Services
+│   └── event/                  # Domain Events
 ├── infrastructure/
-│   ├── persistence/ # JPA entities, Repository impl
-│   ├── messaging/   # RabbitMQ/Kafka publishers/consumers
-│   └── config/      # Module-specific config
+│   ├── persistence/            # JPA entities, Repository impl
+│   ├── messaging/              # RabbitMQ/Kafka publishers/consumers
+│   └── config/                 # Module-specific config
 └── presentation/
-    └── controller/  # REST controllers (thin)
+    └── controller/             # REST controllers (thin)
+    └── ExampleExceptionHandler # Exception handler
 ```
 
 ## Backend Structure
