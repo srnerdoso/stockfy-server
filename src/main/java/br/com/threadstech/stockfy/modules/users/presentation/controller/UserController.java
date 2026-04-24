@@ -1,5 +1,6 @@
 package br.com.threadstech.stockfy.modules.users.presentation.controller;
 
+import br.com.threadstech.stockfy.modules.users.application.dto.RegisterUserRequest;
 import br.com.threadstech.stockfy.modules.users.application.dto.UserResponse;
 import br.com.threadstech.stockfy.modules.users.application.usecase.DeleteUserUseCase;
 import br.com.threadstech.stockfy.modules.users.application.usecase.GenerateResetCodeUseCase;
@@ -11,6 +12,10 @@ import br.com.threadstech.stockfy.modules.users.domain.repository.UserRepository
 import br.com.threadstech.stockfy.modules.users.presentation.mapper.UserResponseMapperFactory;
 import java.util.List;
 import java.util.UUID;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -41,9 +46,8 @@ public class UserController {
 
   @PostMapping
   @PreAuthorize("hasRole('ADMIN')")
-  public ResponseEntity<Void> register(@RequestBody RegisterRequest request) {
-    registerUserUseCase.execute(
-        request.name(), request.email(), request.password(), request.role());
+  public ResponseEntity<Void> register(@RequestBody @Valid RegisterUserRequest request) {
+    registerUserUseCase.execute(request);
     return ResponseEntity.status(HttpStatus.CREATED).build();
   }
 
@@ -101,8 +105,6 @@ public class UserController {
     deleteUserUseCase.execute(id);
     return ResponseEntity.noContent().build();
   }
-
-  public record RegisterRequest(String name, String email, String password, UserRole role) {}
 
   public record UpdateProfileRequest(String name, String email) {}
 

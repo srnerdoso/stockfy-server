@@ -7,6 +7,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import br.com.threadstech.stockfy.modules.users.application.dto.RegisterUserRequest;
 import br.com.threadstech.stockfy.modules.users.domain.model.Email;
 import br.com.threadstech.stockfy.modules.users.domain.model.Password;
 import br.com.threadstech.stockfy.modules.users.domain.model.User;
@@ -57,7 +58,8 @@ class UserManagementTest {
     when(userRepository.findByEmail(any())).thenReturn(Optional.empty());
     when(passwordEncoder.encode(any())).thenReturn("hashed_password");
 
-    registerUserUseCase.execute("New User", "new@example.com", "password123", UserRole.USER);
+    var request = new RegisterUserRequest("New User", "new@example.com", "password123", null, UserRole.USER);
+    registerUserUseCase.execute(request);
 
     verify(userRepository).save(any(User.class));
   }
@@ -67,9 +69,10 @@ class UserManagementTest {
   void shouldThrowExceptionIfEmailExists() {
     when(userRepository.findByEmail(any())).thenReturn(Optional.of(user));
 
+    var request = new RegisterUserRequest("John", "john@example.com", "pass", null, UserRole.USER);
     assertThrows(
         IllegalArgumentException.class,
-        () -> registerUserUseCase.execute("John", "john@example.com", "pass", UserRole.USER));
+        () -> registerUserUseCase.execute(request));
   }
 
   @Test
