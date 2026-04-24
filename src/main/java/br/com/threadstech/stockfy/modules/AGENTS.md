@@ -68,6 +68,7 @@ modules/example-module/
 - **Dependency Direction:** Dependencies always point toward the domain.
 - **Events:** Use selectively for inter-module side effects. Avoid using for simple synchronous flows.
 - **Consistency:** Maintain aggregate transactional boundaries.
+- **Security**: **Security**: Never return stack traces or passwords in response bodies
 
 ## Inter-Module Communication
 - **Isolation:** Exclusively via interfaces (ports).
