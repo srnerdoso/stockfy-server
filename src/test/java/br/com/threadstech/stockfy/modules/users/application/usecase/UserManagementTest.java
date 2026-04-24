@@ -7,6 +7,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import br.com.threadstech.stockfy.modules.users.application.exception.EmailAlreadyExistsException;
 import br.com.threadstech.stockfy.modules.users.application.dto.RegisterUserRequest;
 import br.com.threadstech.stockfy.modules.users.domain.model.Email;
 import br.com.threadstech.stockfy.modules.users.domain.model.Password;
@@ -71,7 +72,7 @@ class UserManagementTest {
 
     var request = new RegisterUserRequest("John", "john@example.com", "pass", null, UserRole.USER);
     assertThrows(
-        IllegalArgumentException.class,
+        EmailAlreadyExistsException.class,
         () -> registerUserUseCase.execute(request));
   }
 

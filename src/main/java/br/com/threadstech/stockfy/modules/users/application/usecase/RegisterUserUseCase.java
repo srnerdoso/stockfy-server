@@ -1,6 +1,7 @@
 package br.com.threadstech.stockfy.modules.users.application.usecase;
 
 import br.com.threadstech.stockfy.modules.users.application.dto.RegisterUserRequest;
+import br.com.threadstech.stockfy.modules.users.application.exception.EmailAlreadyExistsException;
 import br.com.threadstech.stockfy.modules.users.application.exception.PasswordMismatchException;
 import br.com.threadstech.stockfy.modules.users.domain.model.Email;
 import br.com.threadstech.stockfy.modules.users.domain.model.Password;
@@ -23,17 +24,16 @@ public class RegisterUserUseCase {
       throw new PasswordMismatchException();
     }
     Email userEmail = new Email(request.email());
-    // FIXME: Verificação feita de forma incorreta. Utilizar tratamento com trycatch para capturar a exception e lançar a exception correta
     if (userRepository.findByEmail(userEmail).isPresent()) {
-      throw new IllegalArgumentException("Email already exists");
+      throw new EmailAlreadyExistsException();
     }
 
     User user =
         User.builder()
-            .id(UUID.randomUUID()) // FIXME: ID deve ser gerado automaticamente
+            .id(UUID.randomUUID())
             .name(request.name())
             .email(userEmail)
-            .password(new Password(passwordEncoder.encode(request.password()))) // FIXME: Não existe a necessidade de um modelo de dominio
+            .password(new Password(passwordEncoder.encode(request.password())))
             .role(request.role())
             .build();
 
