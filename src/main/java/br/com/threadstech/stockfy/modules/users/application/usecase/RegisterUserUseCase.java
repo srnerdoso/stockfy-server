@@ -20,7 +20,8 @@ public class RegisterUserUseCase {
   private final PasswordEncoder passwordEncoder;
 
   public void execute(RegisterUserRequest request) {
-    if (request.confirmPassword() != null && !request.password().equals(request.confirmPassword())) {
+    if (request.confirmPassword() != null
+        && !request.password().equals(request.confirmPassword())) {
       throw new PasswordMismatchException();
     }
     Email userEmail = new Email(request.email());

@@ -7,15 +7,11 @@ import br.com.threadstech.stockfy.modules.users.application.usecase.GenerateRese
 import br.com.threadstech.stockfy.modules.users.application.usecase.RegisterUserUseCase;
 import br.com.threadstech.stockfy.modules.users.application.usecase.ResetPasswordUseCase;
 import br.com.threadstech.stockfy.modules.users.application.usecase.UpdateProfileUseCase;
-import br.com.threadstech.stockfy.modules.users.domain.model.UserRole;
 import br.com.threadstech.stockfy.modules.users.domain.repository.UserRepository;
 import br.com.threadstech.stockfy.modules.users.presentation.mapper.UserResponseMapperFactory;
+import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

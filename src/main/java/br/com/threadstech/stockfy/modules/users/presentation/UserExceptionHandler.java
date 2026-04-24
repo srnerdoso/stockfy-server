@@ -2,8 +2,8 @@ package br.com.threadstech.stockfy.modules.users.presentation;
 
 import br.com.threadstech.stockfy.modules.users.application.exception.EmailAlreadyExistsException;
 import br.com.threadstech.stockfy.modules.users.application.exception.PasswordMismatchException;
-import br.com.threadstech.stockfy.web.application.exception.InvalidPasswordException;
 import br.com.threadstech.stockfy.web.application.dto.ApiErrorResponse;
+import br.com.threadstech.stockfy.web.application.exception.InvalidPasswordException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
@@ -43,12 +43,7 @@ public class UserExceptionHandler {
 
     ApiErrorResponse response =
         new ApiErrorResponse(
-            "about:blank",
-            "Conflict",
-            HttpStatus.CONFLICT.value(),
-            detail,
-            null,
-            null);
+            "about:blank", "Conflict", HttpStatus.CONFLICT.value(), detail, null, null);
     return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
   }
 
