@@ -65,3 +65,17 @@ src/
 - **Development:** Write tests first → minimal implementation → refactor.
 - **Pre-finalization:** Run all tests → validate Checkstyle.
 - **Review:** Architecture (DDD + Hexagonal) check; No cross-module coupling.
+
+### Agent Work Log (Mandatory)
+- Every agent must create and maintain a documentation file during task execution.
+- File location: `/docs/tasks/<TASK>.md`
+- This file must contain:
+    - What was attempted.
+    - Why it was attempted.
+    - Result (success or failure).
+    - Observations and possible improvements.
+- All actions must be recorded continuously during execution.
+- Objective:
+    - Build a knowledge base of what works and what does not.
+    - Improve future decision-making.
+    - Provide traceability for analysis and optimization of agent behavior.
