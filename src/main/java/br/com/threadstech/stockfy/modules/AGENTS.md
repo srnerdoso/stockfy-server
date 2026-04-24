@@ -74,3 +74,8 @@ modules/example-module/
 - **Forbidden:** Never direct access to entities, repositories, or services of another module.
 - **Integration:** Use Application Services as contracts or Domain Events for asynchronous state changes.
 - **Impact:** Always review cross-module impact before changes.
+
+## Caching
+- Do not cache domain entities or JPA entities.
+- Do not cache objects tied to persistence context (lazy-loaded, proxies).
+- Cache only data used for read operations.
