@@ -86,23 +86,73 @@ class UserCreationIT {
   }
 
   @Test
-  @DisplayName("Deve retornar 400 quando o nome for inválido")
+  @DisplayName("Deve retornar 400 quando o nome for nulo ou vazio")
   @WithMockUser(roles = "ADMIN")
   void registerUser_whenNameIsInvalid_thenReturns400() throws Exception {
-    String json =
-        """
-            {
-                "name": "",
-                "email": "invalid@example.com",
-                "password": "password123",
-                "role": "USER"
-            }
-            """;
+    String jsonNull = """
+        { "email": "john@example.com", "password": "password123", "role": "USER" }
+        """;
+    String jsonBlank = """
+        { "name": " ", "email": "john@example.com", "password": "password123", "role": "USER" }
+        """;
 
-    mockMvc
-        .perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(json))
+    mockMvc.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(jsonNull))
+        .andExpect(status().isBadRequest());
+    mockMvc.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(jsonBlank))
         .andExpect(status().isBadRequest());
   }
+
+  @Test
+  @DisplayName("Deve retornar 400 quando o email for nulo ou inválido")
+  @WithMockUser(roles = "ADMIN")
+  void registerUser_whenEmailIsInvalid_thenReturns400() throws Exception {
+    String jsonNull = """
+        { "name": "John", "password": "password123", "role": "USER" }
+        """;
+    String jsonInvalid = """
+        { "name": "John", "email": "invalid-email", "password": "password123", "role": "USER" }
+        """;
+
+    mockMvc.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(jsonNull))
+        .andExpect(status().isBadRequest());
+    mockMvc.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(jsonInvalid))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  @DisplayName("Deve retornar 400 quando a senha for nula ou em branco")
+  @WithMockUser(roles = "ADMIN")
+  void registerUser_whenPasswordIsInvalid_thenReturns400() throws Exception {
+    String jsonNull = """
+        { "name": "John", "email": "john@example.com", "role": "USER" }
+        """;
+    String jsonBlank = """
+        { "name": "John", "email": "john@example.com", "password": " ", "role": "USER" }
+        """;
+
+    mockMvc.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(jsonNull))
+        .andExpect(status().isBadRequest());
+    mockMvc.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(jsonBlank))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  @DisplayName("Deve retornar 400 quando a role for nula ou inválida")
+  @WithMockUser(roles = "ADMIN")
+  void registerUser_whenRoleIsMissingOrInvalid_thenReturns400() throws Exception {
+    String jsonMissing = """
+        { "name": "John", "email": "john@example.com", "password": "password123" }
+        """;
+    String jsonInvalid = """
+        { "name": "John", "email": "john@example.com", "password": "password123", "role": "INVALID" }
+        """;
+
+    mockMvc.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(jsonMissing))
+        .andExpect(status().isBadRequest());
+    mockMvc.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(jsonInvalid))
+        .andExpect(status().isBadRequest());
+  }
+
 
   @Test
   @DisplayName("Deve retornar 422 quando as senhas não coincidem")
