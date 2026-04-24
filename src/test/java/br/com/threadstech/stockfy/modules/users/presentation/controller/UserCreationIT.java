@@ -3,6 +3,7 @@ package br.com.threadstech.stockfy.modules.users.presentation.controller;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -42,7 +43,8 @@ class UserCreationIT {
             """;
 
     mockMvc.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(json))
-        .andExpect(status().isCreated());
+        .andExpect(status().isCreated())
+        .andExpect(content().string(""));
 
     assertTrue(userRepository.findByEmail(new Email("john@example.com")).isPresent());
   }
