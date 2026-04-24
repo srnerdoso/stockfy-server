@@ -66,6 +66,16 @@ src/
 - **Pre-finalization:** Run all tests → validate Checkstyle.
 - **Review:** Architecture (DDD + Hexagonal) check; No cross-module coupling.
 
+## Agent Context Documentation
+To ensure consistency across the project, additional `AGENTS.md` context files are maintained within specific directories:
+
+- `src/main/java/br/com/threadstech/stockfy/modules/AGENTS.md`: Module-level architectural constraints.
+- `src/main/java/br/com/threadstech/stockfy/modules/users/AGENTS.md`: Specific context for the User management bounded context.
+- `src/main/resources/AGENTS.md`: Global resource-related constraints.
+- `src/test/AGENTS.md`: Testing-specific guidelines and conventions.
+
+Always verify the local `AGENTS.md` before performing tasks within these modules.
+
 ### Agent Work Log (Mandatory)
 - Every agent must create and maintain a documentation file during task execution.
 - File location: `/docs/tasks/<TASK>.md`
