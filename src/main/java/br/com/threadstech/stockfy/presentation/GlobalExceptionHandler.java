@@ -1,6 +1,6 @@
-package br.com.threadstech.stockfy.modules.users.presentation.exception;
+package br.com.threadstech.stockfy.presentation;
 
-import br.com.threadstech.stockfy.shared.exception.ApiErrorResponse;
+import br.com.threadstech.stockfy.application.dto.ApiErrorResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;

@@ -1,4 +1,4 @@
-package br.com.threadstech.stockfy.shared.exception;
+package br.com.threadstech.stockfy.application.dto;
 
 import java.util.List;
 import lombok.Getter;
