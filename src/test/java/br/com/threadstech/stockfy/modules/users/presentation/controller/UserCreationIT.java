@@ -50,7 +50,7 @@ class UserCreationIT {
   }
 
   @Test
-  @DisplayName("Deve retornar 401 quando não houver token de autenticação")
+  @DisplayName("Não deve persistir usuário e deve retornar 401 quando não houver token de autenticação")
   void registerUser_whenNotAuthenticated_thenReturns401() throws Exception {
     String json = """
             {
@@ -63,6 +63,8 @@ class UserCreationIT {
 
     mockMvc.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(json))
         .andExpect(status().isUnauthorized());
+    
+    assertFalse(userRepository.findByEmail(new Email("unauth@example.com")).isPresent());
   }
 
   @Test
