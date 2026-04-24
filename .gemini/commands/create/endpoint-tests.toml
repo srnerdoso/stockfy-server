@@ -1,0 +1,42 @@
+description = "Plan and generate integration tests for specific endpoints, ignoring business logic implementation details"
+
+prompt = """
+Plan and generate integration tests for the endpoint described below:
+
+Base URI: /api/v1
+{{args}}
+
+## Rule (MANDATORY)
+- Assume all specified endpoints exist. DO NOT search for, validate, or depend on their actual implementation. Build tests strictly from the provided specification, regardless of real endpoint existence or correctness.
+
+## Test Structure
+Tests MUST be divided into two categories:
+1. Basic Tests
+2. Security Tests
+
+## Basic Tests (required)
+Cover standard and error scenarios:
+- Validate successful responses (2xx)
+- Validate error responses (4xx, 5xx)
+- Validate response body structure and data
+- Validate data persistence (when applicable)
+
+## Security Tests (required)
+Cover the following cases:
+- Unauthenticated access (no token)
+- Unauthorized access (all roles without permission)
+- Authorized access (all roles with permission)
+- Rate limiting behavior
+- SQL Injection attempts
+- Ensure response does NOT expose sensitive data (e.g., passwords)
+- Ensure response does NOT include stack traces
+
+## Global Requirements
+- ALL tests must validate:
+  - HTTP status code
+  - Response body
+  - Data persistence (when applicable)
+- Do NOT test business logic rules already implemented
+- Generate COMPLETE test coverage for all cases listed above
+- Do NOT skip any required scenario
+"""
