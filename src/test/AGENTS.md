@@ -22,6 +22,7 @@
 - Tests must be independent and deterministic.
 - Do not share state between tests.
 - Test names must describe the expected behavior.
+- Do not use generic or sequential display names (e.g., "Step 1", "Step 2"); @DisplayName must clearly describe the test behavior in pt-BR.
 - Tests are immutable by default:
     - Do not modify existing tests.
     - New behaviors require new tests.

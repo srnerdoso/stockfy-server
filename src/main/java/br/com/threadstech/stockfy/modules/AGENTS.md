@@ -79,3 +79,9 @@ modules/example-module/
 - Do not cache domain entities or JPA entities.
 - Do not cache objects tied to persistence context (lazy-loaded, proxies).
 - Cache only data used for read operations.
+
+## Exception Handling
+- **Forbidden:** Usage of generic exceptions (e.g., IllegalArgumentException, RuntimeException, etc.) for business errors.
+- Always use **specific custom exceptions** that represent the business context.
+    - Example: `InvalidPasswordException` instead of `IllegalArgumentException`.
+- Custom exceptions must be **explicit and meaningful**, reflecting the exact failure.
