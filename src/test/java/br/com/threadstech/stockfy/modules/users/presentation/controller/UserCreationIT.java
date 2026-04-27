@@ -163,7 +163,16 @@ class UserCreationIT {
     var result =
         mockMvc.perform(
             post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(jsonNull));
-    assertBadRequestError(result, "name", "não deve estar em branco");
+    assertBadRequestError(result, "name", "O nome é obrigatório.");
+
+    String jsonInvalid =
+        "{ \"name\": \"User'); DROP TABLE users; --\", \"email\": \"john@example.com\", \"password\": \"password123\", \"role\": \"USER\" }";
+
+    assertBadRequestError(
+        mockMvc.perform(
+            post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(jsonInvalid)),
+        "name",
+        "O nome contém caracteres inválidos.");
     assertFalse(userRepository.findByEmail(new Email("john@example.com")).isPresent());
   }
 
@@ -179,12 +188,12 @@ class UserCreationIT {
         mockMvc.perform(
             post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(jsonNull)),
         "email",
-        "não deve estar em branco");
+        "O e-mail é obrigatório.");
     assertBadRequestError(
         mockMvc.perform(
             post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(jsonInvalid)),
         "email",
-        "deve ser um endereço de e-mail bem formado");
+        "O e-mail informado é inválido.");
     assertFalse(userRepository.findByEmail(new Email("john@example.com")).isPresent());
   }
 
@@ -200,12 +209,12 @@ class UserCreationIT {
         mockMvc.perform(
             post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(jsonNull)),
         "password",
-        "não deve estar em branco");
+        "A senha é obrigatória.");
     assertBadRequestError(
         mockMvc.perform(
             post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(jsonBlank)),
         "password",
-        "não deve estar em branco");
+        "A senha é obrigatória.");
     assertFalse(userRepository.findByEmail(new Email("john@example.com")).isPresent());
   }
 
@@ -222,7 +231,7 @@ class UserCreationIT {
         mockMvc.perform(
             post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(jsonMissing)),
         "role",
-        "não deve ser nulo");
+        "O perfil do usuário é obrigatório.");
     assertBadRequestError(
         mockMvc.perform(
             post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(jsonInvalid)),

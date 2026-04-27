@@ -7,8 +7,11 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 
 public record RegisterUserRequest(
-    @NotBlank @Pattern(regexp = "^[\\p{L}\\p{M}0-9 .'-]+$") String name,
-    @NotBlank @Email String email,
-    @NotBlank String password,
+    @NotBlank(message = "{user.name.not-blank}")
+        @Pattern(regexp = "^[\\p{L}\\p{M}0-9 .'-]+$", message = "{user.name.pattern}")
+        String name,
+    @NotBlank(message = "{user.email.not-blank}") @Email(message = "{user.email.email}")
+        String email,
+    @NotBlank(message = "{user.password.not-blank}") String password,
     String confirmPassword,
-    @NotNull UserRole role) {}
+    @NotNull(message = "{user.role.not-null}") UserRole role) {}
