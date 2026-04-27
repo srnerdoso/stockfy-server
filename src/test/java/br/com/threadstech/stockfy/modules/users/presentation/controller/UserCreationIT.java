@@ -86,7 +86,9 @@ class UserCreationIT {
 
     mockMvc
         .perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(json))
-        .andExpect(status().isUnauthorized());
+        .andExpect(status().isUnauthorized())
+        .andExpect(content().string(""))
+        .andExpect(result -> assertFalse(result.getResponse().isCommitted()));
 
     assertFalse(userRepository.findByEmail(new Email("unauth@example.com")).isPresent());
   }
@@ -108,7 +110,9 @@ class UserCreationIT {
 
     mockMvc
         .perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(json))
-        .andExpect(status().isForbidden());
+        .andExpect(status().isForbidden())
+        .andExpect(content().string(""))
+        .andExpect(result -> assertFalse(result.getResponse().isCommitted()));
 
     assertFalse(userRepository.findByEmail(new Email("user@example.com")).isPresent());
   }

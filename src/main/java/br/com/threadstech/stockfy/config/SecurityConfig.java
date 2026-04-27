@@ -5,6 +5,7 @@ import br.com.threadstech.stockfy.modules.users.infrastructure.security.RateLimi
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -13,6 +14,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
 @EnableWebSecurity
@@ -22,6 +24,8 @@ public class SecurityConfig {
 
   private final RateLimitFilter rateLimitFilter;
   private final JwtAuthenticationFilter jwtAuthenticationFilter;
+  private final UnauthorizedAuthenticationEntryPoint unauthorizedAuthenticationEntryPoint;
+  private final ForbiddenAccessDeniedResponder forbiddenAccessDeniedResponder;
 
   @Bean
   public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -33,26 +37,16 @@ public class SecurityConfig {
         .exceptionHandling(
             exception ->
                 exception
-                    .authenticationEntryPoint(
-                        (request, response, authException) ->
-                            response.sendError(
-                                org.springframework.http.HttpStatus.UNAUTHORIZED.value()))
-                    .accessDeniedHandler(
-                        (request, response, accessDeniedException) ->
-                            response.sendError(
-                                org.springframework.http.HttpStatus.FORBIDDEN.value())))
-        .addFilterBefore(
-            rateLimitFilter,
-            org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
-                .class)
+                    .authenticationEntryPoint(unauthorizedAuthenticationEntryPoint)
+                    .accessDeniedHandler(forbiddenAccessDeniedResponder))
+        .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)
         .addFilterAfter(jwtAuthenticationFilter, RateLimitFilter.class)
         .authorizeHttpRequests(
             auth ->
                 auth.requestMatchers(
-                        org.springframework.http.HttpMethod.POST, "/api/v1/auth/sessions/**")
+                        HttpMethod.POST, "/api/v1/auth/sessions/**")
                     .permitAll()
-                    .requestMatchers(
-                        org.springframework.http.HttpMethod.PATCH, "/api/v1/users/password")
+                    .requestMatchers(HttpMethod.PATCH, "/api/v1/users/password")
                     .permitAll()
                     .requestMatchers("/api/v1/**")
                     .authenticated()
