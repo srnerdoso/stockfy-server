@@ -43,7 +43,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (userId != null && SecurityContextHolder.getContext().getAuthentication() == null) {
           UsernamePasswordAuthenticationToken authToken =
               new UsernamePasswordAuthenticationToken(
-                  UUID.fromString(userId), null, List.of(new SimpleGrantedAuthority(role)));
+                  UUID.fromString(userId),
+                  null,
+                  List.of(new SimpleGrantedAuthority(toAuthority(role))));
           SecurityContextHolder.getContext().setAuthentication(authToken);
         }
       } catch (Exception e) {
@@ -52,5 +54,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     filterChain.doFilter(request, response);
+  }
+
+  private String toAuthority(String role) {
+    if (role.startsWith("ROLE_")) {
+      return role;
+    }
+
+    return "ROLE_" + role;
   }
 }

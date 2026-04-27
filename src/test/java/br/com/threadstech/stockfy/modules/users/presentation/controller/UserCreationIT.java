@@ -9,8 +9,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import br.com.threadstech.stockfy.TestcontainersConfiguration;
 import br.com.threadstech.stockfy.modules.users.domain.model.Email;
+import br.com.threadstech.stockfy.modules.users.domain.model.Password;
+import br.com.threadstech.stockfy.modules.users.domain.model.User;
+import br.com.threadstech.stockfy.modules.users.domain.model.UserRole;
+import br.com.threadstech.stockfy.modules.users.domain.model.UserStatus;
 import br.com.threadstech.stockfy.modules.users.domain.repository.UserRepository;
 import br.com.threadstech.stockfy.modules.users.infrastructure.config.UserRateLimitConfig;
+import br.com.threadstech.stockfy.modules.users.infrastructure.security.JwtService;
+import jakarta.servlet.http.Cookie;
+import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -32,6 +39,7 @@ class UserCreationIT {
   @Autowired private MockMvc mockMvc;
   @Autowired private UserRepository userRepository;
   @Autowired private UserRateLimitConfig rateLimitConfig;
+  @Autowired private JwtService jwtService;
 
   @AfterEach
   void tearDown() {
@@ -68,6 +76,34 @@ class UserCreationIT {
         .andExpect(content().string(""));
 
     assertTrue(userRepository.findByEmail(new Email("created@example.com")).isPresent());
+  }
+
+  @Test
+  @DisplayName("Deve retornar 201 e criar usuário quando token JWT pertencer a ADMIN")
+  void registerUser_whenJwtTokenBelongsToAdmin_thenReturns201AndCreatesUser() throws Exception {
+    User admin = createUser("Jwt Admin", "jwt-admin@example.com", UserRole.ADMIN);
+    userRepository.save(admin);
+    String accessToken = jwtService.generateToken(admin.getId(), admin.getRole().name());
+    String json =
+        """
+            {
+                "name": "Jwt Created",
+                "email": "jwt-created@example.com",
+                "password": "password123",
+                "role": "USER"
+            }
+            """;
+
+    mockMvc
+        .perform(
+            post("/api/v1/users")
+                .cookie(new Cookie("access_token", accessToken))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json))
+        .andExpect(status().isCreated())
+        .andExpect(content().string(""));
+
+    assertTrue(userRepository.findByEmail(new Email("jwt-created@example.com")).isPresent());
   }
 
   @Test
@@ -313,5 +349,17 @@ class UserCreationIT {
         .andExpect(jsonPath("$.detail").value("Erro de validação nos campos informados."))
         .andExpect(jsonPath("$.fieldErrors[0].field").value(field))
         .andExpect(jsonPath("$.fieldErrors[0].message").value(message));
+  }
+
+  private User createUser(String name, String email, UserRole role) {
+    return User.builder()
+        .id(UUID.randomUUID())
+        .name(name)
+        .email(new Email(email))
+        .password(new Password("password123"))
+        .role(role)
+        .status(UserStatus.ACTIVE)
+        .active(true)
+        .build();
   }
 }
