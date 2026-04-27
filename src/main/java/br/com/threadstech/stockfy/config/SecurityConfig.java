@@ -30,6 +30,17 @@ public class SecurityConfig {
         .formLogin(AbstractHttpConfigurer::disable)
         .sessionManagement(
             session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+        .exceptionHandling(
+            exception ->
+                exception
+                    .authenticationEntryPoint(
+                        (request, response, authException) ->
+                            response.sendError(
+                                org.springframework.http.HttpStatus.UNAUTHORIZED.value()))
+                    .accessDeniedHandler(
+                        (request, response, accessDeniedException) ->
+                            response.sendError(
+                                org.springframework.http.HttpStatus.FORBIDDEN.value())))
         .addFilterBefore(
             rateLimitFilter,
             org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter

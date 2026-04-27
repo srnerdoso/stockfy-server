@@ -10,6 +10,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import br.com.threadstech.stockfy.TestcontainersConfiguration;
 import br.com.threadstech.stockfy.modules.users.domain.model.Email;
 import br.com.threadstech.stockfy.modules.users.domain.repository.UserRepository;
+import br.com.threadstech.stockfy.modules.users.infrastructure.config.UserRateLimitConfig;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +20,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 
@@ -28,6 +31,22 @@ class UserCreationIT {
 
   @Autowired private MockMvc mockMvc;
   @Autowired private UserRepository userRepository;
+  @Autowired private UserRateLimitConfig rateLimitConfig;
+
+  @AfterEach
+  void tearDown() {
+    try {
+      var loginBucketsField = UserRateLimitConfig.class.getDeclaredField("loginBuckets");
+      loginBucketsField.setAccessible(true);
+      ((java.util.Map<?, ?>) loginBucketsField.get(rateLimitConfig)).clear();
+
+      var generalBucketsField = UserRateLimitConfig.class.getDeclaredField("generalBuckets");
+      generalBucketsField.setAccessible(true);
+      ((java.util.Map<?, ?>) generalBucketsField.get(rateLimitConfig)).clear();
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
 
   @Test
   @DisplayName("Deve retornar 201 e criar usuário quando os dados forem válidos")
@@ -37,7 +56,7 @@ class UserCreationIT {
         """
             {
                 "name": "John Doe",
-                "email": "john@example.com",
+                "email": "created@example.com",
                 "password": "password123",
                 "role": "ADMIN"
             }
@@ -48,7 +67,7 @@ class UserCreationIT {
         .andExpect(status().isCreated())
         .andExpect(content().string(""));
 
-    assertTrue(userRepository.findByEmail(new Email("john@example.com")).isPresent());
+    assertTrue(userRepository.findByEmail(new Email("created@example.com")).isPresent());
   }
 
   @Test
@@ -198,7 +217,7 @@ class UserCreationIT {
         .andExpect(jsonPath("$.status").value(422))
         .andExpect(jsonPath("$.detail").value("As senhas não coincidem."))
         .andExpect(jsonPath("$.fieldErrors[0].field").value("confirmPassword"))
-        .andExpect(jsonPath("$.fieldErrors[0].message").value("passwords.mismatch"));
+        .andExpect(jsonPath("$.fieldErrors[0].message").value("As senhas não coincidem."));
 
     assertFalse(userRepository.findByEmail(new Email("test@example.com")).isPresent());
   }

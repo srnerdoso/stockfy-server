@@ -2,7 +2,6 @@ package br.com.threadstech.stockfy.web.application.dto;
 
 import java.util.List;
 import lombok.Getter;
-import org.springframework.validation.FieldError;
 
 @Getter
 public class ApiErrorResponse {
@@ -11,7 +10,7 @@ public class ApiErrorResponse {
   private final int status;
   private final String detail;
   private final String instance;
-  private final List<ErrorDetail> fieldErrors;
+  private final List<FieldError> fieldErrors;
 
   public ApiErrorResponse(String type, String title, int status, String detail, String instance) {
     this(type, title, status, detail, instance, null);
@@ -29,13 +28,8 @@ public class ApiErrorResponse {
     this.status = status;
     this.detail = detail;
     this.instance = instance;
-    this.fieldErrors =
-        fieldErrors != null
-            ? fieldErrors.stream()
-                .map(e -> new ErrorDetail(e.getField(), e.getDefaultMessage()))
-                .toList()
-            : null;
+    this.fieldErrors = fieldErrors;
   }
 
-  public record ErrorDetail(String field, String message) {}
+  public record FieldError(String field, String message) {}
 }

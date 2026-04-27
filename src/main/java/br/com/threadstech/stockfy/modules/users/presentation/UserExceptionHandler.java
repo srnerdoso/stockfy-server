@@ -3,7 +3,9 @@ package br.com.threadstech.stockfy.modules.users.presentation;
 import br.com.threadstech.stockfy.modules.users.application.exception.EmailAlreadyExistsException;
 import br.com.threadstech.stockfy.modules.users.application.exception.PasswordMismatchException;
 import br.com.threadstech.stockfy.web.application.dto.ApiErrorResponse;
+import br.com.threadstech.stockfy.web.application.dto.ApiErrorResponse.FieldError;
 import br.com.threadstech.stockfy.web.application.exception.InvalidPasswordException;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
@@ -31,7 +33,11 @@ public class UserExceptionHandler {
             HttpStatus.UNPROCESSABLE_ENTITY.value(),
             detail,
             null,
-            null);
+            List.of(
+                new FieldError(
+                    "confirmPassword",
+                    messageSource.getMessage(
+                        "passwords.mismatch", null, LocaleContextHolder.getLocale()))));
     return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(response);
   }
 

@@ -3,6 +3,7 @@ package br.com.threadstech.stockfy.modules.users.domain.model;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import br.com.threadstech.stockfy.web.application.exception.InvalidPasswordException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -19,13 +20,13 @@ class PasswordTest {
   @Test
   @DisplayName("Should throw exception for short password")
   void shouldThrowExceptionForShortPassword() {
-    assertThrows(IllegalArgumentException.class, () -> new Password("short"));
+    assertThrows(InvalidPasswordException.class, () -> new Password("short"));
   }
 
   @Test
   @DisplayName("Should throw exception for null or empty password")
   void shouldThrowExceptionForNullOrEmptyPassword() {
-    assertThrows(IllegalArgumentException.class, () -> new Password(null));
-    assertThrows(IllegalArgumentException.class, () -> new Password(""));
+    assertThrows(InvalidPasswordException.class, () -> new Password(null));
+    assertThrows(InvalidPasswordException.class, () -> new Password(""));
   }
 }
