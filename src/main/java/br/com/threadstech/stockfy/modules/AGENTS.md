@@ -88,3 +88,16 @@ modules/example-module/
 - Always use **specific custom exceptions** that represent the business context.
     - Example: `InvalidPasswordException` instead of `IllegalArgumentException`.
 - Custom exceptions must be **explicit and meaningful**, reflecting the exact failure.
+
+## Validation DTOs
+
+- **DO NOT** perform manual field validations that can be handled by **Jakarta Validation** annotations.
+- **DO NOT** use hardcoded strings for error messages within annotations.
+- **ALWAYS** uses custom error messages.
+- **ALWAYS** use **MessageSource** (via `messages.properties`) for internationalization and centralized message management.
+    - Example:
+      ```java
+      @NotBlank(message = "{user.name.required}")
+      @Size(min = 3, max = 50, message = "{user.name.size}")
+      private String name;
+      ```
