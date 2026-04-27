@@ -18,8 +18,8 @@ class GlobalExceptionHandlerTest {
   @DisplayName("Deve traduzir mensagem de campo inválido usando MessageSource")
   void handleMessageNotReadable_whenFieldIsInvalid_thenUsesMessageSource() {
     StaticMessageSource messageSource = new StaticMessageSource();
-    messageSource.addMessage("validation.error.message", Locale.getDefault(), "Erro traduzido.");
-    messageSource.addMessage("validation.field.required", Locale.getDefault(), "Campo traduzido.");
+    messageSource.addMessage("feedback.error.validation", Locale.getDefault(), "Erro traduzido.");
+    messageSource.addMessage("validation.field.not-null", Locale.getDefault(), "Campo traduzido.");
     GlobalExceptionHandler handler = new GlobalExceptionHandler(messageSource);
     InvalidFormatException cause =
         InvalidFormatException.from(null, "Invalid value", "INVALID", String.class);

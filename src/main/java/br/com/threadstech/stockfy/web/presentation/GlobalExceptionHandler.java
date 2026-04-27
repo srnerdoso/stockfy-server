@@ -24,7 +24,8 @@ public class GlobalExceptionHandler {
   public ResponseEntity<ApiErrorResponse> handleValidationExceptions(
       MethodArgumentNotValidException ex) {
     String detail =
-        messageSource.getMessage("validation.error.message", null, LocaleContextHolder.getLocale());
+        messageSource.getMessage(
+            "feedback.error.validation", null, LocaleContextHolder.getLocale());
 
     ApiErrorResponse response =
         new ApiErrorResponse(
@@ -48,7 +49,8 @@ public class GlobalExceptionHandler {
   public ResponseEntity<ApiErrorResponse> handleMessageNotReadable(
       HttpMessageNotReadableException ex) {
     String detail =
-        messageSource.getMessage("validation.error.message", null, LocaleContextHolder.getLocale());
+        messageSource.getMessage(
+            "feedback.error.validation", null, LocaleContextHolder.getLocale());
 
     ApiErrorResponse response =
         new ApiErrorResponse(
@@ -63,7 +65,7 @@ public class GlobalExceptionHandler {
 
   private String resolveRequiredFieldMessage() {
     return messageSource.getMessage(
-        "validation.field.required", null, LocaleContextHolder.getLocale());
+        "validation.field.not-null", null, LocaleContextHolder.getLocale());
   }
 
   private String extractFieldName(HttpMessageNotReadableException ex) {

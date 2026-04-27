@@ -37,7 +37,7 @@ public class UserExceptionHandler {
                 new FieldError(
                     "confirmPassword",
                     messageSource.getMessage(
-                        "passwords.mismatch", null, LocaleContextHolder.getLocale()))));
+                        "user.password.mismatch", null, LocaleContextHolder.getLocale()))));
     return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(response);
   }
 
