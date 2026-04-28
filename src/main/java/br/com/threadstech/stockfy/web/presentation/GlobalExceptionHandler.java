@@ -39,8 +39,7 @@ public class GlobalExceptionHandler {
                     fieldError ->
                         new FieldError(
                             fieldError.getField(),
-                            messageSource.getMessage(
-                                fieldError, LocaleContextHolder.getLocale())))
+                            messageSource.getMessage(fieldError, LocaleContextHolder.getLocale())))
                 .toList());
     return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
   }

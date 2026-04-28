@@ -43,8 +43,7 @@ public class SecurityConfig {
         .addFilterAfter(jwtAuthenticationFilter, RateLimitFilter.class)
         .authorizeHttpRequests(
             auth ->
-                auth.requestMatchers(
-                        HttpMethod.POST, "/api/v1/auth/sessions/**")
+                auth.requestMatchers(HttpMethod.POST, "/api/v1/auth/sessions/**")
                     .permitAll()
                     .requestMatchers(HttpMethod.PATCH, "/api/v1/users/password")
                     .permitAll()

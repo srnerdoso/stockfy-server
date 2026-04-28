@@ -16,4 +16,3 @@ class UserExceptionMessageKeyTest {
     assertEquals("user.password.invalid", new InvalidPasswordException().getMessage());
   }
 }
-

@@ -16,30 +16,36 @@ import br.com.threadstech.stockfy.modules.users.domain.model.UserStatus;
 import br.com.threadstech.stockfy.modules.users.domain.repository.UserRepository;
 import br.com.threadstech.stockfy.modules.users.infrastructure.config.UserRateLimitConfig;
 import br.com.threadstech.stockfy.modules.users.infrastructure.security.JwtService;
+import io.github.bucket4j.TimeMeter;
 import jakarta.servlet.http.Cookie;
+import java.time.Duration;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Primary;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@Import(TestcontainersConfiguration.class)
+@Import({TestcontainersConfiguration.class, UserCreationIT.RateLimitTimeTestConfiguration.class})
 class UserCreationIT {
 
   @Autowired private MockMvc mockMvc;
   @Autowired private UserRepository userRepository;
   @Autowired private UserRateLimitConfig rateLimitConfig;
   @Autowired private JwtService jwtService;
+  @Autowired private MutableTimeMeter rateLimitTimeMeter;
 
   @AfterEach
   void tearDown() {
@@ -51,6 +57,7 @@ class UserCreationIT {
       var generalBucketsField = UserRateLimitConfig.class.getDeclaredField("generalBuckets");
       generalBucketsField.setAccessible(true);
       ((java.util.Map<?, ?>) generalBucketsField.get(rateLimitConfig)).clear();
+      rateLimitTimeMeter.reset();
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
@@ -338,7 +345,7 @@ class UserCreationIT {
               .content(json.replace("user@test.com", "user" + i + "@test.com")));
     }
 
-    Thread.sleep(61000);
+    rateLimitTimeMeter.advanceBy(Duration.ofSeconds(61));
 
     mockMvc
         .perform(
@@ -370,5 +377,38 @@ class UserCreationIT {
         .status(UserStatus.ACTIVE)
         .active(true)
         .build();
+  }
+
+  @TestConfiguration(proxyBeanMethods = false)
+  static class RateLimitTimeTestConfiguration {
+
+    @Bean
+    @Primary
+    MutableTimeMeter mutableRateLimitTimeMeter() {
+      return new MutableTimeMeter();
+    }
+  }
+
+  static class MutableTimeMeter implements TimeMeter {
+
+    private final AtomicLong currentTimeNanos = new AtomicLong();
+
+    @Override
+    public long currentTimeNanos() {
+      return currentTimeNanos.get();
+    }
+
+    @Override
+    public boolean isWallClockBased() {
+      return false;
+    }
+
+    void advanceBy(Duration duration) {
+      currentTimeNanos.addAndGet(duration.toNanos());
+    }
+
+    void reset() {
+      currentTimeNanos.set(0);
+    }
   }
 }
