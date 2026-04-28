@@ -120,11 +120,9 @@ public class GlobalExceptionHandler {
   }
 
   private String resolveRequestParameterMessage(String field, boolean required) {
-    if ("type".equals(field)) {
-      String key = required ? "user.type.required" : "user.type.invalid";
-      return messageSource.getMessage(key, null, LocaleContextHolder.getLocale());
-    }
-    return resolveRequiredFieldMessage();
+    String key =
+        required ? "validation.request-parameter.required" : "validation.request-parameter.invalid";
+    return messageSource.getMessage(key, null, LocaleContextHolder.getLocale());
   }
 
   private String extractLeafProperty(String propertyPath) {

@@ -169,7 +169,7 @@ class FindAllUsersIT {
     long usersBeforeRequest = countUsers();
 
     assertValidationError(
-        mockMvc.perform(get("/api/v1/users")), "type", "O tipo de listagem e obrigatorio.");
+        mockMvc.perform(get("/api/v1/users")), "type", "O parâmetro informado é obrigatório.");
 
     assertEquals(usersBeforeRequest, countUsers());
     assertTrue(userExists("ana.admin@example.com"));
@@ -184,7 +184,7 @@ class FindAllUsersIT {
     assertValidationError(
         mockMvc.perform(get("/api/v1/users").param("type", "FULL")),
         "type",
-        "O tipo de listagem deve ser SUMMARY ou DETAILED.");
+        "O parâmetro informado é inválido.");
 
     assertEquals(usersBeforeRequest, countUsers());
     assertTrue(userExists("bruno.user@example.com"));

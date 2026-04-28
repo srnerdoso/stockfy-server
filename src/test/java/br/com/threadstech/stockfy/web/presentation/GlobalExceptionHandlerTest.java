@@ -11,6 +11,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.context.support.StaticMessageSource;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.mock.http.MockHttpInputMessage;
+import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 class GlobalExceptionHandlerTest {
 
@@ -33,6 +35,46 @@ class GlobalExceptionHandlerTest {
     assertEquals("Erro traduzido.", body.getDetail());
     assertEquals("role", body.getFieldErrors().getFirst().field());
     assertEquals("Campo traduzido.", body.getFieldErrors().getFirst().message());
+  }
+
+  @Test
+  @DisplayName("Deve usar mensagem generica quando parametro obrigatorio estiver ausente")
+  void handleMissingRequestParameter_whenTypeIsMissing_thenUsesGenericMessage() {
+    StaticMessageSource messageSource = new StaticMessageSource();
+    messageSource.addMessage("feedback.error.validation", Locale.getDefault(), "Erro traduzido.");
+    messageSource.addMessage(
+        "validation.request-parameter.required",
+        Locale.getDefault(),
+        "Parametro obrigatorio generico.");
+    GlobalExceptionHandler handler = new GlobalExceptionHandler(messageSource);
+    MissingServletRequestParameterException exception =
+        new MissingServletRequestParameterException("type", "UserListType");
+
+    ApiErrorResponse body = handler.handleMissingRequestParameter(exception).getBody();
+
+    assertEquals("Erro traduzido.", body.getDetail());
+    assertEquals("type", body.getFieldErrors().getFirst().field());
+    assertEquals("Parametro obrigatorio generico.", body.getFieldErrors().getFirst().message());
+  }
+
+  @Test
+  @DisplayName("Deve usar mensagem generica quando parametro possuir tipo invalido")
+  void handleArgumentTypeMismatch_whenTypeIsInvalid_thenUsesGenericMessage() {
+    StaticMessageSource messageSource = new StaticMessageSource();
+    messageSource.addMessage("feedback.error.validation", Locale.getDefault(), "Erro traduzido.");
+    messageSource.addMessage(
+        "validation.request-parameter.invalid",
+        Locale.getDefault(),
+        "Parametro invalido generico.");
+    GlobalExceptionHandler handler = new GlobalExceptionHandler(messageSource);
+    MethodArgumentTypeMismatchException exception =
+        new MethodArgumentTypeMismatchException("FULL", String.class, "type", null, null);
+
+    ApiErrorResponse body = handler.handleArgumentTypeMismatch(exception).getBody();
+
+    assertEquals("Erro traduzido.", body.getDetail());
+    assertEquals("type", body.getFieldErrors().getFirst().field());
+    assertEquals("Parametro invalido generico.", body.getFieldErrors().getFirst().message());
   }
 
   @Test
