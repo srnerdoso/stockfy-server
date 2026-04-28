@@ -1,0 +1,65 @@
+INSERT INTO users (
+    id,
+    name,
+    email,
+    password_hash,
+    role,
+    status,
+    active,
+    created_at,
+    created_by,
+    updated_at,
+    updated_by
+) VALUES
+    (
+        '00000000-0000-0000-0000-000000000001',
+        'Ana Admin',
+        'ana.admin@example.com',
+        'password-hash-1',
+        'ADMIN',
+        'ACTIVE',
+        TRUE,
+        TIMESTAMP '2026-04-28 10:00:00',
+        '11111111-1111-1111-1111-111111111111',
+        TIMESTAMP '2026-04-28 10:30:00',
+        '22222222-2222-2222-2222-222222222222'
+    ),
+    (
+        '00000000-0000-0000-0000-000000000002',
+        'Bruno User',
+        'bruno.user@example.com',
+        'password-hash-2',
+        'USER',
+        'ACTIVE',
+        TRUE,
+        TIMESTAMP '2026-04-28 11:00:00',
+        '11111111-1111-1111-1111-111111111111',
+        TIMESTAMP '2026-04-28 11:30:00',
+        '22222222-2222-2222-2222-222222222222'
+    ),
+    (
+        '00000000-0000-0000-0000-000000000003',
+        'Alice Filter',
+        'alice.filter@example.com',
+        'password-hash-3',
+        'USER',
+        'ACTIVE',
+        TRUE,
+        TIMESTAMP '2026-04-28 12:00:00',
+        '11111111-1111-1111-1111-111111111111',
+        TIMESTAMP '2026-04-28 12:30:00',
+        '22222222-2222-2222-2222-222222222222'
+    ),
+    (
+        '00000000-0000-0000-0000-000000000004',
+        'Bob Filter',
+        'bob.filter@example.com',
+        'password-hash-4',
+        'USER',
+        'LOCKED',
+        TRUE,
+        TIMESTAMP '2026-04-28 13:00:00',
+        '11111111-1111-1111-1111-111111111111',
+        TIMESTAMP '2026-04-28 13:30:00',
+        '22222222-2222-2222-2222-222222222222'
+    );

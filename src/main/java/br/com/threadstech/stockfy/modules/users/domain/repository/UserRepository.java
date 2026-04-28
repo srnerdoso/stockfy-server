@@ -5,6 +5,8 @@ import br.com.threadstech.stockfy.modules.users.domain.model.User;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 public interface UserRepository {
   void save(User user);
@@ -14,6 +16,8 @@ public interface UserRepository {
   Optional<User> findByEmail(Email email);
 
   List<User> findAll(String nameFilter);
+
+  Page<User> findAll(String nameFilter, Pageable pageable);
 
   void update(User user);
 }

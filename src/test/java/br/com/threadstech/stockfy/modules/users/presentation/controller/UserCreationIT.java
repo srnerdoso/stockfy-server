@@ -116,8 +116,7 @@ class UserCreationIT {
   }
 
   @Test
-  @DisplayName(
-      "Não deve persistir usuário e deve retornar 401 quando refresh token for inválido")
+  @DisplayName("Não deve persistir usuário e deve retornar 401 quando refresh token for inválido")
   void registerUser_whenAccessTokenIsValidAndRefreshTokenIsInvalid_thenReturns401()
       throws Exception {
     User admin =

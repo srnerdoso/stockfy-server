@@ -1,5 +1,6 @@
 package br.com.threadstech.stockfy.modules.users.domain.model;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -24,7 +25,11 @@ public class User {
   @Builder.Default private boolean active = true;
 
   private String resetPasswordCodeHash;
-  private java.time.LocalDateTime resetPasswordExpiresAt;
+  private LocalDateTime resetPasswordExpiresAt;
+  private LocalDateTime createdAt;
+  private UUID createdBy;
+  private LocalDateTime updatedAt;
+  private UUID updatedBy;
 
   public void lock() {
     this.status = UserStatus.LOCKED;

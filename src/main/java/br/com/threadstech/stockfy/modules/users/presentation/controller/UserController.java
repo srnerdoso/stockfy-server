@@ -1,8 +1,12 @@
 package br.com.threadstech.stockfy.modules.users.presentation.controller;
 
+import br.com.threadstech.stockfy.modules.users.application.dto.FindAllUsersResponse;
 import br.com.threadstech.stockfy.modules.users.application.dto.RegisterUserRequest;
+import br.com.threadstech.stockfy.modules.users.application.dto.UserListItemResponse;
+import br.com.threadstech.stockfy.modules.users.application.dto.UserListType;
 import br.com.threadstech.stockfy.modules.users.application.dto.UserResponse;
 import br.com.threadstech.stockfy.modules.users.application.usecase.DeleteUserUseCase;
+import br.com.threadstech.stockfy.modules.users.application.usecase.FindAllUsersUseCase;
 import br.com.threadstech.stockfy.modules.users.application.usecase.GenerateResetCodeUseCase;
 import br.com.threadstech.stockfy.modules.users.application.usecase.RegisterUserUseCase;
 import br.com.threadstech.stockfy.modules.users.application.usecase.ResetPasswordUseCase;
@@ -10,13 +14,17 @@ import br.com.threadstech.stockfy.modules.users.application.usecase.UpdateProfil
 import br.com.threadstech.stockfy.modules.users.domain.repository.UserRepository;
 import br.com.threadstech.stockfy.modules.users.presentation.mapper.UserResponseMapperFactory;
 import jakarta.validation.Valid;
-import java.util.List;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -30,9 +38,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/users")
 @RequiredArgsConstructor
+@Validated
 public class UserController {
 
   private final RegisterUserUseCase registerUserUseCase;
+  private final FindAllUsersUseCase findAllUsersUseCase;
   private final UpdateProfileUseCase updateProfileUseCase;
   private final DeleteUserUseCase deleteUserUseCase;
   private final GenerateResetCodeUseCase generateResetCodeUseCase;
@@ -81,10 +91,12 @@ public class UserController {
 
   @GetMapping
   @PreAuthorize("hasRole('ADMIN')")
-  public ResponseEntity<List<UserResponse>> findAll(@RequestParam(required = false) String name) {
-    List<UserResponse> users =
-        userRepository.findAll(name).stream().map(mapperFactory::toResponse).toList();
-    return ResponseEntity.ok(users);
+  public ResponseEntity<FindAllUsersResponse<UserListItemResponse>> findAll(
+      @RequestParam(required = false)
+          @Size(max = 255, message = "{user.name.size}") @Pattern(regexp = "^[\\p{L}\\p{M}0-9 .'-]+$", message = "{user.name.pattern}") String name,
+      @RequestParam UserListType type,
+      @PageableDefault(size = 20) Pageable pageable) {
+    return ResponseEntity.ok(findAllUsersUseCase.execute(name, type, pageable));
   }
 
   @PatchMapping("/me")

@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -34,6 +36,14 @@ public class JpaUserRepositoryAdapter implements UserRepository {
   @Override
   public List<User> findAll(String nameFilter) {
     return repository.findAllByName(nameFilter).stream().map(mapper::toDomain).toList();
+  }
+
+  @Override
+  public Page<User> findAll(String nameFilter, Pageable pageable) {
+    if (nameFilter == null) {
+      return repository.findAll(pageable).map(mapper::toDomain);
+    }
+    return repository.findByNameContainingIgnoreCase(nameFilter, pageable).map(mapper::toDomain);
   }
 
   @Override
