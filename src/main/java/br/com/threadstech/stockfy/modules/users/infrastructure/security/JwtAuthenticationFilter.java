@@ -20,36 +20,45 @@ import org.springframework.web.filter.OncePerRequestFilter;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
   private final JwtService jwtService;
+  private final TokenService tokenService;
 
   @Override
   protected void doFilterInternal(
       HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
       throws ServletException, IOException {
 
-    String token = null;
+    String accessToken = null;
+    String refreshToken = null;
     if (request.getCookies() != null) {
       for (Cookie cookie : request.getCookies()) {
         if ("access_token".equals(cookie.getName())) {
-          token = cookie.getValue();
+          accessToken = cookie.getValue();
+        }
+        if ("refresh_token".equals(cookie.getName())) {
+          refreshToken = cookie.getValue();
         }
       }
     }
 
-    if (token != null) {
+    if (accessToken != null && refreshToken != null) {
       try {
-        String userId = jwtService.extractUserId(token);
-        String role = jwtService.extractRole(token);
+        String userId = jwtService.extractUserId(accessToken);
+        String role = jwtService.extractRole(accessToken);
+        UUID authenticatedUserId = UUID.fromString(userId);
+        UUID refreshTokenUserId = tokenService.getUserIdFromRefreshToken(refreshToken);
 
-        if (userId != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+        if (tokenService.validateRefreshToken(refreshToken)
+            && authenticatedUserId.equals(refreshTokenUserId)
+            && SecurityContextHolder.getContext().getAuthentication() == null) {
           UsernamePasswordAuthenticationToken authToken =
               new UsernamePasswordAuthenticationToken(
-                  UUID.fromString(userId),
+                  authenticatedUserId,
                   null,
                   List.of(new SimpleGrantedAuthority(toAuthority(role))));
           SecurityContextHolder.getContext().setAuthentication(authToken);
         }
       } catch (Exception e) {
-        // Invalid token, ignore
+        SecurityContextHolder.clearContext();
       }
     }
 

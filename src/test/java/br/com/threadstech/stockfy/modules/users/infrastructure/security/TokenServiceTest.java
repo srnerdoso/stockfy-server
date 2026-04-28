@@ -1,0 +1,48 @@
+package br.com.threadstech.stockfy.modules.users.infrastructure.security;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.test.util.ReflectionTestUtils;
+
+@ExtendWith(MockitoExtension.class)
+class TokenServiceTest {
+
+  @Mock private StringRedisTemplate redisTemplate;
+  @Mock private ValueOperations<String, String> valueOperations;
+
+  @Test
+  @DisplayName("Deve salvar refresh token no Redis com usuário e expiração configurada")
+  void generateRefreshToken_whenCalled_thenSavesTokenInRedisWithUserAndExpiration() {
+    UUID userId = UUID.randomUUID();
+    long refreshTokenExpiration = 604800000L;
+    TokenService tokenService = new TokenService(redisTemplate);
+    ReflectionTestUtils.setField(tokenService, "refreshTokenExpiration", refreshTokenExpiration);
+    when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+    ArgumentCaptor<String> keyCaptor = ArgumentCaptor.forClass(String.class);
+
+    String refreshToken = tokenService.generateRefreshToken(userId);
+
+    verify(valueOperations)
+        .set(
+            keyCaptor.capture(),
+            eq(userId.toString()),
+            eq(refreshTokenExpiration),
+            eq(TimeUnit.MILLISECONDS));
+    assertEquals("refresh_token:" + refreshToken, keyCaptor.getValue());
+    assertTrue(UUID.fromString(refreshToken).toString().equals(refreshToken));
+  }
+}

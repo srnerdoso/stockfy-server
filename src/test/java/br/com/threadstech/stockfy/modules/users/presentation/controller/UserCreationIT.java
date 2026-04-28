@@ -18,6 +18,7 @@ import br.com.threadstech.stockfy.modules.users.domain.model.UserStatus;
 import br.com.threadstech.stockfy.modules.users.domain.repository.UserRepository;
 import br.com.threadstech.stockfy.modules.users.infrastructure.config.UserRateLimitConfig;
 import br.com.threadstech.stockfy.modules.users.infrastructure.security.JwtService;
+import br.com.threadstech.stockfy.modules.users.infrastructure.security.TokenService;
 import jakarta.servlet.http.Cookie;
 import java.time.Duration;
 import java.util.UUID;
@@ -42,6 +43,7 @@ class UserCreationIT {
   @Autowired private UserRepository userRepository;
   @Autowired private UserRateLimitConfig rateLimitConfig;
   @Autowired private JwtService jwtService;
+  @Autowired private TokenService tokenService;
   @Autowired private MutableTimeMeter rateLimitTimeMeter;
 
   @AfterEach
@@ -88,6 +90,7 @@ class UserCreationIT {
     User admin = createUser("Jwt Admin", "jwt-admin@example.com", UserRole.ADMIN);
     userRepository.save(admin);
     String accessToken = jwtService.generateToken(admin.getId(), admin.getRole().name());
+    String refreshToken = tokenService.generateRefreshToken(admin.getId());
     String json =
         """
             {
@@ -101,13 +104,49 @@ class UserCreationIT {
     mockMvc
         .perform(
             post("/api/v1/users")
-                .cookie(new Cookie("access_token", accessToken))
+                .cookie(
+                    new Cookie("access_token", accessToken),
+                    new Cookie("refresh_token", refreshToken))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(json))
         .andExpect(status().isCreated())
         .andExpect(content().string(""));
 
     assertTrue(userRepository.findByEmail(new Email("jwt-created@example.com")).isPresent());
+  }
+
+  @Test
+  @DisplayName(
+      "Não deve persistir usuário e deve retornar 401 quando refresh token for inválido")
+  void registerUser_whenAccessTokenIsValidAndRefreshTokenIsInvalid_thenReturns401()
+      throws Exception {
+    User admin =
+        createUser("Invalid Session Admin", "invalid-session-admin@example.com", UserRole.ADMIN);
+    userRepository.save(admin);
+    String accessToken = jwtService.generateToken(admin.getId(), admin.getRole().name());
+    String json =
+        """
+            {
+                "name": "Invalid Session Created",
+                "email": "invalid-session-created@example.com",
+                "password": "password123",
+                "role": "USER"
+            }
+            """;
+
+    mockMvc
+        .perform(
+            post("/api/v1/users")
+                .cookie(
+                    new Cookie("access_token", accessToken),
+                    new Cookie("refresh_token", "invalid-refresh-token"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json))
+        .andExpect(status().isUnauthorized())
+        .andExpect(content().string(""));
+
+    assertFalse(
+        userRepository.findByEmail(new Email("invalid-session-created@example.com")).isPresent());
   }
 
   @Test

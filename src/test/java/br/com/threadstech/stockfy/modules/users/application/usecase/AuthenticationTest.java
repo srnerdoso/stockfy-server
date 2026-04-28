@@ -104,6 +104,15 @@ class AuthenticationTest {
   }
 
   @Test
+  @DisplayName("Should throw exception for invalid refresh token")
+  void shouldThrowExceptionForInvalidRefreshToken() {
+    when(tokenService.validateRefreshToken(any())).thenReturn(false);
+
+    assertThrows(
+        IllegalArgumentException.class, () -> refreshTokenUseCase.execute("invalid_refresh_token"));
+  }
+
+  @Test
   @DisplayName("Should logout and revoke token")
   void shouldLogoutSuccessfully() {
     logoutUseCase.execute("refresh_token");
