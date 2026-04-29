@@ -1,5 +1,6 @@
 package br.com.threadstech.stockfy.modules.users.presentation.controller;
 
+import static br.com.threadstech.stockfy.web.presentation.ApiErrorResponseAssertions.assertBadRequestFieldValidation;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -32,7 +33,6 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.ResultActions;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -205,12 +205,12 @@ class UserCreationIT {
     var result =
         mockMvc.perform(
             post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(jsonNull));
-    assertBadRequestError(result, "name", "O nome é obrigatório.");
+    assertBadRequestFieldValidation(result, "name", "O nome é obrigatório.");
 
     String jsonInvalid =
         "{ \"name\": \"User'); DROP TABLE users; --\", \"email\": \"john@example.com\", \"password\": \"password123\", \"role\": \"USER\" }";
 
-    assertBadRequestError(
+    assertBadRequestFieldValidation(
         mockMvc.perform(
             post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(jsonInvalid)),
         "name",
@@ -226,12 +226,12 @@ class UserCreationIT {
     String jsonInvalid =
         "{ \"name\": \"John\", \"email\": \"invalid-email\", \"password\": \"password123\", \"role\": \"USER\" }";
 
-    assertBadRequestError(
+    assertBadRequestFieldValidation(
         mockMvc.perform(
             post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(jsonNull)),
         "email",
         "O e-mail é obrigatório.");
-    assertBadRequestError(
+    assertBadRequestFieldValidation(
         mockMvc.perform(
             post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(jsonInvalid)),
         "email",
@@ -247,12 +247,12 @@ class UserCreationIT {
     String jsonBlank =
         "{ \"name\": \"John\", \"email\": \"john@example.com\", \"password\": \" \", \"role\": \"USER\" }";
 
-    assertBadRequestError(
+    assertBadRequestFieldValidation(
         mockMvc.perform(
             post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(jsonNull)),
         "password",
         "A senha é obrigatória.");
-    assertBadRequestError(
+    assertBadRequestFieldValidation(
         mockMvc.perform(
             post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(jsonBlank)),
         "password",
@@ -269,12 +269,12 @@ class UserCreationIT {
     String jsonInvalid =
         "{ \"name\": \"John\", \"email\": \"john@example.com\", \"password\": \"password123\", \"role\": \"INVALID\" }";
 
-    assertBadRequestError(
+    assertBadRequestFieldValidation(
         mockMvc.perform(
             post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(jsonMissing)),
         "role",
         "O perfil do usuário é obrigatório.");
-    assertBadRequestError(
+    assertBadRequestFieldValidation(
         mockMvc.perform(
             post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(jsonInvalid)),
         "role",
@@ -388,18 +388,6 @@ class UserCreationIT {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(json.replace("user@test.com", "after-window@test.com")))
         .andExpect(status().isCreated());
-  }
-
-  private void assertBadRequestError(ResultActions result, String field, String message)
-      throws Exception {
-    result
-        .andExpect(status().isBadRequest())
-        .andExpect(jsonPath("$.type").value("about:blank"))
-        .andExpect(jsonPath("$.title").value("Validation Error"))
-        .andExpect(jsonPath("$.status").value(400))
-        .andExpect(jsonPath("$.detail").value("Erro de validação nos campos informados."))
-        .andExpect(jsonPath("$.fieldErrors[0].field").value(field))
-        .andExpect(jsonPath("$.fieldErrors[0].message").value(message));
   }
 
   private User createUser(String name, String email, UserRole role) {

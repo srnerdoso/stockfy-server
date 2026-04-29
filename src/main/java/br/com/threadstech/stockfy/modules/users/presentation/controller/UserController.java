@@ -7,6 +7,7 @@ import br.com.threadstech.stockfy.modules.users.application.dto.UserListType;
 import br.com.threadstech.stockfy.modules.users.application.dto.UserResponse;
 import br.com.threadstech.stockfy.modules.users.application.usecase.DeleteUserUseCase;
 import br.com.threadstech.stockfy.modules.users.application.usecase.FindAllUsersUseCase;
+import br.com.threadstech.stockfy.modules.users.application.usecase.FindUserByIdUseCase;
 import br.com.threadstech.stockfy.modules.users.application.usecase.GenerateResetCodeUseCase;
 import br.com.threadstech.stockfy.modules.users.application.usecase.RegisterUserUseCase;
 import br.com.threadstech.stockfy.modules.users.application.usecase.ResetPasswordUseCase;
@@ -43,6 +44,7 @@ public class UserController {
 
   private final RegisterUserUseCase registerUserUseCase;
   private final FindAllUsersUseCase findAllUsersUseCase;
+  private final FindUserByIdUseCase findUserByIdUseCase;
   private final UpdateProfileUseCase updateProfileUseCase;
   private final DeleteUserUseCase deleteUserUseCase;
   private final GenerateResetCodeUseCase generateResetCodeUseCase;
@@ -81,12 +83,9 @@ public class UserController {
   }
 
   @GetMapping("/{id}")
-  public ResponseEntity<UserResponse> getById(@PathVariable UUID id) {
-    return userRepository
-        .findById(id)
-        .map(mapperFactory::toResponse)
-        .map(ResponseEntity::ok)
-        .orElse(ResponseEntity.notFound().build());
+  @PreAuthorize("hasRole('ADMIN') or #id == authentication.principal")
+  public ResponseEntity<UserListItemResponse> getById(@PathVariable UUID id) {
+    return ResponseEntity.ok(findUserByIdUseCase.execute(id));
   }
 
   @GetMapping

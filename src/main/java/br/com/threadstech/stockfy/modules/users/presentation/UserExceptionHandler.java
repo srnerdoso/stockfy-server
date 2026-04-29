@@ -2,6 +2,7 @@ package br.com.threadstech.stockfy.modules.users.presentation;
 
 import br.com.threadstech.stockfy.modules.users.application.exception.EmailAlreadyExistsException;
 import br.com.threadstech.stockfy.modules.users.application.exception.PasswordMismatchException;
+import br.com.threadstech.stockfy.modules.users.application.exception.UserNotFoundException;
 import br.com.threadstech.stockfy.web.application.dto.ApiErrorResponse;
 import br.com.threadstech.stockfy.web.application.dto.ApiErrorResponse.FieldError;
 import br.com.threadstech.stockfy.web.application.exception.InvalidPasswordException;
@@ -68,5 +69,16 @@ public class UserExceptionHandler {
             null,
             null);
     return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(response);
+  }
+
+  @ExceptionHandler(UserNotFoundException.class)
+  public ResponseEntity<ApiErrorResponse> handleUserNotFoundException(UserNotFoundException ex) {
+    String detail =
+        messageSource.getMessage(ex.getMessage(), null, LocaleContextHolder.getLocale());
+
+    ApiErrorResponse response =
+        new ApiErrorResponse(
+            "about:blank", "Not Found", HttpStatus.NOT_FOUND.value(), detail, null);
+    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
   }
 }

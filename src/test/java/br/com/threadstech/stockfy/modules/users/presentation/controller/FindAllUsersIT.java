@@ -1,5 +1,6 @@
 package br.com.threadstech.stockfy.modules.users.presentation.controller;
 
+import static br.com.threadstech.stockfy.web.presentation.ApiErrorResponseAssertions.assertBadRequestFieldValidation;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -23,20 +24,13 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.ResultActions;
 
 @SpringBootTest
 @AutoConfigureMockMvc
 @Import({TestcontainersConfiguration.class, RateLimitTestConfiguration.class})
-@Sql(
-    scripts = "/sql/users/find-all/cleanup.sql",
-    executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
-@Sql(
-    scripts = "/sql/users/find-all/base-users.sql",
-    executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
-@Sql(
-    scripts = "/sql/users/find-all/cleanup.sql",
-    executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
+@Sql(scripts = "/sql/users/cleanup.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
+@Sql(scripts = "/sql/users/base-users.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
+@Sql(scripts = "/sql/users/cleanup.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
 class FindAllUsersIT {
 
   @Autowired private MockMvc mockMvc;
@@ -168,7 +162,7 @@ class FindAllUsersIT {
   void findAllUsers_whenTypeIsMissing_thenReturns400() throws Exception {
     long usersBeforeRequest = countUsers();
 
-    assertValidationError(
+    assertBadRequestFieldValidation(
         mockMvc.perform(get("/api/v1/users")), "type", "O parâmetro informado é obrigatório.");
 
     assertEquals(usersBeforeRequest, countUsers());
@@ -181,7 +175,7 @@ class FindAllUsersIT {
   void findAllUsers_whenTypeIsInvalid_thenReturns400() throws Exception {
     long usersBeforeRequest = countUsers();
 
-    assertValidationError(
+    assertBadRequestFieldValidation(
         mockMvc.perform(get("/api/v1/users").param("type", "FULL")),
         "type",
         "O parâmetro informado é inválido.");
@@ -197,7 +191,7 @@ class FindAllUsersIT {
     String longName = "a".repeat(256);
     long usersBeforeRequest = countUsers();
 
-    assertValidationError(
+    assertBadRequestFieldValidation(
         mockMvc.perform(get("/api/v1/users").param("type", "SUMMARY").param("name", longName)),
         "name",
         "O nome deve ter no maximo 255 caracteres.");
@@ -241,7 +235,7 @@ class FindAllUsersIT {
   void findAllUsers_whenNameContainsSqlInjection_thenReturns400() throws Exception {
     long usersBeforeRequest = countUsers();
 
-    assertValidationError(
+    assertBadRequestFieldValidation(
         mockMvc.perform(
             get("/api/v1/users")
                 .param("type", "SUMMARY")
@@ -302,19 +296,5 @@ class FindAllUsersIT {
         jdbcTemplate.queryForObject(
             "SELECT COUNT(*) FROM users WHERE email = ?", Integer.class, email);
     return count != null && count == 1;
-  }
-
-  private void assertValidationError(ResultActions result, String field, String message)
-      throws Exception {
-    result
-        .andExpect(status().isBadRequest())
-        .andExpect(jsonPath("$.type").value("about:blank"))
-        .andExpect(jsonPath("$.title").value("Validation Error"))
-        .andExpect(jsonPath("$.status").value(400))
-        .andExpect(jsonPath("$.detail").value("Erro de validação nos campos informados."))
-        .andExpect(jsonPath("$.instance").doesNotExist())
-        .andExpect(jsonPath("$.fieldErrors.length()").value(1))
-        .andExpect(jsonPath("$.fieldErrors[0].field").value(field))
-        .andExpect(jsonPath("$.fieldErrors[0].message").value(message));
   }
 }
