@@ -92,9 +92,7 @@ public class UserController {
   @PreAuthorize("hasRole('ADMIN')")
   public ResponseEntity<FindAllUsersResponse<UserListItemResponse>> findAll(
       @RequestParam(required = false)
-          @Size(max = 255, message = "{user.name.size}")
-          @Pattern(regexp = "^[\\p{L}\\p{M}0-9 .'-]+$", message = "{user.name.pattern}")
-          String name,
+          @Size(max = 255, message = "{user.name.size}") @Pattern(regexp = "^[\\p{L}\\p{M}0-9 .'-]+$", message = "{user.name.pattern}") String name,
       @RequestParam UserListType type,
       @PageableDefault(size = 20) Pageable pageable) {
     return ResponseEntity.ok(findAllUsersUseCase.execute(name, type, pageable));

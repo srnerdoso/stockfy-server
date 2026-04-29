@@ -1,7 +1,6 @@
 package br.com.threadstech.stockfy.modules.users.application.usecase;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
@@ -90,11 +89,8 @@ class UserManagementTest {
   @Test
   @DisplayName("Should delete user (soft delete)")
   void shouldDeleteUser() {
-    when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-
     deleteUserUseCase.execute(userId);
 
-    assertFalse(user.isActive());
-    verify(userRepository).update(user);
+    verify(userRepository).deleteById(userId);
   }
 }

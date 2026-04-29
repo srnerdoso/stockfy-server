@@ -20,4 +20,6 @@ public interface UserRepository {
   Page<User> findAll(String nameFilter, Pageable pageable);
 
   void update(User user);
+
+  void deleteById(UUID id);
 }

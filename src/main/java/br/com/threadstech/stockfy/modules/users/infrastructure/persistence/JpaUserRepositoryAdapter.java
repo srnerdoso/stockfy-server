@@ -50,4 +50,9 @@ public class JpaUserRepositoryAdapter implements UserRepository {
   public void update(User user) {
     repository.save(mapper.toEntity(user));
   }
+
+  @Override
+  public void deleteById(UUID id) {
+    repository.deleteById(id);
+  }
 }
