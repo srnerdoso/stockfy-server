@@ -1,6 +1,9 @@
 package br.com.threadstech.stockfy.modules.users.domain.model;
 
+import br.com.threadstech.stockfy.modules.users.domain.exception.InvalidUserRolesException;
 import java.time.LocalDateTime;
+import java.util.EnumSet;
+import java.util.Set;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -18,7 +21,8 @@ public class User {
   private String name;
   private Email email;
   private Password password;
-  private UserRole role;
+
+  @Builder.Default private Set<UserRole> roles = EnumSet.of(UserRole.USER);
 
   @Builder.Default private UserStatus status = UserStatus.ACTIVE;
 
@@ -45,5 +49,17 @@ public class User {
 
   public void activate() {
     this.active = true;
+  }
+
+  public void updateRoles(Set<UserRole> rolesToAdd, Set<UserRole> rolesToRemove) {
+    EnumSet<UserRole> updatedRoles = EnumSet.copyOf(this.roles);
+    updatedRoles.removeAll(rolesToRemove);
+    updatedRoles.addAll(rolesToAdd);
+
+    if (updatedRoles.isEmpty()) {
+      throw new InvalidUserRolesException();
+    }
+
+    this.roles = updatedRoles;
   }
 }

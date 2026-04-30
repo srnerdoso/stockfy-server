@@ -15,6 +15,7 @@ import br.com.threadstech.stockfy.modules.users.domain.model.UserStatus;
 import br.com.threadstech.stockfy.modules.users.domain.repository.UserRepository;
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -35,7 +36,7 @@ class FindUserByIdUseCaseTest {
 
     assertEquals("Owner", response.name());
     assertEquals("owner@example.com", response.email());
-    assertEquals(UserRole.USER, response.role());
+    assertEquals(Set.of(UserRole.USER), response.roles());
     assertEquals(UserStatus.ACTIVE, response.status());
   }
 
@@ -54,7 +55,7 @@ class FindUserByIdUseCaseTest {
         .name("Owner")
         .email(new Email("owner@example.com"))
         .password(new Password("password123"))
-        .role(role)
+        .roles(Set.of(role))
         .status(UserStatus.ACTIVE)
         .active(true)
         .createdAt(LocalDateTime.of(2026, 4, 28, 10, 0))

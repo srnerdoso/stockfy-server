@@ -9,8 +9,10 @@ import static org.mockito.Mockito.when;
 import br.com.threadstech.stockfy.RateLimitTestConfiguration;
 import br.com.threadstech.stockfy.TestcontainersConfiguration;
 import br.com.threadstech.stockfy.modules.users.application.usecase.FindUserByIdUseCase;
+import br.com.threadstech.stockfy.modules.users.domain.model.UserRole;
 import br.com.threadstech.stockfy.modules.users.infrastructure.security.JwtService;
 import br.com.threadstech.stockfy.modules.users.infrastructure.security.TokenService;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -73,7 +75,8 @@ class FindUserByIdInternalErrorIT {
   private HttpHeaders authenticatedHeaders() {
     UUID adminId = UUID.fromString(ADMIN_ID);
     HttpHeaders headers = new HttpHeaders();
-    headers.add(HttpHeaders.COOKIE, "access_token=" + jwtService.generateToken(adminId, "ADMIN"));
+    headers.add(
+        HttpHeaders.COOKIE, "access_token=" + jwtService.generateToken(adminId, Set.of(UserRole.ADMIN)));
     headers.add(HttpHeaders.COOKIE, "refresh_token=" + tokenService.generateRefreshToken(adminId));
     return headers;
   }

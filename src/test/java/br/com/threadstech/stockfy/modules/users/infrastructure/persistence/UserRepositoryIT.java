@@ -10,6 +10,8 @@ import br.com.threadstech.stockfy.modules.users.domain.model.User;
 import br.com.threadstech.stockfy.modules.users.domain.model.UserRole;
 import br.com.threadstech.stockfy.modules.users.domain.model.UserStatus;
 import br.com.threadstech.stockfy.modules.users.domain.repository.UserRepository;
+import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -53,32 +55,35 @@ class UserRepositoryIT {
   }
 
   @Test
-  @DisplayName("Deve persistir role ADMIN ao salvar usuário administrador")
-  void save_whenUserRoleIsAdmin_thenPersistsAdminRole() {
-    User user = createUser("Admin User", "admin-role@example.com", UserRole.ADMIN);
+  @DisplayName("Deve persistir roles ao salvar usuario")
+  void save_whenUserHasRoles_thenPersistsRoles() {
+    User user =
+        createUser("Admin User", "admin-role@example.com", Set.of(UserRole.ADMIN, UserRole.USER));
     userRepository.save(user);
 
     var persisted = userRepository.findByEmail(new Email("admin-role@example.com"));
-    String persistedRole =
-        jdbcTemplate.queryForObject(
-            "SELECT role FROM users WHERE id = ?", String.class, user.getId());
+    List<String> persistedRoles =
+        jdbcTemplate.queryForList(
+            "SELECT role FROM users_roles WHERE user_id = ? ORDER BY role",
+            String.class,
+            user.getId());
 
     assertTrue(persisted.isPresent());
-    assertEquals(UserRole.ADMIN, persisted.get().getRole());
-    assertEquals("ADMIN", persistedRole);
+    assertEquals(Set.of(UserRole.ADMIN, UserRole.USER), persisted.get().getRoles());
+    assertEquals(List.of("ADMIN", "USER"), persistedRoles);
   }
 
   private User createUser(String name, String email) {
-    return createUser(name, email, UserRole.USER);
+    return createUser(name, email, Set.of(UserRole.USER));
   }
 
-  private User createUser(String name, String email, UserRole role) {
+  private User createUser(String name, String email, Set<UserRole> roles) {
     return User.builder()
         .id(UUID.randomUUID())
         .name(name)
         .email(new Email(email))
         .password(new Password("password123"))
-        .role(role)
+        .roles(roles)
         .status(UserStatus.ACTIVE)
         .active(true)
         .build();

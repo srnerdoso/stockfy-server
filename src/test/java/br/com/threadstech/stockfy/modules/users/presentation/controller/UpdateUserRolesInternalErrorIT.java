@@ -8,10 +8,11 @@ import static org.mockito.Mockito.doThrow;
 
 import br.com.threadstech.stockfy.RateLimitTestConfiguration;
 import br.com.threadstech.stockfy.TestcontainersConfiguration;
-import br.com.threadstech.stockfy.modules.users.application.usecase.UpdateProfileUseCase;
+import br.com.threadstech.stockfy.modules.users.application.usecase.UpdateUserRolesUseCase;
 import br.com.threadstech.stockfy.modules.users.domain.model.UserRole;
 import br.com.threadstech.stockfy.modules.users.infrastructure.security.JwtService;
 import br.com.threadstech.stockfy.modules.users.infrastructure.security.TokenService;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
@@ -37,55 +38,54 @@ import org.springframework.test.context.jdbc.Sql;
 @Sql(scripts = "/sql/users/cleanup.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @Sql(scripts = "/sql/users/base-users.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @Sql(scripts = "/sql/users/cleanup.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
-class UpdateCurrentUserInternalErrorIT {
+class UpdateUserRolesInternalErrorIT {
 
-  private static final UUID OWNER_ID = UUID.fromString("00000000-0000-0000-0000-000000000002");
+  private static final UUID ADMIN_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
+  private static final UUID USER_ID = UUID.fromString("00000000-0000-0000-0000-000000000002");
 
   @Autowired private TestRestTemplate restTemplate;
   @Autowired private JdbcTemplate jdbcTemplate;
   @Autowired private JwtService jwtService;
   @Autowired private TokenService tokenService;
 
-  @MockitoBean private UpdateProfileUseCase updateProfileUseCase;
+  @MockitoBean private UpdateUserRolesUseCase updateUserRolesUseCase;
 
   @Test
   @DisplayName("Deve retornar 500 sem stacktrace quando ocorrer erro interno")
-  void updateCurrentUser_whenUnexpectedErrorOccurs_thenReturns500WithoutStacktrace() {
-    long usersBeforeRequest = countUsers();
-    doThrow(new RuntimeException("update database stacktrace detail"))
-        .when(updateProfileUseCase)
-        .execute(OWNER_ID, "Error Name", null);
-
-    HttpHeaders headers = authenticatedHeaders();
-    headers.setContentType(MediaType.APPLICATION_JSON);
+  void updateUserRoles_whenUnexpectedErrorOccurs_thenReturns500WithoutStacktrace() {
+    List<String> oldRoles = userRoles();
+    doThrow(new RuntimeException("roles database stacktrace detail"))
+        .when(updateUserRolesUseCase)
+        .execute(USER_ID, Set.of(UserRole.ADMIN), Set.of(UserRole.USER));
 
     ResponseEntity<String> response =
         restTemplate.exchange(
-            "/api/v1/users/me",
+            "/api/v1/users/{id}/roles",
             HttpMethod.PATCH,
-            new HttpEntity<>("{\"name\":\"Error Name\"}", headers),
-            String.class);
+            new HttpEntity<>("{\"add\":[\"ADMIN\"],\"remove\":[\"USER\"]}", authenticatedHeaders()),
+            String.class,
+            USER_ID);
 
     assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
-    assertThat(response.getBody(), not(containsString("update database stacktrace detail")));
+    assertThat(response.getBody(), not(containsString("roles database stacktrace detail")));
     assertThat(response.getBody(), not(containsString("RuntimeException")));
     assertThat(response.getBody(), not(containsString("at ")));
     assertThat(response.getBody(), not(containsString(".java:")));
-
-    assertEquals(usersBeforeRequest, countUsers());
+    assertEquals(oldRoles, userRoles());
   }
 
   private HttpHeaders authenticatedHeaders() {
     HttpHeaders headers = new HttpHeaders();
+    headers.setContentType(MediaType.APPLICATION_JSON);
     headers.add(
         HttpHeaders.COOKIE,
-        "access_token=" + jwtService.generateToken(OWNER_ID, Set.of(UserRole.USER)));
-    headers.add(HttpHeaders.COOKIE, "refresh_token=" + tokenService.generateRefreshToken(OWNER_ID));
+        "access_token=" + jwtService.generateToken(ADMIN_ID, Set.of(UserRole.ADMIN)));
+    headers.add(HttpHeaders.COOKIE, "refresh_token=" + tokenService.generateRefreshToken(ADMIN_ID));
     return headers;
   }
 
-  private long countUsers() {
-    Long count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM users", Long.class);
-    return count == null ? 0 : count;
+  private List<String> userRoles() {
+    return jdbcTemplate.queryForList(
+        "SELECT role FROM users_roles WHERE user_id = ? ORDER BY role", String.class, USER_ID);
   }
 }

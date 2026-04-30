@@ -22,6 +22,7 @@ import br.com.threadstech.stockfy.modules.users.infrastructure.security.JwtServi
 import br.com.threadstech.stockfy.modules.users.infrastructure.security.TokenService;
 import jakarta.servlet.http.Cookie;
 import java.time.Duration;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
@@ -89,7 +90,7 @@ class UserCreationIT {
   void registerUser_whenJwtTokenBelongsToAdmin_thenReturns201AndCreatesUser() throws Exception {
     User admin = createUser("Jwt Admin", "jwt-admin@example.com", UserRole.ADMIN);
     userRepository.save(admin);
-    String accessToken = jwtService.generateToken(admin.getId(), admin.getRole().name());
+    String accessToken = jwtService.generateToken(admin.getId(), admin.getRoles());
     String refreshToken = tokenService.generateRefreshToken(admin.getId());
     String json =
         """
@@ -122,7 +123,7 @@ class UserCreationIT {
     User admin =
         createUser("Invalid Session Admin", "invalid-session-admin@example.com", UserRole.ADMIN);
     userRepository.save(admin);
-    String accessToken = jwtService.generateToken(admin.getId(), admin.getRole().name());
+    String accessToken = jwtService.generateToken(admin.getId(), admin.getRoles());
     String json =
         """
             {
@@ -396,7 +397,7 @@ class UserCreationIT {
         .name(name)
         .email(new Email(email))
         .password(new Password("password123"))
-        .role(role)
+        .roles(Set.of(role))
         .status(UserStatus.ACTIVE)
         .active(true)
         .build();

@@ -1,11 +1,14 @@
 package br.com.threadstech.stockfy.modules.users.infrastructure.security;
 
+import br.com.threadstech.stockfy.modules.users.domain.model.UserRole;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 import javax.crypto.SecretKey;
@@ -21,9 +24,9 @@ public class JwtService {
   @Value("${jwt.access-token-expiration}")
   private long expiration;
 
-  public String generateToken(UUID userId, String role) {
+  public String generateToken(UUID userId, Set<UserRole> roles) {
     Map<String, Object> claims = new HashMap<>();
-    claims.put("role", role);
+    claims.put("roles", roles.stream().map(UserRole::name).toList());
     return createToken(claims, userId.toString());
   }
 
@@ -46,8 +49,8 @@ public class JwtService {
     return extractClaim(token, Claims::getSubject);
   }
 
-  public String extractRole(String token) {
-    return extractAllClaims(token).get("role", String.class);
+  public List<String> extractRoles(String token) {
+    return extractAllClaims(token).get("roles", List.class);
   }
 
   private <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {

@@ -28,7 +28,7 @@ public class RefreshTokenUseCase {
             .findById(userId)
             .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
-    String accessToken = jwtService.generateToken(user.getId(), user.getRole().name());
+    String accessToken = jwtService.generateToken(user.getId(), user.getRoles());
 
     return new AuthResponse(accessToken, refreshToken);
   }

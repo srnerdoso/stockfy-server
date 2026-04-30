@@ -13,6 +13,7 @@ import br.com.threadstech.stockfy.modules.users.domain.model.UserStatus;
 import br.com.threadstech.stockfy.modules.users.domain.repository.UserRepository;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -45,7 +46,7 @@ class UserControllerTest {
             .id(userId)
             .name("John Doe")
             .email(new Email("john@example.com"))
-            .role(UserRole.USER)
+            .roles(Set.of(UserRole.USER))
             .status(UserStatus.ACTIVE)
             .active(true)
             .build();
@@ -62,6 +63,8 @@ class UserControllerTest {
         .perform(get("/api/v1/users/me"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.name").value("John Doe"))
-        .andExpect(jsonPath("$.email").value("john@example.com"));
+        .andExpect(jsonPath("$.email").value("john@example.com"))
+        .andExpect(jsonPath("$.roles").isArray())
+        .andExpect(jsonPath("$.roles[0]").value("USER"));
   }
 }

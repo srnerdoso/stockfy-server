@@ -18,6 +18,7 @@ import br.com.threadstech.stockfy.modules.users.infrastructure.messaging.RabbitM
 import br.com.threadstech.stockfy.modules.users.infrastructure.security.JwtService;
 import br.com.threadstech.stockfy.modules.users.infrastructure.security.TokenService;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -55,7 +56,7 @@ class AuthenticationTest {
             .name("John Doe")
             .email(new Email("john@example.com"))
             .password(new Password("hashed_password"))
-            .role(UserRole.USER)
+            .roles(Set.of(UserRole.USER))
             .status(UserStatus.ACTIVE)
             .active(true)
             .build();

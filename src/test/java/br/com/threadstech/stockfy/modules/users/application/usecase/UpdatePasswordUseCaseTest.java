@@ -23,6 +23,7 @@ import br.com.threadstech.stockfy.modules.users.domain.repository.UserRepository
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -205,7 +206,7 @@ class UpdatePasswordUseCaseTest {
         .name("John Doe")
         .email(new Email("john@example.com"))
         .password(new Password(CURRENT_PASSWORD_HASH))
-        .role(UserRole.USER)
+        .roles(Set.of(UserRole.USER))
         .status(UserStatus.ACTIVE)
         .active(true)
         .build();

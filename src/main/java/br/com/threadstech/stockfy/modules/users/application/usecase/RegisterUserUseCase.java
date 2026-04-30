@@ -7,6 +7,7 @@ import br.com.threadstech.stockfy.modules.users.domain.model.Email;
 import br.com.threadstech.stockfy.modules.users.domain.model.Password;
 import br.com.threadstech.stockfy.modules.users.domain.model.User;
 import br.com.threadstech.stockfy.modules.users.domain.repository.UserRepository;
+import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -35,7 +36,7 @@ public class RegisterUserUseCase {
             .name(request.name())
             .email(userEmail)
             .password(new Password(passwordEncoder.encode(request.password())))
-            .role(request.role())
+            .roles(Set.of(request.role()))
             .build();
 
     userRepository.save(user);

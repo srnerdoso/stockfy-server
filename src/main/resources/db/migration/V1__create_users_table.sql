@@ -3,7 +3,6 @@ CREATE TABLE users (
     name VARCHAR(255) NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
-    role VARCHAR(50) NOT NULL,
     status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
     active BOOLEAN NOT NULL DEFAULT TRUE,
     reset_password_code_hash VARCHAR(255),
@@ -12,6 +11,13 @@ CREATE TABLE users (
     created_by UUID,
     updated_at TIMESTAMP,
     updated_by UUID
+);
+
+CREATE TABLE users_roles (
+    user_id UUID NOT NULL,
+    role VARCHAR(50) NOT NULL,
+    CONSTRAINT pk_users_roles PRIMARY KEY (user_id, role),
+    CONSTRAINT fk_users_roles_user FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
 CREATE TABLE revinfo (
@@ -26,7 +32,6 @@ CREATE TABLE users_aud (
     name VARCHAR(255),
     email VARCHAR(255),
     password_hash VARCHAR(255),
-    role VARCHAR(50),
     status VARCHAR(20),
     active BOOLEAN,
     reset_password_code_hash VARCHAR(255),
@@ -37,6 +42,15 @@ CREATE TABLE users_aud (
     updated_by UUID,
     PRIMARY KEY (id, rev),
     FOREIGN KEY (rev) REFERENCES revinfo (rev)
+);
+
+CREATE TABLE users_roles_aud (
+    rev INTEGER NOT NULL,
+    user_id UUID NOT NULL,
+    role VARCHAR(50) NOT NULL,
+    revtype SMALLINT,
+    CONSTRAINT pk_users_roles_aud PRIMARY KEY (rev, user_id, role),
+    CONSTRAINT fk_users_roles_aud_rev FOREIGN KEY (rev) REFERENCES revinfo(rev)
 );
 
 CREATE SEQUENCE revinfo_seq START WITH 1 INCREMENT BY 50;

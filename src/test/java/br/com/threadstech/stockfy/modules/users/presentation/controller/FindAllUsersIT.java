@@ -55,7 +55,7 @@ class FindAllUsersIT {
   }
 
   @Test
-  @DisplayName("Deve retornar pagina SUMMARY apenas com nome, email e role")
+  @DisplayName("Deve retornar pagina SUMMARY apenas com nome, email e roles")
   @WithMockUser(roles = "ADMIN")
   void findAllUsers_whenTypeSummary_thenReturnsOnlySummaryFields() throws Exception {
     long usersBeforeRequest = countUsers();
@@ -67,7 +67,8 @@ class FindAllUsersIT {
         .andExpect(jsonPath("$.content.length()").value(4))
         .andExpect(jsonPath("$.content[0].name").exists())
         .andExpect(jsonPath("$.content[0].email").exists())
-        .andExpect(jsonPath("$.content[0].role").exists())
+        .andExpect(jsonPath("$.content[0].roles").isArray())
+        .andExpect(jsonPath("$.content[0].role").doesNotExist())
         .andExpect(jsonPath("$.content[0].id").doesNotExist())
         .andExpect(jsonPath("$.content[0].status").doesNotExist())
         .andExpect(jsonPath("$.content[0].active").doesNotExist())
@@ -101,7 +102,8 @@ class FindAllUsersIT {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.content[0].name").exists())
         .andExpect(jsonPath("$.content[0].email").exists())
-        .andExpect(jsonPath("$.content[0].role").exists())
+        .andExpect(jsonPath("$.content[0].roles").isArray())
+        .andExpect(jsonPath("$.content[0].role").doesNotExist())
         .andExpect(jsonPath("$.content[0].status").exists())
         .andExpect(jsonPath("$.content[0].createdAt").exists())
         .andExpect(jsonPath("$.content[0].createdBy").exists())

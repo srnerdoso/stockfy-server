@@ -80,7 +80,7 @@ class UpdateCurrentUserIT {
     assertEquals(usersBeforeRequest, countUsers());
     assertEquals("Bruno Updated", userName(OWNER_ID));
     assertEquals("bruno.updated@example.com", userEmail(OWNER_ID));
-    assertEquals("USER", userRole(OWNER_ID));
+    assertUserHasRoles(OWNER_ID, "USER");
     assertEquals("ACTIVE", userStatus(OWNER_ID));
     assertTrue(userIsActive(OWNER_ID));
   }
@@ -139,7 +139,7 @@ class UpdateCurrentUserIT {
               "email": "bruno.safe@example.com",
               "password": "new-password",
               "passwordHash": "leaked-password-hash",
-              "role": "ADMIN",
+              "roles": ["ADMIN"],
               "status": "LOCKED",
               "active": false,
               "resetCode": "123456",
@@ -162,7 +162,7 @@ class UpdateCurrentUserIT {
     assertFalse(userExists("99999999-9999-9999-9999-999999999999"));
     assertEquals("Bruno Safe", userName(OWNER_ID));
     assertEquals("bruno.safe@example.com", userEmail(OWNER_ID));
-    assertEquals("USER", userRole(OWNER_ID));
+    assertUserHasRoles(OWNER_ID, "USER");
     assertEquals("ACTIVE", userStatus(OWNER_ID));
     assertTrue(userIsActive(OWNER_ID));
     assertEquals("password-hash-2", passwordHash(OWNER_ID));
@@ -330,9 +330,16 @@ class UpdateCurrentUserIT {
         "SELECT email FROM users WHERE id = ?::uuid", String.class, id);
   }
 
-  private String userRole(String id) {
-    return jdbcTemplate.queryForObject(
-        "SELECT role FROM users WHERE id = ?::uuid", String.class, id);
+  private void assertUserHasRoles(String id, String... expectedRoles) {
+    var roles =
+        jdbcTemplate.queryForList(
+            "SELECT role FROM users_roles WHERE user_id = ?::uuid ORDER BY role",
+            String.class,
+            id);
+    assertEquals(expectedRoles.length, roles.size());
+    for (String expectedRole : expectedRoles) {
+      assertTrue(roles.contains(expectedRole));
+    }
   }
 
   private String userStatus(String id) {

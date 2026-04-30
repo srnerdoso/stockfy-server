@@ -19,6 +19,7 @@ import br.com.threadstech.stockfy.modules.users.domain.model.UserStatus;
 import br.com.threadstech.stockfy.modules.users.domain.repository.UserRepository;
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -47,11 +48,10 @@ class PasswordResetTest {
             .name("John Doe")
             .email(new Email("john@example.com"))
             .password(new Password("hashed_password"))
-            .role(UserRole.USER)
+            .roles(Set.of(UserRole.USER))
             .status(UserStatus.ACTIVE)
             .active(true)
-            .build();
-  }
+            .build();  }
 
   @Test
   @DisplayName("Deve gerar codigo de seis digitos, persistir hash e expiracao")

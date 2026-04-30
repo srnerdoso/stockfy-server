@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import br.com.threadstech.stockfy.modules.users.domain.exception.InvalidUserRolesException;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -49,7 +51,7 @@ class UserTest {
         .name("John Doe")
         .email(new Email("john@example.com"))
         .password(new Password("password123"))
-        .role(UserRole.USER)
+        .roles(Set.of(UserRole.USER))
         .status(UserStatus.ACTIVE)
         .active(true)
         .build();

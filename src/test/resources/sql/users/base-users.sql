@@ -3,7 +3,6 @@ INSERT INTO users (
     name,
     email,
     password_hash,
-    role,
     status,
     active,
     created_at,
@@ -16,7 +15,6 @@ INSERT INTO users (
         'Ana Admin',
         'ana.admin@example.com',
         'password-hash-1',
-        'ADMIN',
         'ACTIVE',
         TRUE,
         TIMESTAMP '2026-04-28 10:00:00',
@@ -29,7 +27,6 @@ INSERT INTO users (
         'Bruno User',
         'bruno.user@example.com',
         'password-hash-2',
-        'USER',
         'ACTIVE',
         TRUE,
         TIMESTAMP '2026-04-28 11:00:00',
@@ -42,7 +39,6 @@ INSERT INTO users (
         'Alice Filter',
         'alice.filter@example.com',
         'password-hash-3',
-        'USER',
         'ACTIVE',
         TRUE,
         TIMESTAMP '2026-04-28 12:00:00',
@@ -55,7 +51,6 @@ INSERT INTO users (
         'Bob Filter',
         'bob.filter@example.com',
         'password-hash-4',
-        'USER',
         'LOCKED',
         TRUE,
         TIMESTAMP '2026-04-28 13:00:00',
@@ -63,3 +58,9 @@ INSERT INTO users (
         TIMESTAMP '2026-04-28 13:30:00',
         '22222222-2222-2222-2222-222222222222'
     );
+
+INSERT INTO users_roles (user_id, role) VALUES
+    ('00000000-0000-0000-0000-000000000001', 'ADMIN'),
+    ('00000000-0000-0000-0000-000000000002', 'USER'),
+    ('00000000-0000-0000-0000-000000000003', 'USER'),
+    ('00000000-0000-0000-0000-000000000004', 'USER');

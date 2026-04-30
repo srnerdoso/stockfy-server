@@ -9,8 +9,10 @@ import static org.mockito.Mockito.doThrow;
 import br.com.threadstech.stockfy.RateLimitTestConfiguration;
 import br.com.threadstech.stockfy.TestcontainersConfiguration;
 import br.com.threadstech.stockfy.modules.users.application.usecase.UpdatePasswordUseCase;
+import br.com.threadstech.stockfy.modules.users.domain.model.UserRole;
 import br.com.threadstech.stockfy.modules.users.infrastructure.security.JwtService;
 import br.com.threadstech.stockfy.modules.users.infrastructure.security.TokenService;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -78,7 +80,9 @@ class UpdatePasswordInternalErrorIT {
 
   private HttpHeaders authenticatedHeaders() {
     HttpHeaders headers = new HttpHeaders();
-    headers.add(HttpHeaders.COOKIE, "access_token=" + jwtService.generateToken(OWNER_ID, "USER"));
+    headers.add(
+        HttpHeaders.COOKIE,
+        "access_token=" + jwtService.generateToken(OWNER_ID, Set.of(UserRole.USER)));
     headers.add(HttpHeaders.COOKIE, "refresh_token=" + tokenService.generateRefreshToken(OWNER_ID));
     return headers;
   }

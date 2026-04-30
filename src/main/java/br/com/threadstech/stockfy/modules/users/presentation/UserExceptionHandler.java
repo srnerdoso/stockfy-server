@@ -5,6 +5,7 @@ import br.com.threadstech.stockfy.modules.users.application.exception.EmailAlrea
 import br.com.threadstech.stockfy.modules.users.application.exception.InvalidPasswordResetCodeException;
 import br.com.threadstech.stockfy.modules.users.application.exception.PasswordMismatchException;
 import br.com.threadstech.stockfy.modules.users.application.exception.UserNotFoundException;
+import br.com.threadstech.stockfy.modules.users.domain.exception.InvalidUserRolesException;
 import br.com.threadstech.stockfy.web.application.dto.ApiErrorResponse;
 import br.com.threadstech.stockfy.web.application.dto.ApiErrorResponse.FieldError;
 import br.com.threadstech.stockfy.web.application.exception.InvalidPasswordException;
@@ -94,6 +95,23 @@ public class UserExceptionHandler {
         new ApiErrorResponse(
             "about:blank", "Not Found", HttpStatus.NOT_FOUND.value(), detail, null);
     return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+  }
+
+  @ExceptionHandler(InvalidUserRolesException.class)
+  public ResponseEntity<ApiErrorResponse> handleInvalidUserRolesException(
+      InvalidUserRolesException ex) {
+    String detail =
+        messageSource.getMessage(ex.getMessage(), null, LocaleContextHolder.getLocale());
+
+    ApiErrorResponse response =
+        new ApiErrorResponse(
+            "about:blank",
+            "Validation Error",
+            HttpStatus.BAD_REQUEST.value(),
+            detail,
+            null,
+            List.of(new FieldError("roles", detail)));
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
   }
 
   private ResponseEntity<ApiErrorResponse> unprocessableEntity(String messageKey) {

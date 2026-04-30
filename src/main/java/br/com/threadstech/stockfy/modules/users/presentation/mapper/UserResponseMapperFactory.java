@@ -32,7 +32,7 @@ public class UserResponseMapperFactory {
         .id(user.getId())
         .name(user.getName())
         .email(user.getEmail().value())
-        .role(user.getRole())
+        .roles(user.getRoles())
         .status(user.getStatus())
         .active(user.isActive())
         // Fields like audit would need to be passed or fetched if Envers is used
@@ -44,7 +44,7 @@ public class UserResponseMapperFactory {
         .id(user.getId())
         .name(user.getName())
         .email(user.getEmail().value())
-        .role(user.getRole())
+        .roles(user.getRoles())
         .build();
   }
 

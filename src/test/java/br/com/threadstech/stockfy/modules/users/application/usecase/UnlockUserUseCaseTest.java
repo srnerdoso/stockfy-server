@@ -13,6 +13,7 @@ import br.com.threadstech.stockfy.modules.users.domain.model.UserRole;
 import br.com.threadstech.stockfy.modules.users.domain.model.UserStatus;
 import br.com.threadstech.stockfy.modules.users.domain.repository.UserRepository;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -70,7 +71,7 @@ class UnlockUserUseCaseTest {
         .name("Locked User")
         .email(new Email("locked@example.com"))
         .password(new Password("password123"))
-        .role(UserRole.USER)
+        .roles(Set.of(UserRole.USER))
         .status(status)
         .active(true)
         .build();

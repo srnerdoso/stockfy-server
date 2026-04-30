@@ -15,6 +15,7 @@ import br.com.threadstech.stockfy.modules.users.domain.model.UserRole;
 import br.com.threadstech.stockfy.modules.users.domain.model.UserStatus;
 import br.com.threadstech.stockfy.modules.users.domain.repository.UserRepository;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -36,7 +37,7 @@ class UpdateProfileUseCaseTest {
 
     assertEquals("New Name", user.getName());
     assertEquals("new@example.com", user.getEmail().value());
-    assertEquals(UserRole.USER, user.getRole());
+    assertEquals(Set.of(UserRole.USER), user.getRoles());
     assertEquals(UserStatus.ACTIVE, user.getStatus());
     verify(userRepository).update(user);
   }
@@ -135,7 +136,7 @@ class UpdateProfileUseCaseTest {
         .name(name)
         .email(new Email(email))
         .password(new Password("password123"))
-        .role(UserRole.USER)
+        .roles(Set.of(UserRole.USER))
         .status(UserStatus.ACTIVE)
         .active(true)
         .build();

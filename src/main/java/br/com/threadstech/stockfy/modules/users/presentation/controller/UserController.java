@@ -4,6 +4,7 @@ import br.com.threadstech.stockfy.modules.users.application.dto.FindAllUsersResp
 import br.com.threadstech.stockfy.modules.users.application.dto.RegisterUserRequest;
 import br.com.threadstech.stockfy.modules.users.application.dto.UpdateCurrentUserRequest;
 import br.com.threadstech.stockfy.modules.users.application.dto.UpdatePasswordRequest;
+import br.com.threadstech.stockfy.modules.users.application.dto.UpdateUserRolesRequest;
 import br.com.threadstech.stockfy.modules.users.application.dto.UserListItemResponse;
 import br.com.threadstech.stockfy.modules.users.application.dto.UserListType;
 import br.com.threadstech.stockfy.modules.users.application.dto.UserResponse;
@@ -15,6 +16,7 @@ import br.com.threadstech.stockfy.modules.users.application.usecase.RegisterUser
 import br.com.threadstech.stockfy.modules.users.application.usecase.UnlockUserUseCase;
 import br.com.threadstech.stockfy.modules.users.application.usecase.UpdatePasswordUseCase;
 import br.com.threadstech.stockfy.modules.users.application.usecase.UpdateProfileUseCase;
+import br.com.threadstech.stockfy.modules.users.application.usecase.UpdateUserRolesUseCase;
 import br.com.threadstech.stockfy.modules.users.domain.repository.UserRepository;
 import br.com.threadstech.stockfy.modules.users.presentation.mapper.UserResponseMapperFactory;
 import jakarta.validation.Valid;
@@ -53,6 +55,7 @@ public class UserController {
   private final GenerateResetCodeUseCase generateResetCodeUseCase;
   private final UpdatePasswordUseCase updatePasswordUseCase;
   private final UnlockUserUseCase unlockUserUseCase;
+  private final UpdateUserRolesUseCase updateUserRolesUseCase;
   private final UserRepository userRepository;
   private final UserResponseMapperFactory mapperFactory;
 
@@ -61,6 +64,14 @@ public class UserController {
   public ResponseEntity<Void> register(@RequestBody @Valid RegisterUserRequest request) {
     registerUserUseCase.execute(request);
     return ResponseEntity.status(HttpStatus.CREATED).build();
+  }
+
+  @PatchMapping("/{id}/roles")
+  @PreAuthorize("hasRole('ADMIN')")
+  public ResponseEntity<Void> updateUserRoles(
+      @PathVariable UUID id, @RequestBody @Valid UpdateUserRolesRequest request) {
+    updateUserRolesUseCase.execute(id, request.rolesToAdd(), request.rolesToRemove());
+    return ResponseEntity.noContent().build();
   }
 
   @PostMapping("/{id}/password-reset-codes")

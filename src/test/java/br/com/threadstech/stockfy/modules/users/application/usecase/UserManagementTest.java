@@ -14,7 +14,9 @@ import br.com.threadstech.stockfy.modules.users.domain.model.User;
 import br.com.threadstech.stockfy.modules.users.domain.model.UserRole;
 import br.com.threadstech.stockfy.modules.users.domain.model.UserStatus;
 import br.com.threadstech.stockfy.modules.users.domain.repository.UserRepository;
+import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -46,7 +48,7 @@ class UserManagementTest {
             .name("John Doe")
             .email(new Email("john@example.com"))
             .password(new Password("hashed_password"))
-            .role(UserRole.USER)
+            .roles(Set.of(UserRole.USER))
             .status(UserStatus.ACTIVE)
             .active(true)
             .build();

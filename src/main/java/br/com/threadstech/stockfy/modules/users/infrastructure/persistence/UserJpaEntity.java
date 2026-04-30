@@ -2,14 +2,20 @@ package br.com.threadstech.stockfy.modules.users.infrastructure.persistence;
 
 import br.com.threadstech.stockfy.modules.users.domain.model.UserRole;
 import br.com.threadstech.stockfy.modules.users.domain.model.UserStatus;
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
+import java.util.EnumSet;
+import java.util.Set;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -49,9 +55,12 @@ public class UserJpaEntity {
   @Column(name = "password_hash", nullable = false)
   private String passwordHash;
 
+  @Builder.Default
+  @ElementCollection(fetch = FetchType.EAGER)
+  @CollectionTable(name = "users_roles", joinColumns = @JoinColumn(name = "user_id"))
   @Enumerated(EnumType.STRING)
-  @Column(nullable = false)
-  private UserRole role;
+  @Column(name = "role", nullable = false)
+  private Set<UserRole> roles = EnumSet.of(UserRole.USER);
 
   @Enumerated(EnumType.STRING)
   @Column(nullable = false)

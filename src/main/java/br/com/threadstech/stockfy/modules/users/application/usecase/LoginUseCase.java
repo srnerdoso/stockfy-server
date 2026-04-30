@@ -44,7 +44,7 @@ public class LoginUseCase {
 
     resetFailedAttempts(email);
 
-    String accessToken = jwtService.generateToken(user.getId(), user.getRole().name());
+    String accessToken = jwtService.generateToken(user.getId(), user.getRoles());
     String refreshToken = tokenService.generateRefreshToken(user.getId());
 
     return new AuthResponse(accessToken, refreshToken);

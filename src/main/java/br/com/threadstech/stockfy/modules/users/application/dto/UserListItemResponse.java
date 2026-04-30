@@ -5,13 +5,14 @@ import br.com.threadstech.stockfy.modules.users.domain.model.UserRole;
 import br.com.threadstech.stockfy.modules.users.domain.model.UserStatus;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import java.time.LocalDateTime;
+import java.util.Set;
 import java.util.UUID;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record UserListItemResponse(
     String name,
     String email,
-    UserRole role,
+    Set<UserRole> roles,
     UserStatus status,
     LocalDateTime createdAt,
     UUID createdBy,
@@ -27,14 +28,14 @@ public record UserListItemResponse(
 
   private static UserListItemResponse summary(User user) {
     return new UserListItemResponse(
-        user.getName(), user.getEmail().value(), user.getRole(), null, null, null, null, null);
+        user.getName(), user.getEmail().value(), user.getRoles(), null, null, null, null, null);
   }
 
   private static UserListItemResponse detailed(User user) {
     return new UserListItemResponse(
         user.getName(),
         user.getEmail().value(),
-        user.getRole(),
+        user.getRoles(),
         user.getStatus(),
         user.getCreatedAt(),
         user.getCreatedBy(),
