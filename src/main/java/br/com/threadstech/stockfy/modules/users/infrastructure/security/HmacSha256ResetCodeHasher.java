@@ -16,7 +16,7 @@ public class HmacSha256ResetCodeHasher implements ResetCodeHasher {
   private final String secret;
 
   public HmacSha256ResetCodeHasher(
-      @Value("${stockfy.users.reset-code-hash-secret:stockfy-reset-code-secret}") String secret) {
+      @Value("${stockfy.users.reset-code-hash-secret}") String secret) {
     this.secret = secret;
   }
 

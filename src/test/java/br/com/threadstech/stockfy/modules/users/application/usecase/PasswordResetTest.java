@@ -2,10 +2,14 @@ package br.com.threadstech.stockfy.modules.users.application.usecase;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import br.com.threadstech.stockfy.modules.users.application.exception.UserNotFoundException;
 import br.com.threadstech.stockfy.modules.users.application.port.ResetCodeHasher;
 import br.com.threadstech.stockfy.modules.users.domain.model.Email;
 import br.com.threadstech.stockfy.modules.users.domain.model.Password;
@@ -13,6 +17,7 @@ import br.com.threadstech.stockfy.modules.users.domain.model.User;
 import br.com.threadstech.stockfy.modules.users.domain.model.UserRole;
 import br.com.threadstech.stockfy.modules.users.domain.model.UserStatus;
 import br.com.threadstech.stockfy.modules.users.domain.repository.UserRepository;
+import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -49,15 +54,26 @@ class PasswordResetTest {
   }
 
   @Test
-  @DisplayName("Should generate reset code for user")
-  void shouldGenerateResetCode() {
+  @DisplayName("Deve gerar codigo de seis digitos, persistir hash e expiracao")
+  void generateResetCode_whenUserExists_thenPersistsHashedCodeAndExpiration() {
     when(userRepository.findById(userId)).thenReturn(Optional.of(user));
     when(resetCodeHasher.hash(any())).thenReturn("hashed_code");
 
     String code = generateResetCodeUseCase.execute(userId);
 
-    assertNotNull(code);
+    assertTrue(code.matches("\\d{6}"));
     assertEquals("hashed_code", user.getResetPasswordCodeHash());
-    verify(userRepository).update(any());
+    assertNotNull(user.getResetPasswordExpiresAt());
+    assertTrue(user.getResetPasswordExpiresAt().isAfter(LocalDateTime.now()));
+    verify(userRepository).update(user);
+  }
+
+  @Test
+  @DisplayName("Deve lancar UserNotFoundException quando usuario nao existir")
+  void generateResetCode_whenUserDoesNotExist_thenThrowsUserNotFoundException() {
+    when(userRepository.findById(userId)).thenReturn(Optional.empty());
+
+    assertThrows(UserNotFoundException.class, () -> generateResetCodeUseCase.execute(userId));
+    verify(userRepository, never()).update(any());
   }
 }

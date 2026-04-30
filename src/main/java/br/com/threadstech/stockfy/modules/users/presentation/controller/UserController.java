@@ -67,7 +67,7 @@ public class UserController {
   @PreAuthorize("hasRole('ADMIN')")
   public ResponseEntity<ResetCodeResponse> generateResetCode(@PathVariable UUID id) {
     String code = generateResetCodeUseCase.execute(id);
-    return ResponseEntity.status(HttpStatus.CREATED).body(new ResetCodeResponse(code));
+    return ResponseEntity.ok(new ResetCodeResponse(code));
   }
 
   @PreAuthorize("#request.code() != null or !isAnonymous()")
