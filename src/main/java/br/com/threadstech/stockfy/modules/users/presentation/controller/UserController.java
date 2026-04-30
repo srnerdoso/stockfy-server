@@ -2,6 +2,7 @@ package br.com.threadstech.stockfy.modules.users.presentation.controller;
 
 import br.com.threadstech.stockfy.modules.users.application.dto.FindAllUsersResponse;
 import br.com.threadstech.stockfy.modules.users.application.dto.RegisterUserRequest;
+import br.com.threadstech.stockfy.modules.users.application.dto.UpdateCurrentUserRequest;
 import br.com.threadstech.stockfy.modules.users.application.dto.UserListItemResponse;
 import br.com.threadstech.stockfy.modules.users.application.dto.UserListType;
 import br.com.threadstech.stockfy.modules.users.application.dto.UserResponse;
@@ -92,7 +93,9 @@ public class UserController {
   @PreAuthorize("hasRole('ADMIN')")
   public ResponseEntity<FindAllUsersResponse<UserListItemResponse>> findAll(
       @RequestParam(required = false)
-          @Size(max = 255, message = "{user.name.size}") @Pattern(regexp = "^[\\p{L}\\p{M}0-9 .'-]+$", message = "{user.name.pattern}") String name,
+          @Size(max = 255, message = "{user.name.size}")
+          @Pattern(regexp = "^[\\p{L}\\p{M}0-9 .'-]+$", message = "{user.name.pattern}")
+          String name,
       @RequestParam UserListType type,
       @PageableDefault(size = 20) Pageable pageable) {
     return ResponseEntity.ok(findAllUsersUseCase.execute(name, type, pageable));
@@ -100,10 +103,10 @@ public class UserController {
 
   @PatchMapping("/me")
   public ResponseEntity<Void> updateProfile(
-      @RequestBody UpdateProfileRequest request, Authentication authentication) {
+      @RequestBody @Valid UpdateCurrentUserRequest request, Authentication authentication) {
     UUID userId = (UUID) authentication.getPrincipal();
     updateProfileUseCase.execute(userId, request.name(), request.email());
-    return ResponseEntity.ok().build();
+    return ResponseEntity.noContent().build();
   }
 
   @DeleteMapping("/{id}")
@@ -112,8 +115,6 @@ public class UserController {
     deleteUserUseCase.execute(id);
     return ResponseEntity.noContent().build();
   }
-
-  public record UpdateProfileRequest(String name, String email) {}
 
   public record ResetCodeResponse(String code) {}
 
