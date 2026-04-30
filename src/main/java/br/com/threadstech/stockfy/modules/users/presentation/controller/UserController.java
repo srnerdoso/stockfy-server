@@ -12,6 +12,7 @@ import br.com.threadstech.stockfy.modules.users.application.usecase.FindAllUsers
 import br.com.threadstech.stockfy.modules.users.application.usecase.FindUserByIdUseCase;
 import br.com.threadstech.stockfy.modules.users.application.usecase.GenerateResetCodeUseCase;
 import br.com.threadstech.stockfy.modules.users.application.usecase.RegisterUserUseCase;
+import br.com.threadstech.stockfy.modules.users.application.usecase.UnlockUserUseCase;
 import br.com.threadstech.stockfy.modules.users.application.usecase.UpdatePasswordUseCase;
 import br.com.threadstech.stockfy.modules.users.application.usecase.UpdateProfileUseCase;
 import br.com.threadstech.stockfy.modules.users.domain.repository.UserRepository;
@@ -51,6 +52,7 @@ public class UserController {
   private final DeleteUserUseCase deleteUserUseCase;
   private final GenerateResetCodeUseCase generateResetCodeUseCase;
   private final UpdatePasswordUseCase updatePasswordUseCase;
+  private final UnlockUserUseCase unlockUserUseCase;
   private final UserRepository userRepository;
   private final UserResponseMapperFactory mapperFactory;
 
@@ -124,6 +126,13 @@ public class UserController {
   @PreAuthorize("hasRole('ADMIN')")
   public ResponseEntity<Void> delete(@PathVariable UUID id) {
     deleteUserUseCase.execute(id);
+    return ResponseEntity.noContent().build();
+  }
+
+  @PatchMapping("/{id}/unlock")
+  @PreAuthorize("hasRole('ADMIN')")
+  public ResponseEntity<Void> unlock(@PathVariable UUID id) {
+    unlockUserUseCase.execute(id);
     return ResponseEntity.noContent().build();
   }
 
