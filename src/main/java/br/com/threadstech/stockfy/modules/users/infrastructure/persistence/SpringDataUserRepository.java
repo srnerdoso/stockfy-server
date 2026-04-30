@@ -14,6 +14,8 @@ import org.springframework.stereotype.Repository;
 public interface SpringDataUserRepository extends JpaRepository<UserJpaEntity, UUID> {
   Optional<UserJpaEntity> findByEmail(String email);
 
+  Optional<UserJpaEntity> findByResetPasswordCodeHash(String resetPasswordCodeHash);
+
   @Query(
       "SELECT u FROM UserJpaEntity u "
           + "WHERE (:name IS NULL OR LOWER(u.name) LIKE LOWER(CONCAT('%', :name, '%')))")

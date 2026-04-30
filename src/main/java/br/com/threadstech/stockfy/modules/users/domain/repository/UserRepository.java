@@ -15,6 +15,8 @@ public interface UserRepository {
 
   Optional<User> findByEmail(Email email);
 
+  Optional<User> findByResetPasswordCodeHash(String resetPasswordCodeHash);
+
   List<User> findAll(String nameFilter);
 
   Page<User> findAll(String nameFilter, Pageable pageable);

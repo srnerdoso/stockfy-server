@@ -3,6 +3,7 @@ package br.com.threadstech.stockfy.modules.users.presentation.controller;
 import br.com.threadstech.stockfy.modules.users.application.dto.FindAllUsersResponse;
 import br.com.threadstech.stockfy.modules.users.application.dto.RegisterUserRequest;
 import br.com.threadstech.stockfy.modules.users.application.dto.UpdateCurrentUserRequest;
+import br.com.threadstech.stockfy.modules.users.application.dto.UpdatePasswordRequest;
 import br.com.threadstech.stockfy.modules.users.application.dto.UserListItemResponse;
 import br.com.threadstech.stockfy.modules.users.application.dto.UserListType;
 import br.com.threadstech.stockfy.modules.users.application.dto.UserResponse;
@@ -11,7 +12,7 @@ import br.com.threadstech.stockfy.modules.users.application.usecase.FindAllUsers
 import br.com.threadstech.stockfy.modules.users.application.usecase.FindUserByIdUseCase;
 import br.com.threadstech.stockfy.modules.users.application.usecase.GenerateResetCodeUseCase;
 import br.com.threadstech.stockfy.modules.users.application.usecase.RegisterUserUseCase;
-import br.com.threadstech.stockfy.modules.users.application.usecase.ResetPasswordUseCase;
+import br.com.threadstech.stockfy.modules.users.application.usecase.UpdatePasswordUseCase;
 import br.com.threadstech.stockfy.modules.users.application.usecase.UpdateProfileUseCase;
 import br.com.threadstech.stockfy.modules.users.domain.repository.UserRepository;
 import br.com.threadstech.stockfy.modules.users.presentation.mapper.UserResponseMapperFactory;
@@ -49,7 +50,7 @@ public class UserController {
   private final UpdateProfileUseCase updateProfileUseCase;
   private final DeleteUserUseCase deleteUserUseCase;
   private final GenerateResetCodeUseCase generateResetCodeUseCase;
-  private final ResetPasswordUseCase resetPasswordUseCase;
+  private final UpdatePasswordUseCase updatePasswordUseCase;
   private final UserRepository userRepository;
   private final UserResponseMapperFactory mapperFactory;
 
@@ -67,10 +68,20 @@ public class UserController {
     return ResponseEntity.status(HttpStatus.CREATED).body(new ResetCodeResponse(code));
   }
 
+  @PreAuthorize("#request.code() != null or !isAnonymous()")
   @PatchMapping("/password")
-  public ResponseEntity<Void> resetPassword(@RequestBody ResetPasswordRequest request) {
-    resetPasswordUseCase.execute(request.email(), request.code(), request.newPassword());
-    return ResponseEntity.ok().build();
+  public ResponseEntity<Void> updatePassword(
+      @RequestBody @Valid UpdatePasswordRequest request, Authentication authentication) {
+    if (request.code() != null) {
+      updatePasswordUseCase.executeWithCode(
+          request.code(), request.newPassword(), request.confirmPassword());
+      return ResponseEntity.noContent().build();
+    }
+
+    UUID userId = (UUID) authentication.getPrincipal();
+    updatePasswordUseCase.executeAuthenticated(
+        userId, request.currentPassword(), request.newPassword(), request.confirmPassword());
+    return ResponseEntity.noContent().build();
   }
 
   @GetMapping("/me")
@@ -117,6 +128,4 @@ public class UserController {
   }
 
   public record ResetCodeResponse(String code) {}
-
-  public record ResetPasswordRequest(String email, String code, String newPassword) {}
 }

@@ -1,6 +1,8 @@
 package br.com.threadstech.stockfy.modules.users.presentation;
 
+import br.com.threadstech.stockfy.modules.users.application.exception.CurrentPasswordInvalidException;
 import br.com.threadstech.stockfy.modules.users.application.exception.EmailAlreadyExistsException;
+import br.com.threadstech.stockfy.modules.users.application.exception.InvalidPasswordResetCodeException;
 import br.com.threadstech.stockfy.modules.users.application.exception.PasswordMismatchException;
 import br.com.threadstech.stockfy.modules.users.application.exception.UserNotFoundException;
 import br.com.threadstech.stockfy.web.application.dto.ApiErrorResponse;
@@ -71,6 +73,18 @@ public class UserExceptionHandler {
     return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(response);
   }
 
+  @ExceptionHandler(InvalidPasswordResetCodeException.class)
+  public ResponseEntity<ApiErrorResponse> handleInvalidPasswordResetCodeException(
+      InvalidPasswordResetCodeException ex) {
+    return unprocessableEntity(ex.getMessage());
+  }
+
+  @ExceptionHandler(CurrentPasswordInvalidException.class)
+  public ResponseEntity<ApiErrorResponse> handleCurrentPasswordInvalidException(
+      CurrentPasswordInvalidException ex) {
+    return unprocessableEntity(ex.getMessage());
+  }
+
   @ExceptionHandler(UserNotFoundException.class)
   public ResponseEntity<ApiErrorResponse> handleUserNotFoundException(UserNotFoundException ex) {
     String detail =
@@ -80,5 +94,20 @@ public class UserExceptionHandler {
         new ApiErrorResponse(
             "about:blank", "Not Found", HttpStatus.NOT_FOUND.value(), detail, null);
     return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+  }
+
+  private ResponseEntity<ApiErrorResponse> unprocessableEntity(String messageKey) {
+    String detail =
+        messageSource.getMessage(messageKey, null, LocaleContextHolder.getLocale());
+
+    ApiErrorResponse response =
+        new ApiErrorResponse(
+            "about:blank",
+            "Unprocessable Entity",
+            HttpStatus.UNPROCESSABLE_ENTITY.value(),
+            detail,
+            null,
+            null);
+    return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(response);
   }
 }

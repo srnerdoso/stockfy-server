@@ -34,6 +34,11 @@ public class JpaUserRepositoryAdapter implements UserRepository {
   }
 
   @Override
+  public Optional<User> findByResetPasswordCodeHash(String resetPasswordCodeHash) {
+    return repository.findByResetPasswordCodeHash(resetPasswordCodeHash).map(mapper::toDomain);
+  }
+
+  @Override
   public List<User> findAll(String nameFilter) {
     return repository.findAllByName(nameFilter).stream().map(mapper::toDomain).toList();
   }
