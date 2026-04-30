@@ -42,5 +42,5 @@ out/
 .env.*
 
 ### Agent Temporary Docs ###
-./docs/superpowers
-./docs/tasks
+/docs/superpowers/**
+/docs/tasks/**
