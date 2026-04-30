@@ -44,3 +44,4 @@ out/
 ### Agent Temporary Docs ###
 /docs/superpowers/**
 /docs/tasks/**
+/specs/**
