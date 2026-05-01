@@ -2,6 +2,7 @@ package br.com.threadstech.stockfy.modules.users.presentation;
 
 import br.com.threadstech.stockfy.modules.users.application.exception.CurrentPasswordInvalidException;
 import br.com.threadstech.stockfy.modules.users.application.exception.EmailAlreadyExistsException;
+import br.com.threadstech.stockfy.modules.users.application.exception.InvalidCredentialsException;
 import br.com.threadstech.stockfy.modules.users.application.exception.InvalidPasswordResetCodeException;
 import br.com.threadstech.stockfy.modules.users.application.exception.PasswordMismatchException;
 import br.com.threadstech.stockfy.modules.users.application.exception.UserNotFoundException;
@@ -95,6 +96,18 @@ public class UserExceptionHandler {
         new ApiErrorResponse(
             "about:blank", "Not Found", HttpStatus.NOT_FOUND.value(), detail, null);
     return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+  }
+
+  @ExceptionHandler(InvalidCredentialsException.class)
+  public ResponseEntity<ApiErrorResponse> handleInvalidCredentialsException(
+      InvalidCredentialsException ex) {
+    String detail =
+        messageSource.getMessage(ex.getMessage(), null, LocaleContextHolder.getLocale());
+
+    ApiErrorResponse response =
+        new ApiErrorResponse(
+            "about:blank", "Unauthorized", HttpStatus.UNAUTHORIZED.value(), detail, null);
+    return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
   }
 
   @ExceptionHandler(InvalidUserRolesException.class)

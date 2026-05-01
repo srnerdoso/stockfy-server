@@ -8,6 +8,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import br.com.threadstech.stockfy.modules.users.application.exception.InvalidCredentialsException;
 import br.com.threadstech.stockfy.modules.users.domain.model.Email;
 import br.com.threadstech.stockfy.modules.users.domain.model.Password;
 import br.com.threadstech.stockfy.modules.users.domain.model.User;
@@ -88,7 +89,7 @@ class AuthenticationTest {
     when(redisTemplate.opsForValue()).thenReturn(valueOperations);
 
     assertThrows(
-        IllegalArgumentException.class, () -> loginUseCase.execute("john@example.com", "wrong"));
+        InvalidCredentialsException.class, () -> loginUseCase.execute("john@example.com", "wrong"));
   }
 
   @Test

@@ -1,11 +1,13 @@
 package br.com.threadstech.stockfy.modules.users.presentation.controller;
 
 import br.com.threadstech.stockfy.modules.users.application.dto.AuthResponse;
+import br.com.threadstech.stockfy.modules.users.application.dto.LoginRequest;
 import br.com.threadstech.stockfy.modules.users.application.usecase.LoginUseCase;
 import br.com.threadstech.stockfy.modules.users.application.usecase.LogoutUseCase;
 import br.com.threadstech.stockfy.modules.users.application.usecase.RefreshTokenUseCase;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CookieValue;
@@ -26,7 +28,7 @@ public class AuthController {
 
   @PostMapping
   public ResponseEntity<Void> login(
-      @RequestBody LoginRequest request, HttpServletResponse response) {
+      @RequestBody @Valid LoginRequest request, HttpServletResponse response) {
     AuthResponse authResponse = loginUseCase.execute(request.email(), request.password());
     addCookies(response, authResponse);
     return ResponseEntity.ok().build();
@@ -75,6 +77,4 @@ public class AuthController {
     response.addCookie(accessCookie);
     response.addCookie(refreshCookie);
   }
-
-  public record LoginRequest(String email, String password) {}
 }

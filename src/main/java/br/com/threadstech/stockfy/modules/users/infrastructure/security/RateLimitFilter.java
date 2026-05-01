@@ -27,7 +27,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
     String clientIp = request.getRemoteAddr();
 
     Bucket bucket;
-    if (path.contains("/auth/sessions")) {
+    if ("POST".equals(request.getMethod()) && path.equals("/api/v1/auth/sessions")) {
       bucket = rateLimitConfig.resolveLoginBucket(clientIp);
     } else if (path.equals("/api/v1/users/password")) {
       bucket = rateLimitConfig.resolvePasswordBucket(clientIp);

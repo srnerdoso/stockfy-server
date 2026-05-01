@@ -26,8 +26,8 @@ public class UserRateLimitConfig {
                 .withCustomTimePrecision(timeMeter)
                 .addLimit(
                     Bandwidth.builder()
-                        .capacity(15)
-                        .refillGreedy(15, Duration.ofMinutes(1))
+                        .capacity(5)
+                        .refillGreedy(5, Duration.ofMinutes(1))
                         .build())
                 .build());
   }

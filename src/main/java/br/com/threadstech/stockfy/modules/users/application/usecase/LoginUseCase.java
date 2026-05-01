@@ -1,6 +1,7 @@
 package br.com.threadstech.stockfy.modules.users.application.usecase;
 
 import br.com.threadstech.stockfy.modules.users.application.dto.AuthResponse;
+import br.com.threadstech.stockfy.modules.users.application.exception.InvalidCredentialsException;
 import br.com.threadstech.stockfy.modules.users.domain.model.Email;
 import br.com.threadstech.stockfy.modules.users.domain.model.User;
 import br.com.threadstech.stockfy.modules.users.domain.model.UserStatus;
@@ -31,15 +32,15 @@ public class LoginUseCase {
     User user =
         userRepository
             .findByEmail(new Email(email))
-            .orElseThrow(() -> new IllegalArgumentException("Invalid credentials"));
+            .orElseThrow(InvalidCredentialsException::new);
 
     if (!user.isActive() || user.getStatus() == UserStatus.LOCKED) {
-      throw new IllegalArgumentException("Account is locked or inactive");
+      throw new InvalidCredentialsException();
     }
 
     if (!passwordEncoder.matches(password, user.getPassword().value())) {
       handleFailedLogin(user);
-      throw new IllegalArgumentException("Invalid credentials");
+      throw new InvalidCredentialsException();
     }
 
     resetFailedAttempts(email);
@@ -53,7 +54,7 @@ public class LoginUseCase {
   private void handleFailedLogin(User user) {
     String key = FAILED_ATTEMPTS_KEY + user.getEmail().value();
     Long attempts = redisTemplate.opsForValue().increment(key);
-    redisTemplate.expire(key, java.time.Duration.ofMinutes(1));
+    redisTemplate.expire(key, java.time.Duration.ofMinutes(15));
 
     if (attempts != null && attempts >= MAX_FAILED_ATTEMPTS) {
       user.lock();

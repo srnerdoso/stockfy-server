@@ -8,6 +8,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import br.com.threadstech.stockfy.TestcontainersConfiguration;
 import br.com.threadstech.stockfy.modules.users.application.dto.AuthResponse;
+import br.com.threadstech.stockfy.modules.users.application.dto.LoginRequest;
 import br.com.threadstech.stockfy.modules.users.application.usecase.LoginUseCase;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
@@ -37,7 +38,7 @@ class AuthControllerTest {
     when(loginUseCase.execute(anyString(), anyString()))
         .thenReturn(new AuthResponse("access", "refresh"));
 
-    var request = new AuthController.LoginRequest("test@example.com", "password");
+    var request = new LoginRequest("test@example.com", "password");
 
     mockMvc
         .perform(

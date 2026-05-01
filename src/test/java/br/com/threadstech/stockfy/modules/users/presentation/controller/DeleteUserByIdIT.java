@@ -12,6 +12,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import br.com.threadstech.stockfy.MutableTimeMeter;
 import br.com.threadstech.stockfy.RateLimitTestConfiguration;
 import br.com.threadstech.stockfy.TestcontainersConfiguration;
+import br.com.threadstech.stockfy.modules.users.application.exception.InvalidCredentialsException;
 import br.com.threadstech.stockfy.modules.users.application.usecase.LoginUseCase;
 import br.com.threadstech.stockfy.modules.users.infrastructure.config.UserRateLimitConfig;
 import java.time.Duration;
@@ -93,7 +94,7 @@ class DeleteUserByIdIT {
     mockMvc.perform(delete("/api/v1/users/{id}", OWNER_ID)).andExpect(status().isNoContent());
 
     assertThrows(
-        IllegalArgumentException.class,
+        InvalidCredentialsException.class,
         () -> loginUseCase.execute("bruno.user@example.com", "password123"));
 
     assertTrue(userExists(OWNER_ID));
