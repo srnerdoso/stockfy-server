@@ -1,5 +1,6 @@
 package br.com.threadstech.stockfy.modules.users.infrastructure.security;
 
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
@@ -35,6 +36,19 @@ public class TokenService {
   public UUID getUserIdFromRefreshToken(String refreshToken) {
     String userId = redisTemplate.opsForValue().get("refresh_token:" + refreshToken);
     return userId != null ? UUID.fromString(userId) : null;
+  }
+
+  public Optional<UUID> consumeRefreshToken(String refreshToken) {
+    String userId = redisTemplate.opsForValue().getAndDelete("refresh_token:" + refreshToken);
+    if (userId == null) {
+      return Optional.empty();
+    }
+
+    try {
+      return Optional.of(UUID.fromString(userId));
+    } catch (IllegalArgumentException ex) {
+      return Optional.empty();
+    }
   }
 
   public void revokeRefreshToken(String refreshToken) {

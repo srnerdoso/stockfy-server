@@ -10,6 +10,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import br.com.threadstech.stockfy.modules.users.application.exception.InvalidCredentialsException;
+import br.com.threadstech.stockfy.modules.users.application.exception.InvalidRefreshTokenException;
 import br.com.threadstech.stockfy.modules.users.domain.model.Email;
 import br.com.threadstech.stockfy.modules.users.domain.model.Password;
 import br.com.threadstech.stockfy.modules.users.domain.model.User;
@@ -122,13 +123,15 @@ class AuthenticationTest {
   @DisplayName("Should refresh token successfully")
   void shouldRefreshTokenSuccessfully() {
     when(tokenService.validateRefreshToken(any())).thenReturn(true);
-    when(tokenService.getUserIdFromRefreshToken(any())).thenReturn(userId);
+    when(tokenService.consumeRefreshToken("old_refresh_token")).thenReturn(Optional.of(userId));
     when(userRepository.findById(any())).thenReturn(Optional.of(user));
     when(jwtService.generateToken(any(), any())).thenReturn("new_access_token");
+    when(tokenService.generateRefreshToken(any())).thenReturn("new_refresh_token");
 
     var response = refreshTokenUseCase.execute("old_refresh_token");
 
     assertEquals("new_access_token", response.accessToken());
+    assertEquals("new_refresh_token", response.refreshToken());
   }
 
   @Test
@@ -137,7 +140,43 @@ class AuthenticationTest {
     when(tokenService.validateRefreshToken(any())).thenReturn(false);
 
     assertThrows(
-        IllegalArgumentException.class, () -> refreshTokenUseCase.execute("invalid_refresh_token"));
+        InvalidRefreshTokenException.class,
+        () -> refreshTokenUseCase.execute("invalid_refresh_token"));
+  }
+
+  @Test
+  @DisplayName("Should throw invalid refresh token when user does not exist")
+  void execute_whenRefreshTokenUserDoesNotExist_thenThrowsInvalidRefreshTokenException() {
+    when(tokenService.validateRefreshToken("refresh_token")).thenReturn(true);
+    when(tokenService.consumeRefreshToken("refresh_token")).thenReturn(Optional.of(userId));
+    when(userRepository.findById(userId)).thenReturn(Optional.empty());
+
+    assertThrows(
+        InvalidRefreshTokenException.class, () -> refreshTokenUseCase.execute("refresh_token"));
+  }
+
+  @Test
+  @DisplayName("Should throw invalid refresh token when user is inactive")
+  void execute_whenUserIsInactive_thenThrowsInvalidRefreshTokenException() {
+    user.setActive(false);
+    when(tokenService.validateRefreshToken("refresh_token")).thenReturn(true);
+    when(tokenService.consumeRefreshToken("refresh_token")).thenReturn(Optional.of(userId));
+    when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+
+    assertThrows(
+        InvalidRefreshTokenException.class, () -> refreshTokenUseCase.execute("refresh_token"));
+  }
+
+  @Test
+  @DisplayName("Should throw invalid refresh token when user is locked")
+  void execute_whenUserIsLocked_thenThrowsInvalidRefreshTokenException() {
+    user.lock();
+    when(tokenService.validateRefreshToken("refresh_token")).thenReturn(true);
+    when(tokenService.consumeRefreshToken("refresh_token")).thenReturn(Optional.of(userId));
+    when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+
+    assertThrows(
+        InvalidRefreshTokenException.class, () -> refreshTokenUseCase.execute("refresh_token"));
   }
 
   @Test

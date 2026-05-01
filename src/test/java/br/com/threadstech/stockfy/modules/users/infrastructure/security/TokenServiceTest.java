@@ -45,4 +45,41 @@ class TokenServiceTest {
     assertEquals("refresh_token:" + refreshToken, keyCaptor.getValue());
     assertTrue(UUID.fromString(refreshToken).toString().equals(refreshToken));
   }
+
+  @Test
+  @DisplayName("Deve consumir refresh token removendo chave do Redis atomicamente")
+  void consumeRefreshToken_whenTokenExists_thenReturnsUserIdAndDeletesToken() {
+    UUID userId = UUID.randomUUID();
+    TokenService tokenService = new TokenService(redisTemplate);
+    when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+    when(valueOperations.getAndDelete("refresh_token:refresh-token")).thenReturn(userId.toString());
+
+    var result = tokenService.consumeRefreshToken("refresh-token");
+
+    assertEquals(userId, result.orElseThrow());
+  }
+
+  @Test
+  @DisplayName("Deve retornar vazio quando refresh token nao existir")
+  void consumeRefreshToken_whenTokenDoesNotExist_thenReturnsEmpty() {
+    TokenService tokenService = new TokenService(redisTemplate);
+    when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+    when(valueOperations.getAndDelete("refresh_token:missing-token")).thenReturn(null);
+
+    var result = tokenService.consumeRefreshToken("missing-token");
+
+    assertTrue(result.isEmpty());
+  }
+
+  @Test
+  @DisplayName("Deve retornar vazio quando valor do refresh token estiver malformado")
+  void consumeRefreshToken_whenRedisValueIsMalformed_thenReturnsEmpty() {
+    TokenService tokenService = new TokenService(redisTemplate);
+    when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+    when(valueOperations.getAndDelete("refresh_token:malformed-token")).thenReturn("not-a-uuid");
+
+    var result = tokenService.consumeRefreshToken("malformed-token");
+
+    assertTrue(result.isEmpty());
+  }
 }

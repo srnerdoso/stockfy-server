@@ -4,6 +4,7 @@ import br.com.threadstech.stockfy.modules.users.application.exception.CurrentPas
 import br.com.threadstech.stockfy.modules.users.application.exception.EmailAlreadyExistsException;
 import br.com.threadstech.stockfy.modules.users.application.exception.InvalidCredentialsException;
 import br.com.threadstech.stockfy.modules.users.application.exception.InvalidPasswordResetCodeException;
+import br.com.threadstech.stockfy.modules.users.application.exception.InvalidRefreshTokenException;
 import br.com.threadstech.stockfy.modules.users.application.exception.PasswordMismatchException;
 import br.com.threadstech.stockfy.modules.users.application.exception.UserNotFoundException;
 import br.com.threadstech.stockfy.modules.users.domain.exception.InvalidUserRolesException;
@@ -108,6 +109,11 @@ public class UserExceptionHandler {
         new ApiErrorResponse(
             "about:blank", "Unauthorized", HttpStatus.UNAUTHORIZED.value(), detail, null);
     return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+  }
+
+  @ExceptionHandler(InvalidRefreshTokenException.class)
+  public ResponseEntity<Void> handleInvalidRefreshTokenException() {
+    return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
   }
 
   @ExceptionHandler(InvalidUserRolesException.class)
