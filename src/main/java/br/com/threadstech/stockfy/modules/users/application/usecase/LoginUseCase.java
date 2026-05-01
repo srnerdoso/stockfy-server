@@ -29,9 +29,10 @@ public class LoginUseCase {
   private static final String FAILED_ATTEMPTS_KEY = "login_attempts:";
 
   public AuthResponse execute(String email, String password) {
+    Email userEmail = parseEmail(email);
     User user =
         userRepository
-            .findByEmail(new Email(email))
+            .findByEmail(userEmail)
             .orElseThrow(InvalidCredentialsException::new);
 
     if (!user.isActive() || user.getStatus() == UserStatus.LOCKED) {
@@ -54,7 +55,7 @@ public class LoginUseCase {
   private void handleFailedLogin(User user) {
     String key = FAILED_ATTEMPTS_KEY + user.getEmail().value();
     Long attempts = redisTemplate.opsForValue().increment(key);
-    redisTemplate.expire(key, java.time.Duration.ofMinutes(15));
+    redisTemplate.expire(key, java.time.Duration.ofDays(1));
 
     if (attempts != null && attempts >= MAX_FAILED_ATTEMPTS) {
       user.lock();
@@ -67,5 +68,13 @@ public class LoginUseCase {
 
   private void resetFailedAttempts(String email) {
     redisTemplate.delete(FAILED_ATTEMPTS_KEY + email);
+  }
+
+  private Email parseEmail(String email) {
+    try {
+      return new Email(email);
+    } catch (IllegalArgumentException ex) {
+      throw new InvalidCredentialsException();
+    }
   }
 }

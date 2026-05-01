@@ -137,23 +137,6 @@ class LoginUserIT {
   }
 
   @Test
-  @DisplayName("Deve retornar 400 quando email tiver dominio maior que o permitido")
-  void loginUser_whenEmailDomainSuffixIsTooLong_thenReturns400() throws Exception {
-    long usersBeforeRequest = countUsers();
-
-    assertBadRequestFieldValidation(
-        mockMvc.perform(
-            post("/api/v1/auth/sessions")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"email\":\"bruno.user@example.technology\",\"password\":\"password123\"}")),
-        "email",
-        "O e-mail informado é inválido.");
-
-    assertEquals(usersBeforeRequest, countUsers());
-    assertEquals("ACTIVE", userStatus());
-  }
-
-  @Test
   @DisplayName("Deve retornar 400 com todos os erros quando email e senha forem omitidos")
   void loginUser_whenEmailAndPasswordAreMissing_thenReturns400WithBothFieldErrors()
       throws Exception {

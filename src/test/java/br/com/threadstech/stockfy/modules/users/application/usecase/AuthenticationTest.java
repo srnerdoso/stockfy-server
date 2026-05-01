@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -18,6 +19,7 @@ import br.com.threadstech.stockfy.modules.users.domain.repository.UserRepository
 import br.com.threadstech.stockfy.modules.users.infrastructure.messaging.RabbitMqEventPublisher;
 import br.com.threadstech.stockfy.modules.users.infrastructure.security.JwtService;
 import br.com.threadstech.stockfy.modules.users.infrastructure.security.TokenService;
+import java.time.Duration;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -90,6 +92,30 @@ class AuthenticationTest {
 
     assertThrows(
         InvalidCredentialsException.class, () -> loginUseCase.execute("john@example.com", "wrong"));
+  }
+
+  @Test
+  @DisplayName("Should keep failed login attempts for one day")
+  void execute_whenPasswordIsWrong_thenExpiresFailedAttemptsAfterOneDay() {
+    when(userRepository.findByEmail(any())).thenReturn(Optional.of(user));
+    when(passwordEncoder.matches(any(), any())).thenReturn(false);
+
+    @SuppressWarnings("unchecked")
+    ValueOperations<String, String> valueOperations = mock(ValueOperations.class);
+    when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+
+    assertThrows(
+        InvalidCredentialsException.class, () -> loginUseCase.execute("john@example.com", "wrong"));
+
+    verify(redisTemplate).expire(eq("login_attempts:john@example.com"), eq(Duration.ofDays(1)));
+  }
+
+  @Test
+  @DisplayName("Should throw invalid credentials when email value object rejects address")
+  void execute_whenEmailValueObjectRejectsAddress_thenThrowsInvalidCredentialsException() {
+    assertThrows(
+        InvalidCredentialsException.class,
+        () -> loginUseCase.execute("john@example.technology", "password123"));
   }
 
   @Test
