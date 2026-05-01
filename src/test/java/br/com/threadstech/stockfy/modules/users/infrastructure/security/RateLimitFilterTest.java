@@ -1,6 +1,7 @@
 package br.com.threadstech.stockfy.modules.users.infrastructure.security;
 
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -63,6 +64,32 @@ class RateLimitFilterTest {
 
     verify(rateLimitConfig).resolveGeneralBucket(CLIENT_IP);
     verify(rateLimitConfig, never()).resolveLoginBucket(anyString());
+  }
+
+  @Test
+  @DisplayName("Deve retornar 429 sem corpo para encerramento de sessao")
+  void doFilter_whenLogoutLimitExceeded_thenReturns429WithoutBody() throws Exception {
+    when(rateLimitConfig.resolveGeneralBucket(CLIENT_IP)).thenReturn(generalBucket);
+    when(generalBucket.tryConsume(1)).thenReturn(false);
+
+    var response = new MockHttpServletResponse();
+    new RateLimitFilter(rateLimitConfig).doFilter(logoutRequest(), response, filterChain);
+
+    assertEquals(429, response.getStatus());
+    assertEquals("", response.getContentAsString());
+  }
+
+  @Test
+  @DisplayName("Deve preservar corpo de rate limit para demais endpoints")
+  void doFilter_whenNonLogoutLimitExceeded_thenReturns429WithMessage() throws Exception {
+    when(rateLimitConfig.resolveGeneralBucket(CLIENT_IP)).thenReturn(generalBucket);
+    when(generalBucket.tryConsume(1)).thenReturn(false);
+
+    var response = new MockHttpServletResponse();
+    new RateLimitFilter(rateLimitConfig).doFilter(refreshRequest(), response, filterChain);
+
+    assertEquals(429, response.getStatus());
+    assertEquals("Too many requests", response.getContentAsString());
   }
 
   private MockHttpServletRequest loginRequest() {

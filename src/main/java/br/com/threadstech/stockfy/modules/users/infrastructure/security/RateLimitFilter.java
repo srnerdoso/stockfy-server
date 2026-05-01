@@ -39,7 +39,14 @@ public class RateLimitFilter extends OncePerRequestFilter {
       filterChain.doFilter(request, response);
     } else {
       response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
-      response.getWriter().write("Too many requests");
+      if (!isLogoutRequest(request)) {
+        response.getWriter().write("Too many requests");
+      }
     }
+  }
+
+  private boolean isLogoutRequest(HttpServletRequest request) {
+    return "DELETE".equals(request.getMethod())
+        && "/api/v1/auth/sessions/current".equals(request.getRequestURI());
   }
 }

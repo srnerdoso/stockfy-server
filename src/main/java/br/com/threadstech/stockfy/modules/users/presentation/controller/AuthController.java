@@ -68,13 +68,18 @@ public class AuthController {
   }
 
   private void clearCookies(HttpServletResponse response) {
-    Cookie accessCookie = new Cookie("access_token", null);
-    accessCookie.setPath("/");
-    accessCookie.setMaxAge(0);
-    Cookie refreshCookie = new Cookie("refresh_token", null);
-    refreshCookie.setPath("/");
-    refreshCookie.setMaxAge(0);
+    Cookie accessCookie = expiredCookie("access_token");
+    Cookie refreshCookie = expiredCookie("refresh_token");
     response.addCookie(accessCookie);
     response.addCookie(refreshCookie);
+  }
+
+  private Cookie expiredCookie(String name) {
+    Cookie cookie = new Cookie(name, null);
+    cookie.setHttpOnly(true);
+    cookie.setSecure(true);
+    cookie.setPath("/");
+    cookie.setMaxAge(0);
+    return cookie;
   }
 }
