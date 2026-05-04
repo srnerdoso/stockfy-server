@@ -17,28 +17,28 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class RegisterUserUseCase {
 
-  private final UserRepository userRepository;
-  private final PasswordEncoder passwordEncoder;
+	private final UserRepository userRepository;
 
-  public void execute(RegisterUserRequest request) {
-    if (request.confirmPassword() != null
-        && !request.password().equals(request.confirmPassword())) {
-      throw new PasswordMismatchException();
-    }
-    Email userEmail = new Email(request.email());
-    if (userRepository.findByEmail(userEmail).isPresent()) {
-      throw new EmailAlreadyExistsException();
-    }
+	private final PasswordEncoder passwordEncoder;
 
-    User user =
-        User.builder()
-            .id(UUID.randomUUID())
-            .name(request.name())
-            .email(userEmail)
-            .password(new Password(passwordEncoder.encode(request.password())))
-            .roles(Set.of(request.role()))
-            .build();
+	public void execute(RegisterUserRequest request) {
+		if (request.confirmPassword() != null && !request.password().equals(request.confirmPassword())) {
+			throw new PasswordMismatchException();
+		}
+		Email userEmail = new Email(request.email());
+		if (userRepository.findByEmail(userEmail).isPresent()) {
+			throw new EmailAlreadyExistsException();
+		}
 
-    userRepository.save(user);
-  }
+		User user = User.builder()
+			.id(UUID.randomUUID())
+			.name(request.name())
+			.email(userEmail)
+			.password(new Password(passwordEncoder.encode(request.password())))
+			.roles(Set.of(request.role()))
+			.build();
+
+		userRepository.save(user);
+	}
+
 }

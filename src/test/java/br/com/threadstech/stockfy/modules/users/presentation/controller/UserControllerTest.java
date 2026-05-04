@@ -32,39 +32,39 @@ import org.springframework.test.web.servlet.MockMvc;
 @Import(TestcontainersConfiguration.class)
 class UserControllerTest {
 
-  @Autowired private MockMvc mockMvc;
+	@Autowired
+	private MockMvc mockMvc;
 
-  @MockitoBean private UserRepository userRepository;
+	@MockitoBean
+	private UserRepository userRepository;
 
-  private final UUID userId = UUID.randomUUID();
+	private final UUID userId = UUID.randomUUID();
 
-  @Test
-  @DisplayName("Should return user profile when authenticated")
-  void shouldReturnUserProfile() throws Exception {
-    User user =
-        User.builder()
-            .id(userId)
-            .name("John Doe")
-            .email(new Email("john@example.com"))
-            .roles(Set.of(UserRole.USER))
-            .status(UserStatus.ACTIVE)
-            .active(true)
-            .build();
+	@Test
+	@DisplayName("Should return user profile when authenticated")
+	void shouldReturnUserProfile() throws Exception {
+		User user = User.builder()
+			.id(userId)
+			.name("John Doe")
+			.email(new Email("john@example.com"))
+			.roles(Set.of(UserRole.USER))
+			.status(UserStatus.ACTIVE)
+			.active(true)
+			.build();
 
-    when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+		when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
-    // Manually set security context for test
-    SecurityContextHolder.getContext()
-        .setAuthentication(
-            new UsernamePasswordAuthenticationToken(
-                userId, null, List.of(new SimpleGrantedAuthority("ROLE_USER"))));
+		// Manually set security context for test
+		SecurityContextHolder.getContext()
+			.setAuthentication(new UsernamePasswordAuthenticationToken(userId, null,
+					List.of(new SimpleGrantedAuthority("ROLE_USER"))));
 
-    mockMvc
-        .perform(get("/api/v1/users/me"))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.name").value("John Doe"))
-        .andExpect(jsonPath("$.email").value("john@example.com"))
-        .andExpect(jsonPath("$.roles").isArray())
-        .andExpect(jsonPath("$.roles[0]").value("USER"));
-  }
+		mockMvc.perform(get("/api/v1/users/me"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.name").value("John Doe"))
+			.andExpect(jsonPath("$.email").value("john@example.com"))
+			.andExpect(jsonPath("$.roles").isArray())
+			.andExpect(jsonPath("$.roles[0]").value("USER"));
+	}
+
 }

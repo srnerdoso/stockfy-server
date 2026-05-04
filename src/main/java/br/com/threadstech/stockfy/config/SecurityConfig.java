@@ -22,41 +22,39 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-  private final RateLimitFilter rateLimitFilter;
-  private final JwtAuthenticationFilter jwtAuthenticationFilter;
-  private final UnauthorizedAuthenticationEntryPoint unauthorizedAuthenticationEntryPoint;
-  private final ForbiddenAccessDeniedResponder forbiddenAccessDeniedResponder;
+	private final RateLimitFilter rateLimitFilter;
 
-  @Bean
-  public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-    http.csrf(AbstractHttpConfigurer::disable)
-        .httpBasic(AbstractHttpConfigurer::disable)
-        .formLogin(AbstractHttpConfigurer::disable)
-        .sessionManagement(
-            session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-        .exceptionHandling(
-            exception ->
-                exception
-                    .authenticationEntryPoint(unauthorizedAuthenticationEntryPoint)
-                    .accessDeniedHandler(forbiddenAccessDeniedResponder))
-        .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)
-        .addFilterAfter(jwtAuthenticationFilter, RateLimitFilter.class)
-        .authorizeHttpRequests(
-            auth ->
-                auth.requestMatchers(HttpMethod.POST, "/api/v1/auth/sessions/**")
-                    .permitAll()
-                    .requestMatchers(HttpMethod.PATCH, "/api/v1/users/password")
-                    .permitAll()
-                    .requestMatchers("/api/v1/**")
-                    .authenticated()
-                    .anyRequest()
-                    .permitAll());
+	private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
-    return http.build();
-  }
+	private final UnauthorizedAuthenticationEntryPoint unauthorizedAuthenticationEntryPoint;
 
-  @Bean
-  public PasswordEncoder passwordEncoder() {
-    return new BCryptPasswordEncoder();
-  }
+	private final ForbiddenAccessDeniedResponder forbiddenAccessDeniedResponder;
+
+	@Bean
+	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+		http.csrf(AbstractHttpConfigurer::disable)
+			.httpBasic(AbstractHttpConfigurer::disable)
+			.formLogin(AbstractHttpConfigurer::disable)
+			.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+			.exceptionHandling(exception -> exception.authenticationEntryPoint(unauthorizedAuthenticationEntryPoint)
+				.accessDeniedHandler(forbiddenAccessDeniedResponder))
+			.addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)
+			.addFilterAfter(jwtAuthenticationFilter, RateLimitFilter.class)
+			.authorizeHttpRequests(auth -> auth.requestMatchers(HttpMethod.POST, "/api/v1/auth/sessions/**")
+				.permitAll()
+				.requestMatchers(HttpMethod.PATCH, "/api/v1/users/password")
+				.permitAll()
+				.requestMatchers("/api/v1/**")
+				.authenticated()
+				.anyRequest()
+				.permitAll());
+
+		return http.build();
+	}
+
+	@Bean
+	public PasswordEncoder passwordEncoder() {
+		return new BCryptPasswordEncoder();
+	}
+
 }

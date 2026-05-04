@@ -10,11 +10,12 @@ import org.junit.jupiter.api.Test;
 
 class UserExceptionMessageKeyTest {
 
-  @Test
-  @DisplayName("Deve expor chaves de mensagem seguindo kebab-case e hierarquia")
-  void constructor_whenExceptionIsCreated_thenUsesStructuredMessageKey() {
-    assertEquals("exception.email-already-exists", new EmailAlreadyExistsException().getMessage());
-    assertEquals("user.password.mismatch", new PasswordMismatchException().getMessage());
-    assertEquals("user.password.invalid", new InvalidPasswordException().getMessage());
-  }
+	@Test
+	@DisplayName("Deve expor chaves de mensagem seguindo kebab-case e hierarquia")
+	void constructor_whenExceptionIsCreated_thenUsesStructuredMessageKey() {
+		assertEquals("exception.email-already-exists", new EmailAlreadyExistsException().getMessage());
+		assertEquals("user.password.mismatch", new PasswordMismatchException().getMessage());
+		assertEquals("user.password.invalid", new InvalidPasswordException().getMessage());
+	}
+
 }

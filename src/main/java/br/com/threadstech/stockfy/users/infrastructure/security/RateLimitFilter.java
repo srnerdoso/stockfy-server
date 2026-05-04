@@ -16,37 +16,39 @@ import org.springframework.web.filter.OncePerRequestFilter;
 @RequiredArgsConstructor
 public class RateLimitFilter extends OncePerRequestFilter {
 
-  private final UserRateLimitConfig rateLimitConfig;
+	private final UserRateLimitConfig rateLimitConfig;
 
-  @Override
-  protected void doFilterInternal(
-      HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
-      throws ServletException, IOException {
+	@Override
+	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+			throws ServletException, IOException {
 
-    String path = request.getRequestURI();
-    String clientIp = request.getRemoteAddr();
+		String path = request.getRequestURI();
+		String clientIp = request.getRemoteAddr();
 
-    Bucket bucket;
-    if ("POST".equals(request.getMethod()) && path.equals("/api/v1/auth/sessions")) {
-      bucket = rateLimitConfig.resolveLoginBucket(clientIp);
-    } else if (path.equals("/api/v1/users/password")) {
-      bucket = rateLimitConfig.resolvePasswordBucket(clientIp);
-    } else {
-      bucket = rateLimitConfig.resolveGeneralBucket(clientIp);
-    }
+		Bucket bucket;
+		if ("POST".equals(request.getMethod()) && path.equals("/api/v1/auth/sessions")) {
+			bucket = rateLimitConfig.resolveLoginBucket(clientIp);
+		}
+		else if (path.equals("/api/v1/users/password")) {
+			bucket = rateLimitConfig.resolvePasswordBucket(clientIp);
+		}
+		else {
+			bucket = rateLimitConfig.resolveGeneralBucket(clientIp);
+		}
 
-    if (bucket.tryConsume(1)) {
-      filterChain.doFilter(request, response);
-    } else {
-      response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
-      if (!isLogoutRequest(request)) {
-        response.getWriter().write("Too many requests");
-      }
-    }
-  }
+		if (bucket.tryConsume(1)) {
+			filterChain.doFilter(request, response);
+		}
+		else {
+			response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
+			if (!isLogoutRequest(request)) {
+				response.getWriter().write("Too many requests");
+			}
+		}
+	}
 
-  private boolean isLogoutRequest(HttpServletRequest request) {
-    return "DELETE".equals(request.getMethod())
-        && "/api/v1/auth/sessions/current".equals(request.getRequestURI());
-  }
+	private boolean isLogoutRequest(HttpServletRequest request) {
+		return "DELETE".equals(request.getMethod()) && "/api/v1/auth/sessions/current".equals(request.getRequestURI());
+	}
+
 }

@@ -17,7 +17,6 @@ import br.com.threadstech.stockfy.users.domain.model.User;
 import br.com.threadstech.stockfy.users.domain.model.UserRole;
 import br.com.threadstech.stockfy.users.domain.model.UserStatus;
 import br.com.threadstech.stockfy.users.domain.repository.UserRepository;
-
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -33,69 +32,77 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 @ExtendWith(MockitoExtension.class)
 class UserManagementTest {
 
-  @Mock private UserRepository userRepository;
-  @Mock private PasswordEncoder passwordEncoder;
+	@Mock
+	private UserRepository userRepository;
 
-  @InjectMocks private RegisterUserUseCase registerUserUseCase;
-  @InjectMocks private UpdateProfileUseCase updateProfileUseCase;
-  @InjectMocks private DeleteUserUseCase deleteUserUseCase;
+	@Mock
+	private PasswordEncoder passwordEncoder;
 
-  private User user;
-  private final UUID userId = UUID.randomUUID();
+	@InjectMocks
+	private RegisterUserUseCase registerUserUseCase;
 
-  @BeforeEach
-  void setUp() {
-    user =
-        User.builder()
-            .id(userId)
-            .name("John Doe")
-            .email(new Email("john@example.com"))
-            .password(new Password("hashed_password"))
-            .roles(Set.of(UserRole.USER))
-            .status(UserStatus.ACTIVE)
-            .active(true)
-            .build();
-  }
+	@InjectMocks
+	private UpdateProfileUseCase updateProfileUseCase;
 
-  @Test
-  @DisplayName("Should register new user")
-  void shouldRegisterNewUser() {
-    when(userRepository.findByEmail(any())).thenReturn(Optional.empty());
-    when(passwordEncoder.encode(any())).thenReturn("hashed_password");
+	@InjectMocks
+	private DeleteUserUseCase deleteUserUseCase;
 
-    var request =
-        new RegisterUserRequest("New User", "new@example.com", "password123", null, UserRole.USER);
-    registerUserUseCase.execute(request);
+	private User user;
 
-    verify(userRepository).save(any(User.class));
-  }
+	private final UUID userId = UUID.randomUUID();
 
-  @Test
-  @DisplayName("Should throw exception if email already exists")
-  void shouldThrowExceptionIfEmailExists() {
-    when(userRepository.findByEmail(any())).thenReturn(Optional.of(user));
+	@BeforeEach
+	void setUp() {
+		user = User.builder()
+			.id(userId)
+			.name("John Doe")
+			.email(new Email("john@example.com"))
+			.password(new Password("hashed_password"))
+			.roles(Set.of(UserRole.USER))
+			.status(UserStatus.ACTIVE)
+			.active(true)
+			.build();
+	}
 
-    var request = new RegisterUserRequest("John", "john@example.com", "pass", null, UserRole.USER);
-    assertThrows(EmailAlreadyExistsException.class, () -> registerUserUseCase.execute(request));
-  }
+	@Test
+	@DisplayName("Should register new user")
+	void shouldRegisterNewUser() {
+		when(userRepository.findByEmail(any())).thenReturn(Optional.empty());
+		when(passwordEncoder.encode(any())).thenReturn("hashed_password");
 
-  @Test
-  @DisplayName("Should update user profile")
-  void shouldUpdateUserProfile() {
-    when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+		var request = new RegisterUserRequest("New User", "new@example.com", "password123", null, UserRole.USER);
+		registerUserUseCase.execute(request);
 
-    updateProfileUseCase.execute(userId, "Updated Name", "updated@example.com");
+		verify(userRepository).save(any(User.class));
+	}
 
-    assertEquals("Updated Name", user.getName());
-    assertEquals("updated@example.com", user.getEmail().value());
-    verify(userRepository).update(user);
-  }
+	@Test
+	@DisplayName("Should throw exception if email already exists")
+	void shouldThrowExceptionIfEmailExists() {
+		when(userRepository.findByEmail(any())).thenReturn(Optional.of(user));
 
-  @Test
-  @DisplayName("Should delete user (soft delete)")
-  void shouldDeleteUser() {
-    deleteUserUseCase.execute(userId);
+		var request = new RegisterUserRequest("John", "john@example.com", "pass", null, UserRole.USER);
+		assertThrows(EmailAlreadyExistsException.class, () -> registerUserUseCase.execute(request));
+	}
 
-    verify(userRepository).deleteById(userId);
-  }
+	@Test
+	@DisplayName("Should update user profile")
+	void shouldUpdateUserProfile() {
+		when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+
+		updateProfileUseCase.execute(userId, "Updated Name", "updated@example.com");
+
+		assertEquals("Updated Name", user.getName());
+		assertEquals("updated@example.com", user.getEmail().value());
+		verify(userRepository).update(user);
+	}
+
+	@Test
+	@DisplayName("Should delete user (soft delete)")
+	void shouldDeleteUser() {
+		deleteUserUseCase.execute(userId);
+
+		verify(userRepository).deleteById(userId);
+	}
+
 }

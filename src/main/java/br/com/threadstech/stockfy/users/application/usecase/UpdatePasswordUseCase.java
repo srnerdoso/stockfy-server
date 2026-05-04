@@ -21,72 +21,74 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class UpdatePasswordUseCase {
 
-  private static final int MAX_INVALID_ATTEMPTS = 15;
-  private static final String INVALID_ATTEMPTS_KEY = "password_update_attempts:";
+	private static final int MAX_INVALID_ATTEMPTS = 15;
 
-  private final UserRepository userRepository;
-  private final PasswordEncoder passwordEncoder;
-  private final ResetCodeHasher resetCodeHasher;
-  private final StringRedisTemplate redisTemplate;
+	private static final String INVALID_ATTEMPTS_KEY = "password_update_attempts:";
 
-  @Transactional
-  public void executeWithCode(String code, String newPassword, String confirmPassword) {
-    validatePasswordConfirmation(newPassword, confirmPassword);
-    User user = findUserByResetCode(code);
-    updatePassword(user, newPassword);
-    user.setResetPasswordCodeHash(null);
-    user.setResetPasswordExpiresAt(null);
-    userRepository.update(user);
-  }
+	private final UserRepository userRepository;
 
-  @Transactional(noRollbackFor = CurrentPasswordInvalidException.class)
-  public void executeAuthenticated(
-      UUID userId, String currentPassword, String newPassword, String confirmPassword) {
-    validatePasswordConfirmation(newPassword, confirmPassword);
-    User user = userRepository.findById(userId).orElseThrow(UserNotFoundException::new);
+	private final PasswordEncoder passwordEncoder;
 
-    if (currentPassword == null
-        || currentPassword.isBlank()
-        || !passwordEncoder.matches(currentPassword, user.getPassword().value())) {
-      countInvalidAttempt(user);
-      throw new CurrentPasswordInvalidException();
-    }
+	private final ResetCodeHasher resetCodeHasher;
 
-    redisTemplate.delete(INVALID_ATTEMPTS_KEY + user.getId());
-    updatePassword(user, newPassword);
-    userRepository.update(user);
-  }
+	private final StringRedisTemplate redisTemplate;
 
-  private void validatePasswordConfirmation(String newPassword, String confirmPassword) {
-    if (!newPassword.equals(confirmPassword)) {
-      throw new PasswordMismatchException();
-    }
-  }
+	@Transactional
+	public void executeWithCode(String code, String newPassword, String confirmPassword) {
+		validatePasswordConfirmation(newPassword, confirmPassword);
+		User user = findUserByResetCode(code);
+		updatePassword(user, newPassword);
+		user.setResetPasswordCodeHash(null);
+		user.setResetPasswordExpiresAt(null);
+		userRepository.update(user);
+	}
 
-  private User findUserByResetCode(String code) {
-    String codeHash = resetCodeHasher.hash(code);
-    return userRepository
-        .findByResetPasswordCodeHash(codeHash)
-        .filter(this::resetCodeNotExpired)
-        .orElseThrow(InvalidPasswordResetCodeException::new);
-  }
+	@Transactional(noRollbackFor = CurrentPasswordInvalidException.class)
+	public void executeAuthenticated(UUID userId, String currentPassword, String newPassword, String confirmPassword) {
+		validatePasswordConfirmation(newPassword, confirmPassword);
+		User user = userRepository.findById(userId).orElseThrow(UserNotFoundException::new);
 
-  private boolean resetCodeNotExpired(User user) {
-    return user.getResetPasswordExpiresAt() != null
-        && !user.getResetPasswordExpiresAt().isBefore(LocalDateTime.now());
-  }
+		if (currentPassword == null || currentPassword.isBlank()
+				|| !passwordEncoder.matches(currentPassword, user.getPassword().value())) {
+			countInvalidAttempt(user);
+			throw new CurrentPasswordInvalidException();
+		}
 
-  private void updatePassword(User user, String newPassword) {
-    user.setPassword(new Password(passwordEncoder.encode(newPassword)));
-  }
+		redisTemplate.delete(INVALID_ATTEMPTS_KEY + user.getId());
+		updatePassword(user, newPassword);
+		userRepository.update(user);
+	}
 
-  private void countInvalidAttempt(User user) {
-    String key = INVALID_ATTEMPTS_KEY + user.getId();
-    Long attempts = redisTemplate.opsForValue().increment(key);
-    redisTemplate.expire(key, Duration.ofMinutes(5));
-    if (attempts != null && attempts >= MAX_INVALID_ATTEMPTS) {
-      user.lock();
-      userRepository.update(user);
-    }
-  }
+	private void validatePasswordConfirmation(String newPassword, String confirmPassword) {
+		if (!newPassword.equals(confirmPassword)) {
+			throw new PasswordMismatchException();
+		}
+	}
+
+	private User findUserByResetCode(String code) {
+		String codeHash = resetCodeHasher.hash(code);
+		return userRepository.findByResetPasswordCodeHash(codeHash)
+			.filter(this::resetCodeNotExpired)
+			.orElseThrow(InvalidPasswordResetCodeException::new);
+	}
+
+	private boolean resetCodeNotExpired(User user) {
+		return user.getResetPasswordExpiresAt() != null
+				&& !user.getResetPasswordExpiresAt().isBefore(LocalDateTime.now());
+	}
+
+	private void updatePassword(User user, String newPassword) {
+		user.setPassword(new Password(passwordEncoder.encode(newPassword)));
+	}
+
+	private void countInvalidAttempt(User user) {
+		String key = INVALID_ATTEMPTS_KEY + user.getId();
+		Long attempts = redisTemplate.opsForValue().increment(key);
+		redisTemplate.expire(key, Duration.ofMinutes(5));
+		if (attempts != null && attempts >= MAX_INVALID_ATTEMPTS) {
+			user.lock();
+			userRepository.update(user);
+		}
+	}
+
 }

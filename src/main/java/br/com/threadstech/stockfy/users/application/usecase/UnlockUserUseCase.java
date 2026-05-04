@@ -13,17 +13,19 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class UnlockUserUseCase {
 
-  private static final String LOGIN_ATTEMPTS_KEY = "login_attempts:";
+	private static final String LOGIN_ATTEMPTS_KEY = "login_attempts:";
 
-  private final UserRepository userRepository;
-  private final StringRedisTemplate redisTemplate;
+	private final UserRepository userRepository;
 
-  @Transactional
-  public void execute(UUID userId) {
-    User user = userRepository.findById(userId).orElseThrow(UserNotFoundException::new);
+	private final StringRedisTemplate redisTemplate;
 
-    user.unlock();
-    redisTemplate.delete(LOGIN_ATTEMPTS_KEY + user.getEmail().value());
-    userRepository.update(user);
-  }
+	@Transactional
+	public void execute(UUID userId) {
+		User user = userRepository.findById(userId).orElseThrow(UserNotFoundException::new);
+
+		user.unlock();
+		redisTemplate.delete(LOGIN_ATTEMPTS_KEY + user.getEmail().value());
+		userRepository.update(user);
+	}
+
 }

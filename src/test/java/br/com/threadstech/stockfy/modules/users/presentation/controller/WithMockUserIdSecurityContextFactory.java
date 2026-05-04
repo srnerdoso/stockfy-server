@@ -8,22 +8,20 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.test.context.support.WithSecurityContextFactory;
 
-public class WithMockUserIdSecurityContextFactory
-    implements WithSecurityContextFactory<WithMockUserId> {
+public class WithMockUserIdSecurityContextFactory implements WithSecurityContextFactory<WithMockUserId> {
 
-  @Override
-  public SecurityContext createSecurityContext(WithMockUserId annotation) {
-    var authorities =
-        Arrays.stream(annotation.roles())
-            .map(role -> role.startsWith("ROLE_") ? role : "ROLE_" + role)
-            .map(SimpleGrantedAuthority::new)
-            .toList();
+	@Override
+	public SecurityContext createSecurityContext(WithMockUserId annotation) {
+		var authorities = Arrays.stream(annotation.roles())
+			.map(role -> role.startsWith("ROLE_") ? role : "ROLE_" + role)
+			.map(SimpleGrantedAuthority::new)
+			.toList();
 
-    var authentication =
-        new UsernamePasswordAuthenticationToken(
-            UUID.fromString(annotation.id()), null, authorities);
-    SecurityContext context = SecurityContextHolder.createEmptyContext();
-    context.setAuthentication(authentication);
-    return context;
-  }
+		var authentication = new UsernamePasswordAuthenticationToken(UUID.fromString(annotation.id()), null,
+				authorities);
+		SecurityContext context = SecurityContextHolder.createEmptyContext();
+		context.setAuthentication(authentication);
+		return context;
+	}
+
 }

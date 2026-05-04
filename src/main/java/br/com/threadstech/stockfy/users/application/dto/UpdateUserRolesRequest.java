@@ -8,27 +8,23 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public record UpdateUserRolesRequest(
-    List<
-            @NotNull(message = "{user.roles.invalid}")
-            @Pattern(regexp = "ADMIN|USER", message = "{user.roles.invalid}") String>
-        add,
-    List<
-            @NotNull(message = "{user.roles.invalid}")
-            @Pattern(regexp = "ADMIN|USER", message = "{user.roles.invalid}") String>
-        remove) {
+		List<@NotNull(message = "{user.roles.invalid}") @Pattern(regexp = "ADMIN|USER",
+				message = "{user.roles.invalid}") String> add,
+		List<@NotNull(message = "{user.roles.invalid}") @Pattern(regexp = "ADMIN|USER",
+				message = "{user.roles.invalid}") String> remove) {
 
-  public Set<UserRole> rolesToAdd() {
-    return toRoles(add);
-  }
+	public Set<UserRole> rolesToAdd() {
+		return toRoles(add);
+	}
 
-  public Set<UserRole> rolesToRemove() {
-    return toRoles(remove);
-  }
+	public Set<UserRole> rolesToRemove() {
+		return toRoles(remove);
+	}
 
-  private Set<UserRole> toRoles(List<String> roles) {
-    if (roles == null) {
-      return Set.of();
-    }
-    return roles.stream().map(UserRole::valueOf).collect(Collectors.toUnmodifiableSet());
-  }
+	private Set<UserRole> toRoles(List<String> roles) {
+		if (roles == null) {
+			return Set.of();
+		}
+		return roles.stream().map(UserRole::valueOf).collect(Collectors.toUnmodifiableSet());
+	}
 }

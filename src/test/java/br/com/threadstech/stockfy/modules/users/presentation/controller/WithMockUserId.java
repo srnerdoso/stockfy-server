@@ -7,7 +7,9 @@ import org.springframework.security.test.context.support.WithSecurityContext;
 @Retention(RetentionPolicy.RUNTIME)
 @WithSecurityContext(factory = WithMockUserIdSecurityContextFactory.class)
 public @interface WithMockUserId {
-  String id();
 
-  String[] roles() default {"USER"};
+	String id();
+
+	String[] roles() default { "USER" };
+
 }

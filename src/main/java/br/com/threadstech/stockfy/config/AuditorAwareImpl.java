@@ -11,13 +11,14 @@ import org.springframework.stereotype.Component;
 @Component
 public class AuditorAwareImpl implements AuditorAware<UUID> {
 
-  @Override
-  public Optional<UUID> getCurrentAuditor() {
-    return Optional.ofNullable(SecurityContextHolder.getContext())
-        .map(SecurityContext::getAuthentication)
-        .filter(Authentication::isAuthenticated)
-        .map(Authentication::getPrincipal)
-        .filter(principal -> principal instanceof UUID)
-        .map(principal -> (UUID) principal);
-  }
+	@Override
+	public Optional<UUID> getCurrentAuditor() {
+		return Optional.ofNullable(SecurityContextHolder.getContext())
+			.map(SecurityContext::getAuthentication)
+			.filter(Authentication::isAuthenticated)
+			.map(Authentication::getPrincipal)
+			.filter(principal -> principal instanceof UUID)
+			.map(principal -> (UUID) principal);
+	}
+
 }

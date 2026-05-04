@@ -10,10 +10,11 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class DeleteUserUseCase {
 
-  private final UserRepository userRepository;
+	private final UserRepository userRepository;
 
-  @Transactional
-  public void execute(UUID userId) {
-    userRepository.deleteById(userId);
-  }
+	@Transactional
+	public void execute(UUID userId) {
+		userRepository.deleteById(userId);
+	}
+
 }

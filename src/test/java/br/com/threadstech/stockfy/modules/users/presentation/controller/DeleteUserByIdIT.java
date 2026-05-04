@@ -31,195 +31,192 @@ import org.springframework.test.web.servlet.MockMvc;
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@Import({TestcontainersConfiguration.class, RateLimitTestConfiguration.class})
+@Import({ TestcontainersConfiguration.class, RateLimitTestConfiguration.class })
 @Sql(scripts = "/sql/users/cleanup.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @Sql(scripts = "/sql/users/base-users.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @Sql(scripts = "/sql/users/cleanup.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
 class DeleteUserByIdIT {
 
-  private static final String ADMIN_ID = "00000000-0000-0000-0000-000000000001";
-  private static final String OWNER_ID = "00000000-0000-0000-0000-000000000002";
-  private static final String OTHER_ID = "00000000-0000-0000-0000-000000000003";
+	private static final String ADMIN_ID = "00000000-0000-0000-0000-000000000001";
 
-  @Autowired private MockMvc mockMvc;
-  @Autowired private JdbcTemplate jdbcTemplate;
-  @Autowired private PasswordEncoder passwordEncoder;
-  @Autowired private LoginUseCase loginUseCase;
-  @Autowired private UserRateLimitConfig rateLimitConfig;
-  @Autowired private MutableTimeMeter rateLimitTimeMeter;
+	private static final String OWNER_ID = "00000000-0000-0000-0000-000000000002";
 
-  @AfterEach
-  void tearDownRateLimit() {
-    try {
-      var loginBucketsField = UserRateLimitConfig.class.getDeclaredField("loginBuckets");
-      loginBucketsField.setAccessible(true);
-      ((java.util.Map<?, ?>) loginBucketsField.get(rateLimitConfig)).clear();
+	private static final String OTHER_ID = "00000000-0000-0000-0000-000000000003";
 
-      var generalBucketsField = UserRateLimitConfig.class.getDeclaredField("generalBuckets");
-      generalBucketsField.setAccessible(true);
-      ((java.util.Map<?, ?>) generalBucketsField.get(rateLimitConfig)).clear();
-      rateLimitTimeMeter.reset();
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
-  }
+	@Autowired
+	private MockMvc mockMvc;
 
-  @Test
-  @DisplayName("Deve retornar 204 e aplicar soft delete quando ADMIN deletar ID existente")
-  @WithMockUserId(id = ADMIN_ID, roles = "ADMIN")
-  void deleteUserById_whenAdminDeletesExistingUser_thenReturns204AndSoftDeletesUser()
-      throws Exception {
-    long usersBeforeRequest = countUsers();
-    assertTrue(userIsActive(OWNER_ID));
+	@Autowired
+	private JdbcTemplate jdbcTemplate;
 
-    mockMvc
-        .perform(delete("/api/v1/users/{id}", OWNER_ID))
-        .andExpect(status().isNoContent())
-        .andExpect(content().string(""));
+	@Autowired
+	private PasswordEncoder passwordEncoder;
 
-    assertEquals(usersBeforeRequest, countUsers());
-    assertTrue(userExists(OWNER_ID));
-    assertFalse(userIsActive(OWNER_ID));
-  }
+	@Autowired
+	private LoginUseCase loginUseCase;
 
-  @Test
-  @DisplayName("Deve impedir login apos usuario ser deletado")
-  @WithMockUserId(id = ADMIN_ID, roles = "ADMIN")
-  void deleteUserById_whenUserWasDeleted_thenUserCannotLogin() throws Exception {
-    jdbcTemplate.update(
-        "UPDATE users SET password_hash = ? WHERE id = ?",
-        passwordEncoder.encode("password123"),
-        UUID.fromString(OWNER_ID));
+	@Autowired
+	private UserRateLimitConfig rateLimitConfig;
 
-    mockMvc.perform(delete("/api/v1/users/{id}", OWNER_ID)).andExpect(status().isNoContent());
+	@Autowired
+	private MutableTimeMeter rateLimitTimeMeter;
 
-    assertThrows(
-        InvalidCredentialsException.class,
-        () -> loginUseCase.execute("bruno.user@example.com", "password123"));
+	@AfterEach
+	void tearDownRateLimit() {
+		try {
+			var loginBucketsField = UserRateLimitConfig.class.getDeclaredField("loginBuckets");
+			loginBucketsField.setAccessible(true);
+			((java.util.Map<?, ?>) loginBucketsField.get(rateLimitConfig)).clear();
 
-    assertTrue(userExists(OWNER_ID));
-    assertFalse(userIsActive(OWNER_ID));
-  }
+			var generalBucketsField = UserRateLimitConfig.class.getDeclaredField("generalBuckets");
+			generalBucketsField.setAccessible(true);
+			((java.util.Map<?, ?>) generalBucketsField.get(rateLimitConfig)).clear();
+			rateLimitTimeMeter.reset();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
 
-  @Test
-  @DisplayName("Deve retornar 403 sem corpo quando USER tentar deletar a propria conta")
-  @WithMockUserId(id = OWNER_ID, roles = "USER")
-  void deleteUserById_whenOwnerUserDeletesOwnAccount_thenReturns403WithoutBody() throws Exception {
-    long usersBeforeRequest = countUsers();
+	@Test
+	@DisplayName("Deve retornar 204 e aplicar soft delete quando ADMIN deletar ID existente")
+	@WithMockUserId(id = ADMIN_ID, roles = "ADMIN")
+	void deleteUserById_whenAdminDeletesExistingUser_thenReturns204AndSoftDeletesUser() throws Exception {
+		long usersBeforeRequest = countUsers();
+		assertTrue(userIsActive(OWNER_ID));
 
-    mockMvc
-        .perform(delete("/api/v1/users/{id}", OWNER_ID))
-        .andExpect(status().isForbidden())
-        .andExpect(content().string(""));
+		mockMvc.perform(delete("/api/v1/users/{id}", OWNER_ID))
+			.andExpect(status().isNoContent())
+			.andExpect(content().string(""));
 
-    assertEquals(usersBeforeRequest, countUsers());
-    assertTrue(userIsActive(OWNER_ID));
-  }
+		assertEquals(usersBeforeRequest, countUsers());
+		assertTrue(userExists(OWNER_ID));
+		assertFalse(userIsActive(OWNER_ID));
+	}
 
-  @Test
-  @DisplayName("Deve retornar 401 sem corpo quando usuario nao estiver autenticado")
-  void deleteUserById_whenNotAuthenticated_thenReturns401WithoutBody() throws Exception {
-    long usersBeforeRequest = countUsers();
+	@Test
+	@DisplayName("Deve impedir login apos usuario ser deletado")
+	@WithMockUserId(id = ADMIN_ID, roles = "ADMIN")
+	void deleteUserById_whenUserWasDeleted_thenUserCannotLogin() throws Exception {
+		jdbcTemplate.update("UPDATE users SET password_hash = ? WHERE id = ?", passwordEncoder.encode("password123"),
+				UUID.fromString(OWNER_ID));
 
-    mockMvc
-        .perform(delete("/api/v1/users/{id}", OWNER_ID))
-        .andExpect(status().isUnauthorized())
-        .andExpect(content().string(""));
+		mockMvc.perform(delete("/api/v1/users/{id}", OWNER_ID)).andExpect(status().isNoContent());
 
-    assertEquals(usersBeforeRequest, countUsers());
-    assertTrue(userIsActive(OWNER_ID));
-  }
+		assertThrows(InvalidCredentialsException.class,
+				() -> loginUseCase.execute("bruno.user@example.com", "password123"));
 
-  @Test
-  @DisplayName("Deve retornar 400 quando ID nao for UUID valido")
-  @WithMockUserId(id = ADMIN_ID, roles = "ADMIN")
-  void deleteUserById_whenIdIsInvalidUuid_thenReturns400AndDoesNotAlterData() throws Exception {
-    long usersBeforeRequest = countUsers();
+		assertTrue(userExists(OWNER_ID));
+		assertFalse(userIsActive(OWNER_ID));
+	}
 
-    assertBadRequestFieldValidation(
-        mockMvc.perform(delete("/api/v1/users/{id}", "not-a-uuid")),
-        "id",
-        "O parâmetro informado é inválido.");
+	@Test
+	@DisplayName("Deve retornar 403 sem corpo quando USER tentar deletar a propria conta")
+	@WithMockUserId(id = OWNER_ID, roles = "USER")
+	void deleteUserById_whenOwnerUserDeletesOwnAccount_thenReturns403WithoutBody() throws Exception {
+		long usersBeforeRequest = countUsers();
 
-    assertEquals(usersBeforeRequest, countUsers());
-    assertTrue(userIsActive(OWNER_ID));
-  }
+		mockMvc.perform(delete("/api/v1/users/{id}", OWNER_ID))
+			.andExpect(status().isForbidden())
+			.andExpect(content().string(""));
 
-  @Test
-  @DisplayName("Deve retornar 400 quando ID contiver SQL Injection")
-  @WithMockUserId(id = ADMIN_ID, roles = "ADMIN")
-  void deleteUserById_whenIdContainsSqlInjection_thenReturns400AndDoesNotAlterData()
-      throws Exception {
-    long usersBeforeRequest = countUsers();
+		assertEquals(usersBeforeRequest, countUsers());
+		assertTrue(userIsActive(OWNER_ID));
+	}
 
-    assertBadRequestFieldValidation(
-        mockMvc.perform(
-            delete("/api/v1/users/{id}", "00000000-0000-0000-0000-000000000002' OR '1'='1")),
-        "id",
-        "O parâmetro informado é inválido.");
+	@Test
+	@DisplayName("Deve retornar 401 sem corpo quando usuario nao estiver autenticado")
+	void deleteUserById_whenNotAuthenticated_thenReturns401WithoutBody() throws Exception {
+		long usersBeforeRequest = countUsers();
 
-    assertEquals(usersBeforeRequest, countUsers());
-    assertTrue(userIsActive(OWNER_ID));
-    assertTrue(userIsActive(OTHER_ID));
-  }
+		mockMvc.perform(delete("/api/v1/users/{id}", OWNER_ID))
+			.andExpect(status().isUnauthorized())
+			.andExpect(content().string(""));
 
-  @Test
-  @DisplayName("Deve retornar 429 quando exceder limite geral de requisicoes")
-  @WithMockUserId(id = ADMIN_ID, roles = "ADMIN")
-  void deleteUserById_whenLimitExceeded_thenReturns429() throws Exception {
-    long usersBeforeRequest = countUsers();
+		assertEquals(usersBeforeRequest, countUsers());
+		assertTrue(userIsActive(OWNER_ID));
+	}
 
-    for (int i = 0; i <= 10; i++) {
-      var result = mockMvc.perform(delete("/api/v1/users/{id}", "not-a-uuid"));
-      if (i == 10) {
-        result.andExpect(status().isTooManyRequests());
-      }
-    }
+	@Test
+	@DisplayName("Deve retornar 400 quando ID nao for UUID valido")
+	@WithMockUserId(id = ADMIN_ID, roles = "ADMIN")
+	void deleteUserById_whenIdIsInvalidUuid_thenReturns400AndDoesNotAlterData() throws Exception {
+		long usersBeforeRequest = countUsers();
 
-    assertEquals(usersBeforeRequest, countUsers());
-    assertTrue(userIsActive(OWNER_ID));
-    assertTrue(userIsActive(OTHER_ID));
-  }
+		assertBadRequestFieldValidation(mockMvc.perform(delete("/api/v1/users/{id}", "not-a-uuid")), "id",
+				"O parâmetro informado é inválido.");
 
-  @Test
-  @DisplayName("Deve permitir nova tentativa quando a janela de rate limit expirar")
-  @WithMockUserId(id = ADMIN_ID, roles = "ADMIN")
-  void deleteUserById_whenRateLimitWindowExpires_thenProcessesRequest() throws Exception {
-    long usersBeforeRequest = countUsers();
+		assertEquals(usersBeforeRequest, countUsers());
+		assertTrue(userIsActive(OWNER_ID));
+	}
 
-    for (int i = 0; i < 10; i++) {
-      mockMvc.perform(delete("/api/v1/users/{id}", "not-a-uuid"));
-    }
+	@Test
+	@DisplayName("Deve retornar 400 quando ID contiver SQL Injection")
+	@WithMockUserId(id = ADMIN_ID, roles = "ADMIN")
+	void deleteUserById_whenIdContainsSqlInjection_thenReturns400AndDoesNotAlterData() throws Exception {
+		long usersBeforeRequest = countUsers();
 
-    mockMvc
-        .perform(delete("/api/v1/users/{id}", "not-a-uuid"))
-        .andExpect(status().isTooManyRequests());
+		assertBadRequestFieldValidation(
+				mockMvc.perform(delete("/api/v1/users/{id}", "00000000-0000-0000-0000-000000000002' OR '1'='1")), "id",
+				"O parâmetro informado é inválido.");
 
-    rateLimitTimeMeter.advanceBy(Duration.ofSeconds(61));
+		assertEquals(usersBeforeRequest, countUsers());
+		assertTrue(userIsActive(OWNER_ID));
+		assertTrue(userIsActive(OTHER_ID));
+	}
 
-    mockMvc.perform(delete("/api/v1/users/{id}", OTHER_ID)).andExpect(status().isNoContent());
+	@Test
+	@DisplayName("Deve retornar 429 quando exceder limite geral de requisicoes")
+	@WithMockUserId(id = ADMIN_ID, roles = "ADMIN")
+	void deleteUserById_whenLimitExceeded_thenReturns429() throws Exception {
+		long usersBeforeRequest = countUsers();
 
-    assertEquals(usersBeforeRequest, countUsers());
-    assertTrue(userIsActive(OWNER_ID));
-    assertFalse(userIsActive(OTHER_ID));
-  }
+		for (int i = 0; i <= 10; i++) {
+			var result = mockMvc.perform(delete("/api/v1/users/{id}", "not-a-uuid"));
+			if (i == 10) {
+				result.andExpect(status().isTooManyRequests());
+			}
+		}
 
-  private long countUsers() {
-    Long count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM users", Long.class);
-    return count == null ? 0 : count;
-  }
+		assertEquals(usersBeforeRequest, countUsers());
+		assertTrue(userIsActive(OWNER_ID));
+		assertTrue(userIsActive(OTHER_ID));
+	}
 
-  private boolean userExists(String id) {
-    Integer count =
-        jdbcTemplate.queryForObject(
-            "SELECT COUNT(*) FROM users WHERE id = ?::uuid", Integer.class, id);
-    return count != null && count == 1;
-  }
+	@Test
+	@DisplayName("Deve permitir nova tentativa quando a janela de rate limit expirar")
+	@WithMockUserId(id = ADMIN_ID, roles = "ADMIN")
+	void deleteUserById_whenRateLimitWindowExpires_thenProcessesRequest() throws Exception {
+		long usersBeforeRequest = countUsers();
 
-  private boolean userIsActive(String id) {
-    Boolean active =
-        jdbcTemplate.queryForObject(
-            "SELECT active FROM users WHERE id = ?::uuid", Boolean.class, id);
-    return Boolean.TRUE.equals(active);
-  }
+		for (int i = 0; i < 10; i++) {
+			mockMvc.perform(delete("/api/v1/users/{id}", "not-a-uuid"));
+		}
+
+		mockMvc.perform(delete("/api/v1/users/{id}", "not-a-uuid")).andExpect(status().isTooManyRequests());
+
+		rateLimitTimeMeter.advanceBy(Duration.ofSeconds(61));
+
+		mockMvc.perform(delete("/api/v1/users/{id}", OTHER_ID)).andExpect(status().isNoContent());
+
+		assertEquals(usersBeforeRequest, countUsers());
+		assertTrue(userIsActive(OWNER_ID));
+		assertFalse(userIsActive(OTHER_ID));
+	}
+
+	private long countUsers() {
+		Long count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM users", Long.class);
+		return count == null ? 0 : count;
+	}
+
+	private boolean userExists(String id) {
+		Integer count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM users WHERE id = ?::uuid", Integer.class, id);
+		return count != null && count == 1;
+	}
+
+	private boolean userIsActive(String id) {
+		Boolean active = jdbcTemplate.queryForObject("SELECT active FROM users WHERE id = ?::uuid", Boolean.class, id);
+		return Boolean.TRUE.equals(active);
+	}
+
 }

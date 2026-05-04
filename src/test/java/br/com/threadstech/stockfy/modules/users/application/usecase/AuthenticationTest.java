@@ -41,151 +41,160 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 @ExtendWith(MockitoExtension.class)
 class AuthenticationTest {
 
-  @Mock private UserRepository userRepository;
-  @Mock private PasswordEncoder passwordEncoder;
-  @Mock private JwtService jwtService;
-  @Mock private TokenService tokenService;
-  @Mock private StringRedisTemplate redisTemplate;
-  @Mock private RabbitMqEventPublisher eventPublisher;
+	@Mock
+	private UserRepository userRepository;
 
-  @InjectMocks private LoginUseCase loginUseCase;
-  @InjectMocks private RefreshTokenUseCase refreshTokenUseCase;
-  @InjectMocks private LogoutUseCase logoutUseCase;
+	@Mock
+	private PasswordEncoder passwordEncoder;
 
-  private User user;
-  private final UUID userId = UUID.randomUUID();
+	@Mock
+	private JwtService jwtService;
 
-  @BeforeEach
-  void setUp() {
-    user =
-        User.builder()
-            .id(userId)
-            .name("John Doe")
-            .email(new Email("john@example.com"))
-            .password(new Password("hashed_password"))
-            .roles(Set.of(UserRole.USER))
-            .status(UserStatus.ACTIVE)
-            .active(true)
-            .build();
-  }
+	@Mock
+	private TokenService tokenService;
 
-  @Test
-  @DisplayName("Should login successfully")
-  void shouldLoginSuccessfully() {
-    when(userRepository.findByEmail(any())).thenReturn(Optional.of(user));
-    when(passwordEncoder.matches(any(), any())).thenReturn(true);
-    when(jwtService.generateToken(any(), any())).thenReturn("access_token");
-    when(tokenService.generateRefreshToken(any())).thenReturn("refresh_token");
+	@Mock
+	private StringRedisTemplate redisTemplate;
 
-    var response = loginUseCase.execute("john@example.com", "password123");
+	@Mock
+	private RabbitMqEventPublisher eventPublisher;
 
-    assertNotNull(response);
-    assertEquals("access_token", response.accessToken());
-    assertEquals("refresh_token", response.refreshToken());
-  }
+	@InjectMocks
+	private LoginUseCase loginUseCase;
 
-  @Test
-  @DisplayName("Should throw exception for invalid credentials")
-  void shouldThrowExceptionForInvalidCredentials() {
-    when(userRepository.findByEmail(any())).thenReturn(Optional.of(user));
-    when(passwordEncoder.matches(any(), any())).thenReturn(false);
+	@InjectMocks
+	private RefreshTokenUseCase refreshTokenUseCase;
 
-    @SuppressWarnings("unchecked")
-    ValueOperations<String, String> valueOperations = mock(ValueOperations.class);
-    when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+	@InjectMocks
+	private LogoutUseCase logoutUseCase;
 
-    assertThrows(
-        InvalidCredentialsException.class, () -> loginUseCase.execute("john@example.com", "wrong"));
-  }
+	private User user;
 
-  @Test
-  @DisplayName("Should keep failed login attempts for one day")
-  void execute_whenPasswordIsWrong_thenExpiresFailedAttemptsAfterOneDay() {
-    when(userRepository.findByEmail(any())).thenReturn(Optional.of(user));
-    when(passwordEncoder.matches(any(), any())).thenReturn(false);
+	private final UUID userId = UUID.randomUUID();
 
-    @SuppressWarnings("unchecked")
-    ValueOperations<String, String> valueOperations = mock(ValueOperations.class);
-    when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+	@BeforeEach
+	void setUp() {
+		user = User.builder()
+			.id(userId)
+			.name("John Doe")
+			.email(new Email("john@example.com"))
+			.password(new Password("hashed_password"))
+			.roles(Set.of(UserRole.USER))
+			.status(UserStatus.ACTIVE)
+			.active(true)
+			.build();
+	}
 
-    assertThrows(
-        InvalidCredentialsException.class, () -> loginUseCase.execute("john@example.com", "wrong"));
+	@Test
+	@DisplayName("Should login successfully")
+	void shouldLoginSuccessfully() {
+		when(userRepository.findByEmail(any())).thenReturn(Optional.of(user));
+		when(passwordEncoder.matches(any(), any())).thenReturn(true);
+		when(jwtService.generateToken(any(), any())).thenReturn("access_token");
+		when(tokenService.generateRefreshToken(any())).thenReturn("refresh_token");
 
-    verify(redisTemplate).expire(eq("login_attempts:john@example.com"), eq(Duration.ofDays(1)));
-  }
+		var response = loginUseCase.execute("john@example.com", "password123");
 
-  @Test
-  @DisplayName("Should throw invalid credentials when email value object rejects address")
-  void execute_whenEmailValueObjectRejectsAddress_thenThrowsInvalidCredentialsException() {
-    assertThrows(
-        InvalidCredentialsException.class,
-        () -> loginUseCase.execute("john@example.technology", "password123"));
-  }
+		assertNotNull(response);
+		assertEquals("access_token", response.accessToken());
+		assertEquals("refresh_token", response.refreshToken());
+	}
 
-  @Test
-  @DisplayName("Should refresh token successfully")
-  void shouldRefreshTokenSuccessfully() {
-    when(tokenService.validateRefreshToken(any())).thenReturn(true);
-    when(tokenService.consumeRefreshToken("old_refresh_token")).thenReturn(Optional.of(userId));
-    when(userRepository.findById(any())).thenReturn(Optional.of(user));
-    when(jwtService.generateToken(any(), any())).thenReturn("new_access_token");
-    when(tokenService.generateRefreshToken(any())).thenReturn("new_refresh_token");
+	@Test
+	@DisplayName("Should throw exception for invalid credentials")
+	void shouldThrowExceptionForInvalidCredentials() {
+		when(userRepository.findByEmail(any())).thenReturn(Optional.of(user));
+		when(passwordEncoder.matches(any(), any())).thenReturn(false);
 
-    var response = refreshTokenUseCase.execute("old_refresh_token");
+		@SuppressWarnings("unchecked")
+		ValueOperations<String, String> valueOperations = mock(ValueOperations.class);
+		when(redisTemplate.opsForValue()).thenReturn(valueOperations);
 
-    assertEquals("new_access_token", response.accessToken());
-    assertEquals("new_refresh_token", response.refreshToken());
-  }
+		assertThrows(InvalidCredentialsException.class, () -> loginUseCase.execute("john@example.com", "wrong"));
+	}
 
-  @Test
-  @DisplayName("Should throw exception for invalid refresh token")
-  void shouldThrowExceptionForInvalidRefreshToken() {
-    when(tokenService.validateRefreshToken(any())).thenReturn(false);
+	@Test
+	@DisplayName("Should keep failed login attempts for one day")
+	void execute_whenPasswordIsWrong_thenExpiresFailedAttemptsAfterOneDay() {
+		when(userRepository.findByEmail(any())).thenReturn(Optional.of(user));
+		when(passwordEncoder.matches(any(), any())).thenReturn(false);
 
-    assertThrows(
-        InvalidRefreshTokenException.class,
-        () -> refreshTokenUseCase.execute("invalid_refresh_token"));
-  }
+		@SuppressWarnings("unchecked")
+		ValueOperations<String, String> valueOperations = mock(ValueOperations.class);
+		when(redisTemplate.opsForValue()).thenReturn(valueOperations);
 
-  @Test
-  @DisplayName("Should throw invalid refresh token when user does not exist")
-  void execute_whenRefreshTokenUserDoesNotExist_thenThrowsInvalidRefreshTokenException() {
-    when(tokenService.validateRefreshToken("refresh_token")).thenReturn(true);
-    when(tokenService.consumeRefreshToken("refresh_token")).thenReturn(Optional.of(userId));
-    when(userRepository.findById(userId)).thenReturn(Optional.empty());
+		assertThrows(InvalidCredentialsException.class, () -> loginUseCase.execute("john@example.com", "wrong"));
 
-    assertThrows(
-        InvalidRefreshTokenException.class, () -> refreshTokenUseCase.execute("refresh_token"));
-  }
+		verify(redisTemplate).expire(eq("login_attempts:john@example.com"), eq(Duration.ofDays(1)));
+	}
 
-  @Test
-  @DisplayName("Should throw invalid refresh token when user is inactive")
-  void execute_whenUserIsInactive_thenThrowsInvalidRefreshTokenException() {
-    user.setActive(false);
-    when(tokenService.validateRefreshToken("refresh_token")).thenReturn(true);
-    when(tokenService.consumeRefreshToken("refresh_token")).thenReturn(Optional.of(userId));
-    when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+	@Test
+	@DisplayName("Should throw invalid credentials when email value object rejects address")
+	void execute_whenEmailValueObjectRejectsAddress_thenThrowsInvalidCredentialsException() {
+		assertThrows(InvalidCredentialsException.class,
+				() -> loginUseCase.execute("john@example.technology", "password123"));
+	}
 
-    assertThrows(
-        InvalidRefreshTokenException.class, () -> refreshTokenUseCase.execute("refresh_token"));
-  }
+	@Test
+	@DisplayName("Should refresh token successfully")
+	void shouldRefreshTokenSuccessfully() {
+		when(tokenService.validateRefreshToken(any())).thenReturn(true);
+		when(tokenService.consumeRefreshToken("old_refresh_token")).thenReturn(Optional.of(userId));
+		when(userRepository.findById(any())).thenReturn(Optional.of(user));
+		when(jwtService.generateToken(any(), any())).thenReturn("new_access_token");
+		when(tokenService.generateRefreshToken(any())).thenReturn("new_refresh_token");
 
-  @Test
-  @DisplayName("Should throw invalid refresh token when user is locked")
-  void execute_whenUserIsLocked_thenThrowsInvalidRefreshTokenException() {
-    user.lock();
-    when(tokenService.validateRefreshToken("refresh_token")).thenReturn(true);
-    when(tokenService.consumeRefreshToken("refresh_token")).thenReturn(Optional.of(userId));
-    when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+		var response = refreshTokenUseCase.execute("old_refresh_token");
 
-    assertThrows(
-        InvalidRefreshTokenException.class, () -> refreshTokenUseCase.execute("refresh_token"));
-  }
+		assertEquals("new_access_token", response.accessToken());
+		assertEquals("new_refresh_token", response.refreshToken());
+	}
 
-  @Test
-  @DisplayName("Should logout and revoke token")
-  void shouldLogoutSuccessfully() {
-    logoutUseCase.execute("refresh_token");
-    verify(tokenService).revokeRefreshToken("refresh_token");
-  }
+	@Test
+	@DisplayName("Should throw exception for invalid refresh token")
+	void shouldThrowExceptionForInvalidRefreshToken() {
+		when(tokenService.validateRefreshToken(any())).thenReturn(false);
+
+		assertThrows(InvalidRefreshTokenException.class, () -> refreshTokenUseCase.execute("invalid_refresh_token"));
+	}
+
+	@Test
+	@DisplayName("Should throw invalid refresh token when user does not exist")
+	void execute_whenRefreshTokenUserDoesNotExist_thenThrowsInvalidRefreshTokenException() {
+		when(tokenService.validateRefreshToken("refresh_token")).thenReturn(true);
+		when(tokenService.consumeRefreshToken("refresh_token")).thenReturn(Optional.of(userId));
+		when(userRepository.findById(userId)).thenReturn(Optional.empty());
+
+		assertThrows(InvalidRefreshTokenException.class, () -> refreshTokenUseCase.execute("refresh_token"));
+	}
+
+	@Test
+	@DisplayName("Should throw invalid refresh token when user is inactive")
+	void execute_whenUserIsInactive_thenThrowsInvalidRefreshTokenException() {
+		user.setActive(false);
+		when(tokenService.validateRefreshToken("refresh_token")).thenReturn(true);
+		when(tokenService.consumeRefreshToken("refresh_token")).thenReturn(Optional.of(userId));
+		when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+
+		assertThrows(InvalidRefreshTokenException.class, () -> refreshTokenUseCase.execute("refresh_token"));
+	}
+
+	@Test
+	@DisplayName("Should throw invalid refresh token when user is locked")
+	void execute_whenUserIsLocked_thenThrowsInvalidRefreshTokenException() {
+		user.lock();
+		when(tokenService.validateRefreshToken("refresh_token")).thenReturn(true);
+		when(tokenService.consumeRefreshToken("refresh_token")).thenReturn(Optional.of(userId));
+		when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+
+		assertThrows(InvalidRefreshTokenException.class, () -> refreshTokenUseCase.execute("refresh_token"));
+	}
+
+	@Test
+	@DisplayName("Should logout and revoke token")
+	void shouldLogoutSuccessfully() {
+		logoutUseCase.execute("refresh_token");
+		verify(tokenService).revokeRefreshToken("refresh_token");
+	}
+
 }

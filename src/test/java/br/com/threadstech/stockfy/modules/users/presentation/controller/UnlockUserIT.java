@@ -26,175 +26,175 @@ import org.springframework.test.web.servlet.MockMvc;
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@Import({TestcontainersConfiguration.class, RateLimitTestConfiguration.class})
+@Import({ TestcontainersConfiguration.class, RateLimitTestConfiguration.class })
 @Sql(scripts = "/sql/users/cleanup.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @Sql(scripts = "/sql/users/base-users.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @Sql(scripts = "/sql/users/cleanup.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
 class UnlockUserIT {
 
-  private static final String ADMIN_ID = "00000000-0000-0000-0000-000000000001";
-  private static final String OWNER_ID = "00000000-0000-0000-0000-000000000002";
-  private static final String LOCKED_ID = "00000000-0000-0000-0000-000000000004";
-  private static final String LOCKED_EMAIL = "bob.filter@example.com";
-  private static final String LOGIN_ATTEMPTS_KEY = "login_attempts:";
+	private static final String ADMIN_ID = "00000000-0000-0000-0000-000000000001";
 
-  @Autowired private MockMvc mockMvc;
-  @Autowired private JdbcTemplate jdbcTemplate;
-  @Autowired private StringRedisTemplate redisTemplate;
-  @Autowired private UserRateLimitConfig rateLimitConfig;
-  @Autowired private MutableTimeMeter rateLimitTimeMeter;
+	private static final String OWNER_ID = "00000000-0000-0000-0000-000000000002";
 
-  @AfterEach
-  void tearDown() {
-    clearRateLimitBuckets();
-    redisTemplate.delete(LOGIN_ATTEMPTS_KEY + LOCKED_EMAIL);
-    rateLimitTimeMeter.reset();
-  }
+	private static final String LOCKED_ID = "00000000-0000-0000-0000-000000000004";
 
-  @Test
-  @DisplayName("Deve retornar 204, desbloquear usuario e limpar tentativas de login")
-  @WithMockUserId(id = ADMIN_ID, roles = "ADMIN")
-  void unlockUser_whenAdminUnlocksLockedUser_thenReturns204PersistsStatusAndClearsAttempts()
-      throws Exception {
-    long usersBeforeRequest = countUsers();
-    lockUser(LOCKED_ID);
-    redisTemplate.opsForValue().set(LOGIN_ATTEMPTS_KEY + LOCKED_EMAIL, "15");
+	private static final String LOCKED_EMAIL = "bob.filter@example.com";
 
-    mockMvc
-        .perform(patch("/api/v1/users/{id}/unlock", LOCKED_ID))
-        .andExpect(status().isNoContent())
-        .andExpect(content().string(""));
+	private static final String LOGIN_ATTEMPTS_KEY = "login_attempts:";
 
-    assertEquals(usersBeforeRequest, countUsers());
-    assertEquals("ACTIVE", userStatus(LOCKED_ID));
-    assertNull(redisTemplate.opsForValue().get(LOGIN_ATTEMPTS_KEY + LOCKED_EMAIL));
-  }
+	@Autowired
+	private MockMvc mockMvc;
 
-  @Test
-  @DisplayName("Deve retornar 401 sem corpo quando usuario nao estiver autenticado")
-  void unlockUser_whenNotAuthenticated_thenReturns401WithoutBody() throws Exception {
-    String oldStatus = userStatus(LOCKED_ID);
+	@Autowired
+	private JdbcTemplate jdbcTemplate;
 
-    mockMvc
-        .perform(patch("/api/v1/users/{id}/unlock", LOCKED_ID))
-        .andExpect(status().isUnauthorized())
-        .andExpect(content().string(""));
+	@Autowired
+	private StringRedisTemplate redisTemplate;
 
-    assertEquals(oldStatus, userStatus(LOCKED_ID));
-  }
+	@Autowired
+	private UserRateLimitConfig rateLimitConfig;
 
-  @Test
-  @DisplayName("Deve retornar 403 sem corpo quando usuario autenticado nao for ADMIN")
-  @WithMockUserId(id = OWNER_ID, roles = "USER")
-  void unlockUser_whenAuthenticatedUserIsNotAdmin_thenReturns403WithoutBody() throws Exception {
-    String oldStatus = userStatus(LOCKED_ID);
+	@Autowired
+	private MutableTimeMeter rateLimitTimeMeter;
 
-    mockMvc
-        .perform(patch("/api/v1/users/{id}/unlock", LOCKED_ID))
-        .andExpect(status().isForbidden())
-        .andExpect(content().string(""));
+	@AfterEach
+	void tearDown() {
+		clearRateLimitBuckets();
+		redisTemplate.delete(LOGIN_ATTEMPTS_KEY + LOCKED_EMAIL);
+		rateLimitTimeMeter.reset();
+	}
 
-    assertEquals(oldStatus, userStatus(LOCKED_ID));
-  }
+	@Test
+	@DisplayName("Deve retornar 204, desbloquear usuario e limpar tentativas de login")
+	@WithMockUserId(id = ADMIN_ID, roles = "ADMIN")
+	void unlockUser_whenAdminUnlocksLockedUser_thenReturns204PersistsStatusAndClearsAttempts() throws Exception {
+		long usersBeforeRequest = countUsers();
+		lockUser(LOCKED_ID);
+		redisTemplate.opsForValue().set(LOGIN_ATTEMPTS_KEY + LOCKED_EMAIL, "15");
 
-  @Test
-  @DisplayName("Deve retornar 400 quando ID nao for UUID valido")
-  @WithMockUserId(id = ADMIN_ID, roles = "ADMIN")
-  void unlockUser_whenIdIsInvalidUuid_thenReturns400AndDoesNotAlterData() throws Exception {
-    String oldStatus = userStatus(LOCKED_ID);
+		mockMvc.perform(patch("/api/v1/users/{id}/unlock", LOCKED_ID))
+			.andExpect(status().isNoContent())
+			.andExpect(content().string(""));
 
-    assertBadRequestFieldValidation(
-        mockMvc.perform(patch("/api/v1/users/{id}/unlock", "not-a-uuid")),
-        "id",
-        "O parâmetro informado é inválido.");
+		assertEquals(usersBeforeRequest, countUsers());
+		assertEquals("ACTIVE", userStatus(LOCKED_ID));
+		assertNull(redisTemplate.opsForValue().get(LOGIN_ATTEMPTS_KEY + LOCKED_EMAIL));
+	}
 
-    assertEquals(oldStatus, userStatus(LOCKED_ID));
-  }
+	@Test
+	@DisplayName("Deve retornar 401 sem corpo quando usuario nao estiver autenticado")
+	void unlockUser_whenNotAuthenticated_thenReturns401WithoutBody() throws Exception {
+		String oldStatus = userStatus(LOCKED_ID);
 
-  @Test
-  @DisplayName("Deve retornar 400 quando ID contiver SQL Injection")
-  @WithMockUserId(id = ADMIN_ID, roles = "ADMIN")
-  void unlockUser_whenIdContainsSqlInjection_thenReturns400AndDoesNotAlterData()
-      throws Exception {
-    String oldStatus = userStatus(LOCKED_ID);
+		mockMvc.perform(patch("/api/v1/users/{id}/unlock", LOCKED_ID))
+			.andExpect(status().isUnauthorized())
+			.andExpect(content().string(""));
 
-    assertBadRequestFieldValidation(
-        mockMvc.perform(
-            patch(
-                "/api/v1/users/{id}/unlock",
-                "00000000-0000-0000-0000-000000000004' OR '1'='1")),
-        "id",
-        "O parâmetro informado é inválido.");
+		assertEquals(oldStatus, userStatus(LOCKED_ID));
+	}
 
-    assertEquals(oldStatus, userStatus(LOCKED_ID));
-  }
+	@Test
+	@DisplayName("Deve retornar 403 sem corpo quando usuario autenticado nao for ADMIN")
+	@WithMockUserId(id = OWNER_ID, roles = "USER")
+	void unlockUser_whenAuthenticatedUserIsNotAdmin_thenReturns403WithoutBody() throws Exception {
+		String oldStatus = userStatus(LOCKED_ID);
 
-  @Test
-  @DisplayName("Deve retornar 429 quando exceder limite geral de requisicoes")
-  @WithMockUserId(id = ADMIN_ID, roles = "ADMIN")
-  void unlockUser_whenLimitExceeded_thenReturns429() throws Exception {
-    String oldStatus = userStatus(LOCKED_ID);
+		mockMvc.perform(patch("/api/v1/users/{id}/unlock", LOCKED_ID))
+			.andExpect(status().isForbidden())
+			.andExpect(content().string(""));
 
-    for (int i = 0; i <= 10; i++) {
-      var result = mockMvc.perform(patch("/api/v1/users/{id}/unlock", "not-a-uuid"));
-      if (i == 10) {
-        result.andExpect(status().isTooManyRequests());
-      }
-    }
+		assertEquals(oldStatus, userStatus(LOCKED_ID));
+	}
 
-    assertEquals(oldStatus, userStatus(LOCKED_ID));
-  }
+	@Test
+	@DisplayName("Deve retornar 400 quando ID nao for UUID valido")
+	@WithMockUserId(id = ADMIN_ID, roles = "ADMIN")
+	void unlockUser_whenIdIsInvalidUuid_thenReturns400AndDoesNotAlterData() throws Exception {
+		String oldStatus = userStatus(LOCKED_ID);
 
-  @Test
-  @DisplayName("Deve permitir desbloqueio quando a janela de rate limit expirar")
-  @WithMockUserId(id = ADMIN_ID, roles = "ADMIN")
-  void unlockUser_whenRateLimitWindowExpires_thenProcessesRequest() throws Exception {
-    lockUser(LOCKED_ID);
+		assertBadRequestFieldValidation(mockMvc.perform(patch("/api/v1/users/{id}/unlock", "not-a-uuid")), "id",
+				"O parâmetro informado é inválido.");
 
-    for (int i = 0; i < 10; i++) {
-      mockMvc.perform(patch("/api/v1/users/{id}/unlock", "not-a-uuid"));
-    }
+		assertEquals(oldStatus, userStatus(LOCKED_ID));
+	}
 
-    mockMvc
-        .perform(patch("/api/v1/users/{id}/unlock", "not-a-uuid"))
-        .andExpect(status().isTooManyRequests());
+	@Test
+	@DisplayName("Deve retornar 400 quando ID contiver SQL Injection")
+	@WithMockUserId(id = ADMIN_ID, roles = "ADMIN")
+	void unlockUser_whenIdContainsSqlInjection_thenReturns400AndDoesNotAlterData() throws Exception {
+		String oldStatus = userStatus(LOCKED_ID);
 
-    rateLimitTimeMeter.advanceBy(Duration.ofSeconds(61));
+		assertBadRequestFieldValidation(
+				mockMvc.perform(patch("/api/v1/users/{id}/unlock", "00000000-0000-0000-0000-000000000004' OR '1'='1")),
+				"id", "O parâmetro informado é inválido.");
 
-    mockMvc
-        .perform(patch("/api/v1/users/{id}/unlock", LOCKED_ID))
-        .andExpect(status().isNoContent())
-        .andExpect(content().string(""));
+		assertEquals(oldStatus, userStatus(LOCKED_ID));
+	}
 
-    assertEquals("ACTIVE", userStatus(LOCKED_ID));
-  }
+	@Test
+	@DisplayName("Deve retornar 429 quando exceder limite geral de requisicoes")
+	@WithMockUserId(id = ADMIN_ID, roles = "ADMIN")
+	void unlockUser_whenLimitExceeded_thenReturns429() throws Exception {
+		String oldStatus = userStatus(LOCKED_ID);
 
-  private long countUsers() {
-    Long count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM users", Long.class);
-    return count == null ? 0 : count;
-  }
+		for (int i = 0; i <= 10; i++) {
+			var result = mockMvc.perform(patch("/api/v1/users/{id}/unlock", "not-a-uuid"));
+			if (i == 10) {
+				result.andExpect(status().isTooManyRequests());
+			}
+		}
 
-  private void lockUser(String id) {
-    jdbcTemplate.update("UPDATE users SET status = 'LOCKED' WHERE id = ?::uuid", id);
-  }
+		assertEquals(oldStatus, userStatus(LOCKED_ID));
+	}
 
-  private String userStatus(String id) {
-    return jdbcTemplate.queryForObject(
-        "SELECT status FROM users WHERE id = ?::uuid", String.class, id);
-  }
+	@Test
+	@DisplayName("Deve permitir desbloqueio quando a janela de rate limit expirar")
+	@WithMockUserId(id = ADMIN_ID, roles = "ADMIN")
+	void unlockUser_whenRateLimitWindowExpires_thenProcessesRequest() throws Exception {
+		lockUser(LOCKED_ID);
 
-  private void clearRateLimitBuckets() {
-    try {
-      clearBucketMap("loginBuckets");
-      clearBucketMap("generalBuckets");
-    } catch (ReflectiveOperationException e) {
-      throw new IllegalStateException(e);
-    }
-  }
+		for (int i = 0; i < 10; i++) {
+			mockMvc.perform(patch("/api/v1/users/{id}/unlock", "not-a-uuid"));
+		}
 
-  private void clearBucketMap(String fieldName) throws ReflectiveOperationException {
-    var field = UserRateLimitConfig.class.getDeclaredField(fieldName);
-    field.setAccessible(true);
-    ((java.util.Map<?, ?>) field.get(rateLimitConfig)).clear();
-  }
+		mockMvc.perform(patch("/api/v1/users/{id}/unlock", "not-a-uuid")).andExpect(status().isTooManyRequests());
+
+		rateLimitTimeMeter.advanceBy(Duration.ofSeconds(61));
+
+		mockMvc.perform(patch("/api/v1/users/{id}/unlock", LOCKED_ID))
+			.andExpect(status().isNoContent())
+			.andExpect(content().string(""));
+
+		assertEquals("ACTIVE", userStatus(LOCKED_ID));
+	}
+
+	private long countUsers() {
+		Long count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM users", Long.class);
+		return count == null ? 0 : count;
+	}
+
+	private void lockUser(String id) {
+		jdbcTemplate.update("UPDATE users SET status = 'LOCKED' WHERE id = ?::uuid", id);
+	}
+
+	private String userStatus(String id) {
+		return jdbcTemplate.queryForObject("SELECT status FROM users WHERE id = ?::uuid", String.class, id);
+	}
+
+	private void clearRateLimitBuckets() {
+		try {
+			clearBucketMap("loginBuckets");
+			clearBucketMap("generalBuckets");
+		}
+		catch (ReflectiveOperationException e) {
+			throw new IllegalStateException(e);
+		}
+	}
+
+	private void clearBucketMap(String fieldName) throws ReflectiveOperationException {
+		var field = UserRateLimitConfig.class.getDeclaredField(fieldName);
+		field.setAccessible(true);
+		((java.util.Map<?, ?>) field.get(rateLimitConfig)).clear();
+	}
+
 }

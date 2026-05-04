@@ -9,12 +9,14 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class RabbitMqEventPublisher {
 
-  private final RabbitTemplate rabbitTemplate;
+	private final RabbitTemplate rabbitTemplate;
 
-  private static final String EXCHANGE = "security.exchange";
-  private static final String ROUTING_KEY = "account.locked";
+	private static final String EXCHANGE = "security.exchange";
 
-  public void publish(AccountLockedEvent event) {
-    rabbitTemplate.convertAndSend(EXCHANGE, ROUTING_KEY, event);
-  }
+	private static final String ROUTING_KEY = "account.locked";
+
+	public void publish(AccountLockedEvent event) {
+		rabbitTemplate.convertAndSend(EXCHANGE, ROUTING_KEY, event);
+	}
+
 }

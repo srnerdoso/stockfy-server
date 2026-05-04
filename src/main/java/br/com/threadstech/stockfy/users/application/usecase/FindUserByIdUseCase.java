@@ -14,11 +14,12 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class FindUserByIdUseCase {
 
-  private final UserRepository userRepository;
+	private final UserRepository userRepository;
 
-  @Transactional(readOnly = true)
-  public UserListItemResponse execute(UUID requestedUserId) {
-    User user = userRepository.findById(requestedUserId).orElseThrow(UserNotFoundException::new);
-    return UserListItemResponse.from(user, UserListType.DETAILED);
-  }
+	@Transactional(readOnly = true)
+	public UserListItemResponse execute(UUID requestedUserId) {
+		User user = userRepository.findById(requestedUserId).orElseThrow(UserNotFoundException::new);
+		return UserListItemResponse.from(user, UserListType.DETAILED);
+	}
+
 }

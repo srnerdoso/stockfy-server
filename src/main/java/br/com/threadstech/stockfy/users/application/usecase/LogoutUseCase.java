@@ -8,9 +8,10 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class LogoutUseCase {
 
-  private final TokenService tokenService;
+	private final TokenService tokenService;
 
-  public void execute(String refreshToken) {
-    tokenService.revokeRefreshToken(refreshToken);
-  }
+	public void execute(String refreshToken) {
+		tokenService.revokeRefreshToken(refreshToken);
+	}
+
 }

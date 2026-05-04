@@ -17,80 +17,69 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 
 class GlobalExceptionHandlerTest {
 
-  @Test
-  @DisplayName("Deve traduzir mensagem de campo inválido usando MessageSource")
-  void handleMessageNotReadable_whenFieldIsInvalid_thenUsesMessageSource() {
-    StaticMessageSource messageSource = new StaticMessageSource();
-    messageSource.addMessage("feedback.error.validation", Locale.getDefault(), "Erro traduzido.");
-    messageSource.addMessage("validation.field.not-null", Locale.getDefault(), "Campo traduzido.");
-    GlobalExceptionHandler handler = new GlobalExceptionHandler(messageSource);
-    InvalidFormatException cause =
-        InvalidFormatException.from(null, "Invalid value", "INVALID", String.class);
-    cause.prependPath(new Object(), "role");
-    HttpMessageNotReadableException exception =
-        new HttpMessageNotReadableException(
-            "Invalid JSON", cause, new MockHttpInputMessage(new byte[0]));
+	@Test
+	@DisplayName("Deve traduzir mensagem de campo inválido usando MessageSource")
+	void handleMessageNotReadable_whenFieldIsInvalid_thenUsesMessageSource() {
+		StaticMessageSource messageSource = new StaticMessageSource();
+		messageSource.addMessage("feedback.error.validation", Locale.getDefault(), "Erro traduzido.");
+		messageSource.addMessage("validation.field.not-null", Locale.getDefault(), "Campo traduzido.");
+		GlobalExceptionHandler handler = new GlobalExceptionHandler(messageSource);
+		InvalidFormatException cause = InvalidFormatException.from(null, "Invalid value", "INVALID", String.class);
+		cause.prependPath(new Object(), "role");
+		HttpMessageNotReadableException exception = new HttpMessageNotReadableException("Invalid JSON", cause,
+				new MockHttpInputMessage(new byte[0]));
 
-    ApiErrorResponse body = handler.handleMessageNotReadable(exception).getBody();
+		ApiErrorResponse body = handler.handleMessageNotReadable(exception).getBody();
 
-    assertEquals("Erro traduzido.", body.getDetail());
-    assertEquals("role", body.getFieldErrors().getFirst().field());
-    assertEquals("Campo traduzido.", body.getFieldErrors().getFirst().message());
-  }
+		assertEquals("Erro traduzido.", body.getDetail());
+		assertEquals("role", body.getFieldErrors().getFirst().field());
+		assertEquals("Campo traduzido.", body.getFieldErrors().getFirst().message());
+	}
 
-  @Test
-  @DisplayName("Deve usar mensagem generica quando parametro obrigatorio estiver ausente")
-  void handleMissingRequestParameter_whenTypeIsMissing_thenUsesGenericMessage() {
-    StaticMessageSource messageSource = new StaticMessageSource();
-    messageSource.addMessage("feedback.error.validation", Locale.getDefault(), "Erro traduzido.");
-    messageSource.addMessage(
-        "validation.request-parameter.required",
-        Locale.getDefault(),
-        "Parametro obrigatorio generico.");
-    GlobalExceptionHandler handler = new GlobalExceptionHandler(messageSource);
-    MissingServletRequestParameterException exception =
-        new MissingServletRequestParameterException("type", "UserListType");
+	@Test
+	@DisplayName("Deve usar mensagem generica quando parametro obrigatorio estiver ausente")
+	void handleMissingRequestParameter_whenTypeIsMissing_thenUsesGenericMessage() {
+		StaticMessageSource messageSource = new StaticMessageSource();
+		messageSource.addMessage("feedback.error.validation", Locale.getDefault(), "Erro traduzido.");
+		messageSource.addMessage("validation.request-parameter.required", Locale.getDefault(),
+				"Parametro obrigatorio generico.");
+		GlobalExceptionHandler handler = new GlobalExceptionHandler(messageSource);
+		MissingServletRequestParameterException exception = new MissingServletRequestParameterException("type",
+				"UserListType");
 
-    ApiErrorResponse body = handler.handleMissingRequestParameter(exception).getBody();
+		ApiErrorResponse body = handler.handleMissingRequestParameter(exception).getBody();
 
-    assertEquals("Erro traduzido.", body.getDetail());
-    assertEquals("type", body.getFieldErrors().getFirst().field());
-    assertEquals("Parametro obrigatorio generico.", body.getFieldErrors().getFirst().message());
-  }
+		assertEquals("Erro traduzido.", body.getDetail());
+		assertEquals("type", body.getFieldErrors().getFirst().field());
+		assertEquals("Parametro obrigatorio generico.", body.getFieldErrors().getFirst().message());
+	}
 
-  @Test
-  @DisplayName("Deve usar mensagem generica quando parametro possuir tipo invalido")
-  void handleArgumentTypeMismatch_whenTypeIsInvalid_thenUsesGenericMessage() {
-    StaticMessageSource messageSource = new StaticMessageSource();
-    messageSource.addMessage("feedback.error.validation", Locale.getDefault(), "Erro traduzido.");
-    messageSource.addMessage(
-        "validation.request-parameter.invalid",
-        Locale.getDefault(),
-        "Parametro invalido generico.");
-    GlobalExceptionHandler handler = new GlobalExceptionHandler(messageSource);
-    MethodArgumentTypeMismatchException exception =
-        new MethodArgumentTypeMismatchException("FULL", String.class, "type", null, null);
+	@Test
+	@DisplayName("Deve usar mensagem generica quando parametro possuir tipo invalido")
+	void handleArgumentTypeMismatch_whenTypeIsInvalid_thenUsesGenericMessage() {
+		StaticMessageSource messageSource = new StaticMessageSource();
+		messageSource.addMessage("feedback.error.validation", Locale.getDefault(), "Erro traduzido.");
+		messageSource.addMessage("validation.request-parameter.invalid", Locale.getDefault(),
+				"Parametro invalido generico.");
+		GlobalExceptionHandler handler = new GlobalExceptionHandler(messageSource);
+		MethodArgumentTypeMismatchException exception = new MethodArgumentTypeMismatchException("FULL", String.class,
+				"type", null, null);
 
-    ApiErrorResponse body = handler.handleArgumentTypeMismatch(exception).getBody();
+		ApiErrorResponse body = handler.handleArgumentTypeMismatch(exception).getBody();
 
-    assertEquals("Erro traduzido.", body.getDetail());
-    assertEquals("type", body.getFieldErrors().getFirst().field());
-    assertEquals("Parametro invalido generico.", body.getFieldErrors().getFirst().message());
-  }
+		assertEquals("Erro traduzido.", body.getDetail());
+		assertEquals("type", body.getFieldErrors().getFirst().field());
+		assertEquals("Parametro invalido generico.", body.getFieldErrors().getFirst().message());
+	}
 
-  @Test
-  @DisplayName("Deve expor erros de campo sem depender de FieldError do Spring")
-  void constructor_whenFieldErrorsAreProvided_thenUsesApiFieldError() {
-    ApiErrorResponse response =
-        new ApiErrorResponse(
-            "about:blank",
-            "Validation Error",
-            400,
-            "Erro traduzido.",
-            null,
-            List.of(new ApiErrorResponse.FieldError("role", "Campo traduzido.")));
+	@Test
+	@DisplayName("Deve expor erros de campo sem depender de FieldError do Spring")
+	void constructor_whenFieldErrorsAreProvided_thenUsesApiFieldError() {
+		ApiErrorResponse response = new ApiErrorResponse("about:blank", "Validation Error", 400, "Erro traduzido.",
+				null, List.of(new ApiErrorResponse.FieldError("role", "Campo traduzido.")));
 
-    assertEquals("role", response.getFieldErrors().getFirst().field());
-    assertEquals("Campo traduzido.", response.getFieldErrors().getFirst().message());
-  }
+		assertEquals("role", response.getFieldErrors().getFirst().field());
+		assertEquals("Campo traduzido.", response.getFieldErrors().getFirst().message());
+	}
+
 }

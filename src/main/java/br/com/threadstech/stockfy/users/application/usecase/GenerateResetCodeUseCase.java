@@ -15,18 +15,20 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class GenerateResetCodeUseCase {
 
-  private final UserRepository userRepository;
-  private final ResetCodeHasher resetCodeHasher;
+	private final UserRepository userRepository;
 
-  @Transactional
-  public String execute(UUID userId) {
-    User user = userRepository.findById(userId).orElseThrow(UserNotFoundException::new);
+	private final ResetCodeHasher resetCodeHasher;
 
-    String code = String.format("%06d", new SecureRandom().nextInt(1000000));
-    user.setResetPasswordCodeHash(resetCodeHasher.hash(code));
-    user.setResetPasswordExpiresAt(LocalDateTime.now().plusHours(24));
+	@Transactional
+	public String execute(UUID userId) {
+		User user = userRepository.findById(userId).orElseThrow(UserNotFoundException::new);
 
-    userRepository.update(user);
-    return code;
-  }
+		String code = String.format("%06d", new SecureRandom().nextInt(1000000));
+		user.setResetPasswordCodeHash(resetCodeHasher.hash(code));
+		user.setResetPasswordExpiresAt(LocalDateTime.now().plusHours(24));
+
+		userRepository.update(user);
+		return code;
+	}
+
 }

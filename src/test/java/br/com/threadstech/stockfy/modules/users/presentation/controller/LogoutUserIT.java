@@ -43,294 +43,277 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@Import({TestcontainersConfiguration.class, RateLimitTestConfiguration.class})
+@Import({ TestcontainersConfiguration.class, RateLimitTestConfiguration.class })
 @Sql(scripts = "/sql/users/cleanup.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @Sql(scripts = "/sql/users/base-users.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @Sql(scripts = "/sql/users/cleanup.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
 class LogoutUserIT {
 
-  private static final UUID USER_ID =
-      UUID.fromString("00000000-0000-0000-0000-000000000002");
-  private static final UUID OTHER_USER_ID =
-      UUID.fromString("00000000-0000-0000-0000-000000000001");
+	private static final UUID USER_ID = UUID.fromString("00000000-0000-0000-0000-000000000002");
 
-  @Autowired private MockMvc mockMvc;
-  @Autowired private JdbcTemplate jdbcTemplate;
-  @Autowired private JwtService jwtService;
-  @Autowired private TokenService tokenService;
-  @Autowired private StringRedisTemplate redisTemplate;
-  @Autowired private UserRateLimitConfig rateLimitConfig;
-  @Autowired private MutableTimeMeter rateLimitTimeMeter;
+	private static final UUID OTHER_USER_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
 
-  @AfterEach
-  void tearDown() {
-    clearRateLimitBuckets();
-    rateLimitTimeMeter.reset();
-  }
+	@Autowired
+	private MockMvc mockMvc;
 
-  @Test
-  @DisplayName("Deve retornar 204, revogar refresh token e limpar cookies")
-  void logoutUser_whenAuthenticated_thenReturns204RevokesTokenAndClearsCookies()
-      throws Exception {
-    long usersBeforeRequest = countUsers();
-    UserSnapshot userBeforeRequest = userSnapshot();
-    String accessToken = jwtService.generateToken(USER_ID, Set.of(UserRole.USER));
-    String refreshToken = tokenService.generateRefreshToken(USER_ID);
+	@Autowired
+	private JdbcTemplate jdbcTemplate;
 
-    var result =
-        mockMvc
-            .perform(
-                delete("/api/v1/auth/sessions/current")
-                    .cookie(new Cookie("access_token", accessToken))
-                    .cookie(new Cookie("refresh_token", refreshToken)))
-            .andExpect(status().isNoContent())
-            .andExpect(content().string(""))
-            .andExpect(cookie().maxAge("access_token", 0))
-            .andExpect(cookie().maxAge("refresh_token", 0))
-            .andReturn();
+	@Autowired
+	private JwtService jwtService;
 
-    List<String> setCookieHeaders = result.getResponse().getHeaders("Set-Cookie");
-    assertThat(
-        setCookieHeaders,
-        hasItem(allOf(containsString("access_token="), containsString("Max-Age=0"))));
-    assertThat(
-        setCookieHeaders,
-        hasItem(allOf(containsString("refresh_token="), containsString("Max-Age=0"))));
-    assertThat(setCookieHeaders, everyItem(containsString("Path=/")));
-    assertThat(setCookieHeaders, everyItem(containsString("HttpOnly")));
-    assertThat(setCookieHeaders, everyItem(containsString("Secure")));
-    assertFalse(Boolean.TRUE.equals(redisTemplate.hasKey("refresh_token:" + refreshToken)));
-    assertUserDataUnchanged(usersBeforeRequest, userBeforeRequest);
-  }
+	@Autowired
+	private TokenService tokenService;
 
-  @Test
-  @DisplayName("Deve impedir nova autenticacao com os mesmos cookies apos logout")
-  void logoutUser_whenSameCookiesAreReused_thenPrivateEndpointReturns401() throws Exception {
-    long usersBeforeRequest = countUsers();
-    UserSnapshot userBeforeRequest = userSnapshot();
-    String accessToken = jwtService.generateToken(USER_ID, Set.of(UserRole.USER));
-    String refreshToken = tokenService.generateRefreshToken(USER_ID);
-    Cookie accessCookie = new Cookie("access_token", accessToken);
-    Cookie refreshCookie = new Cookie("refresh_token", refreshToken);
+	@Autowired
+	private StringRedisTemplate redisTemplate;
 
-    mockMvc
-        .perform(delete("/api/v1/auth/sessions/current").cookie(accessCookie, refreshCookie))
-        .andExpect(status().isNoContent());
+	@Autowired
+	private UserRateLimitConfig rateLimitConfig;
 
-    mockMvc
-        .perform(get("/api/v1/users/me").cookie(accessCookie, refreshCookie))
-        .andExpect(status().isUnauthorized())
-        .andExpect(content().string(""));
+	@Autowired
+	private MutableTimeMeter rateLimitTimeMeter;
 
-    assertFalse(Boolean.TRUE.equals(redisTemplate.hasKey("refresh_token:" + refreshToken)));
-    assertUserDataUnchanged(usersBeforeRequest, userBeforeRequest);
-  }
+	@AfterEach
+	void tearDown() {
+		clearRateLimitBuckets();
+		rateLimitTimeMeter.reset();
+	}
 
-  @Test
-  @DisplayName("Deve retornar 401 sem corpo quando nao autenticado")
-  void logoutUser_whenCookiesAreMissing_thenReturns401WithoutBody() throws Exception {
-    long usersBeforeRequest = countUsers();
-    UserSnapshot userBeforeRequest = userSnapshot();
+	@Test
+	@DisplayName("Deve retornar 204, revogar refresh token e limpar cookies")
+	void logoutUser_whenAuthenticated_thenReturns204RevokesTokenAndClearsCookies() throws Exception {
+		long usersBeforeRequest = countUsers();
+		UserSnapshot userBeforeRequest = userSnapshot();
+		String accessToken = jwtService.generateToken(USER_ID, Set.of(UserRole.USER));
+		String refreshToken = tokenService.generateRefreshToken(USER_ID);
 
-    mockMvc
-        .perform(delete("/api/v1/auth/sessions/current"))
-        .andExpect(status().isUnauthorized())
-        .andExpect(content().string(""));
+		var result = mockMvc
+			.perform(delete("/api/v1/auth/sessions/current").cookie(new Cookie("access_token", accessToken))
+				.cookie(new Cookie("refresh_token", refreshToken)))
+			.andExpect(status().isNoContent())
+			.andExpect(content().string(""))
+			.andExpect(cookie().maxAge("access_token", 0))
+			.andExpect(cookie().maxAge("refresh_token", 0))
+			.andReturn();
 
-    assertUserDataUnchanged(usersBeforeRequest, userBeforeRequest);
-  }
+		List<String> setCookieHeaders = result.getResponse().getHeaders("Set-Cookie");
+		assertThat(setCookieHeaders, hasItem(allOf(containsString("access_token="), containsString("Max-Age=0"))));
+		assertThat(setCookieHeaders, hasItem(allOf(containsString("refresh_token="), containsString("Max-Age=0"))));
+		assertThat(setCookieHeaders, everyItem(containsString("Path=/")));
+		assertThat(setCookieHeaders, everyItem(containsString("HttpOnly")));
+		assertThat(setCookieHeaders, everyItem(containsString("Secure")));
+		assertFalse(Boolean.TRUE.equals(redisTemplate.hasKey("refresh_token:" + refreshToken)));
+		assertUserDataUnchanged(usersBeforeRequest, userBeforeRequest);
+	}
 
-  @Test
-  @DisplayName("Deve retornar 401 sem corpo quando refresh token for invalido")
-  void logoutUser_whenRefreshTokenIsInvalid_thenReturns401WithoutBody() throws Exception {
-    long usersBeforeRequest = countUsers();
-    UserSnapshot userBeforeRequest = userSnapshot();
-    String accessToken = jwtService.generateToken(USER_ID, Set.of(UserRole.USER));
+	@Test
+	@DisplayName("Deve impedir nova autenticacao com os mesmos cookies apos logout")
+	void logoutUser_whenSameCookiesAreReused_thenPrivateEndpointReturns401() throws Exception {
+		long usersBeforeRequest = countUsers();
+		UserSnapshot userBeforeRequest = userSnapshot();
+		String accessToken = jwtService.generateToken(USER_ID, Set.of(UserRole.USER));
+		String refreshToken = tokenService.generateRefreshToken(USER_ID);
+		Cookie accessCookie = new Cookie("access_token", accessToken);
+		Cookie refreshCookie = new Cookie("refresh_token", refreshToken);
 
-    mockMvc
-        .perform(
-            delete("/api/v1/auth/sessions/current")
-                .cookie(new Cookie("access_token", accessToken))
-                .cookie(new Cookie("refresh_token", "invalid-refresh-token")))
-        .andExpect(status().isUnauthorized())
-        .andExpect(content().string(""));
+		mockMvc.perform(delete("/api/v1/auth/sessions/current").cookie(accessCookie, refreshCookie))
+			.andExpect(status().isNoContent());
 
-    assertUserDataUnchanged(usersBeforeRequest, userBeforeRequest);
-  }
+		mockMvc.perform(get("/api/v1/users/me").cookie(accessCookie, refreshCookie))
+			.andExpect(status().isUnauthorized())
+			.andExpect(content().string(""));
 
-  @Test
-  @DisplayName("Deve retornar 401 quando access token estiver ausente")
-  void logoutUser_whenAccessTokenIsMissing_thenReturns401AndKeepsRefreshToken()
-      throws Exception {
-    long usersBeforeRequest = countUsers();
-    UserSnapshot userBeforeRequest = userSnapshot();
-    String refreshToken = tokenService.generateRefreshToken(USER_ID);
+		assertFalse(Boolean.TRUE.equals(redisTemplate.hasKey("refresh_token:" + refreshToken)));
+		assertUserDataUnchanged(usersBeforeRequest, userBeforeRequest);
+	}
 
-    mockMvc
-        .perform(
-            delete("/api/v1/auth/sessions/current")
-                .cookie(new Cookie("refresh_token", refreshToken)))
-        .andExpect(status().isUnauthorized())
-        .andExpect(content().string(""));
+	@Test
+	@DisplayName("Deve retornar 401 sem corpo quando nao autenticado")
+	void logoutUser_whenCookiesAreMissing_thenReturns401WithoutBody() throws Exception {
+		long usersBeforeRequest = countUsers();
+		UserSnapshot userBeforeRequest = userSnapshot();
 
-    assertTrue(Boolean.TRUE.equals(redisTemplate.hasKey("refresh_token:" + refreshToken)));
-    assertUserDataUnchanged(usersBeforeRequest, userBeforeRequest);
-  }
+		mockMvc.perform(delete("/api/v1/auth/sessions/current"))
+			.andExpect(status().isUnauthorized())
+			.andExpect(content().string(""));
 
-  @Test
-  @DisplayName("Deve retornar 401 quando access token for invalido")
-  void logoutUser_whenAccessTokenIsInvalid_thenReturns401AndKeepsRefreshToken()
-      throws Exception {
-    long usersBeforeRequest = countUsers();
-    UserSnapshot userBeforeRequest = userSnapshot();
-    String refreshToken = tokenService.generateRefreshToken(USER_ID);
+		assertUserDataUnchanged(usersBeforeRequest, userBeforeRequest);
+	}
 
-    mockMvc
-        .perform(
-            delete("/api/v1/auth/sessions/current")
-                .cookie(new Cookie("access_token", "invalid-access-token"))
-                .cookie(new Cookie("refresh_token", refreshToken)))
-        .andExpect(status().isUnauthorized())
-        .andExpect(content().string(""));
+	@Test
+	@DisplayName("Deve retornar 401 sem corpo quando refresh token for invalido")
+	void logoutUser_whenRefreshTokenIsInvalid_thenReturns401WithoutBody() throws Exception {
+		long usersBeforeRequest = countUsers();
+		UserSnapshot userBeforeRequest = userSnapshot();
+		String accessToken = jwtService.generateToken(USER_ID, Set.of(UserRole.USER));
 
-    assertTrue(Boolean.TRUE.equals(redisTemplate.hasKey("refresh_token:" + refreshToken)));
-    assertUserDataUnchanged(usersBeforeRequest, userBeforeRequest);
-  }
+		mockMvc
+			.perform(delete("/api/v1/auth/sessions/current").cookie(new Cookie("access_token", accessToken))
+				.cookie(new Cookie("refresh_token", "invalid-refresh-token")))
+			.andExpect(status().isUnauthorized())
+			.andExpect(content().string(""));
 
-  @Test
-  @DisplayName("Deve retornar 401 quando refresh token pertencer a outro usuario")
-  void logoutUser_whenRefreshTokenBelongsToAnotherUser_thenReturns401AndKeepsToken()
-      throws Exception {
-    long usersBeforeRequest = countUsers();
-    UserSnapshot userBeforeRequest = userSnapshot();
-    String accessToken = jwtService.generateToken(USER_ID, Set.of(UserRole.USER));
-    String refreshToken = tokenService.generateRefreshToken(OTHER_USER_ID);
+		assertUserDataUnchanged(usersBeforeRequest, userBeforeRequest);
+	}
 
-    mockMvc
-        .perform(
-            delete("/api/v1/auth/sessions/current")
-                .cookie(new Cookie("access_token", accessToken))
-                .cookie(new Cookie("refresh_token", refreshToken)))
-        .andExpect(status().isUnauthorized())
-        .andExpect(content().string(""));
+	@Test
+	@DisplayName("Deve retornar 401 quando access token estiver ausente")
+	void logoutUser_whenAccessTokenIsMissing_thenReturns401AndKeepsRefreshToken() throws Exception {
+		long usersBeforeRequest = countUsers();
+		UserSnapshot userBeforeRequest = userSnapshot();
+		String refreshToken = tokenService.generateRefreshToken(USER_ID);
 
-    assertTrue(Boolean.TRUE.equals(redisTemplate.hasKey("refresh_token:" + refreshToken)));
-    assertUserDataUnchanged(usersBeforeRequest, userBeforeRequest);
-  }
+		mockMvc.perform(delete("/api/v1/auth/sessions/current").cookie(new Cookie("refresh_token", refreshToken)))
+			.andExpect(status().isUnauthorized())
+			.andExpect(content().string(""));
 
-  @Test
-  @DisplayName("Deve retornar 429 quando exceder limite geral de requisicoes")
-  void logoutUser_whenGeneralLimitExceeded_thenReturns429() throws Exception {
-    long usersBeforeRequest = countUsers();
-    UserSnapshot userBeforeRequest = userSnapshot();
+		assertTrue(Boolean.TRUE.equals(redisTemplate.hasKey("refresh_token:" + refreshToken)));
+		assertUserDataUnchanged(usersBeforeRequest, userBeforeRequest);
+	}
 
-    for (int i = 0; i < 10; i++) {
-      mockMvc.perform(authenticatedLogoutRequest()).andExpect(status().isNoContent());
-    }
+	@Test
+	@DisplayName("Deve retornar 401 quando access token for invalido")
+	void logoutUser_whenAccessTokenIsInvalid_thenReturns401AndKeepsRefreshToken() throws Exception {
+		long usersBeforeRequest = countUsers();
+		UserSnapshot userBeforeRequest = userSnapshot();
+		String refreshToken = tokenService.generateRefreshToken(USER_ID);
 
-    String blockedRefreshToken = tokenService.generateRefreshToken(USER_ID);
-    mockMvc
-        .perform(authenticatedLogoutRequest(blockedRefreshToken))
-        .andExpect(status().isTooManyRequests())
-        .andExpect(content().string(""));
+		mockMvc
+			.perform(delete("/api/v1/auth/sessions/current").cookie(new Cookie("access_token", "invalid-access-token"))
+				.cookie(new Cookie("refresh_token", refreshToken)))
+			.andExpect(status().isUnauthorized())
+			.andExpect(content().string(""));
 
-    assertTrue(Boolean.TRUE.equals(redisTemplate.hasKey("refresh_token:" + blockedRefreshToken)));
-    assertUserDataUnchanged(usersBeforeRequest, userBeforeRequest);
-  }
+		assertTrue(Boolean.TRUE.equals(redisTemplate.hasKey("refresh_token:" + refreshToken)));
+		assertUserDataUnchanged(usersBeforeRequest, userBeforeRequest);
+	}
 
-  @Test
-  @DisplayName("Deve permitir logout quando a janela de rate limit expirar")
-  void logoutUser_whenRateLimitWindowExpires_thenProcessesRequest() throws Exception {
-    long usersBeforeRequest = countUsers();
-    UserSnapshot userBeforeRequest = userSnapshot();
+	@Test
+	@DisplayName("Deve retornar 401 quando refresh token pertencer a outro usuario")
+	void logoutUser_whenRefreshTokenBelongsToAnotherUser_thenReturns401AndKeepsToken() throws Exception {
+		long usersBeforeRequest = countUsers();
+		UserSnapshot userBeforeRequest = userSnapshot();
+		String accessToken = jwtService.generateToken(USER_ID, Set.of(UserRole.USER));
+		String refreshToken = tokenService.generateRefreshToken(OTHER_USER_ID);
 
-    for (int i = 0; i < 10; i++) {
-      mockMvc.perform(authenticatedLogoutRequest()).andExpect(status().isNoContent());
-    }
+		mockMvc
+			.perform(delete("/api/v1/auth/sessions/current").cookie(new Cookie("access_token", accessToken))
+				.cookie(new Cookie("refresh_token", refreshToken)))
+			.andExpect(status().isUnauthorized())
+			.andExpect(content().string(""));
 
-    String blockedRefreshToken = tokenService.generateRefreshToken(USER_ID);
-    mockMvc
-        .perform(authenticatedLogoutRequest(blockedRefreshToken))
-        .andExpect(status().isTooManyRequests())
-        .andExpect(content().string(""));
+		assertTrue(Boolean.TRUE.equals(redisTemplate.hasKey("refresh_token:" + refreshToken)));
+		assertUserDataUnchanged(usersBeforeRequest, userBeforeRequest);
+	}
 
-    rateLimitTimeMeter.advanceBy(Duration.ofSeconds(61));
+	@Test
+	@DisplayName("Deve retornar 429 quando exceder limite geral de requisicoes")
+	void logoutUser_whenGeneralLimitExceeded_thenReturns429() throws Exception {
+		long usersBeforeRequest = countUsers();
+		UserSnapshot userBeforeRequest = userSnapshot();
 
-    String refreshToken = tokenService.generateRefreshToken(USER_ID);
-    mockMvc
-        .perform(authenticatedLogoutRequest(refreshToken))
-        .andExpect(status().isNoContent())
-        .andExpect(content().string(""));
+		for (int i = 0; i < 10; i++) {
+			mockMvc.perform(authenticatedLogoutRequest()).andExpect(status().isNoContent());
+		}
 
-    assertFalse(Boolean.TRUE.equals(redisTemplate.hasKey("refresh_token:" + refreshToken)));
-    assertTrue(Boolean.TRUE.equals(redisTemplate.hasKey("refresh_token:" + blockedRefreshToken)));
-    assertUserDataUnchanged(usersBeforeRequest, userBeforeRequest);
-  }
+		String blockedRefreshToken = tokenService.generateRefreshToken(USER_ID);
+		mockMvc.perform(authenticatedLogoutRequest(blockedRefreshToken))
+			.andExpect(status().isTooManyRequests())
+			.andExpect(content().string(""));
 
-  private MockHttpServletRequestBuilder authenticatedLogoutRequest() {
-    return authenticatedLogoutRequest(tokenService.generateRefreshToken(USER_ID));
-  }
+		assertTrue(Boolean.TRUE.equals(redisTemplate.hasKey("refresh_token:" + blockedRefreshToken)));
+		assertUserDataUnchanged(usersBeforeRequest, userBeforeRequest);
+	}
 
-  private MockHttpServletRequestBuilder authenticatedLogoutRequest(String refreshToken) {
-    return delete("/api/v1/auth/sessions/current")
-        .cookie(new Cookie("access_token", jwtService.generateToken(USER_ID, Set.of(UserRole.USER))))
-        .cookie(new Cookie("refresh_token", refreshToken));
-  }
+	@Test
+	@DisplayName("Deve permitir logout quando a janela de rate limit expirar")
+	void logoutUser_whenRateLimitWindowExpires_thenProcessesRequest() throws Exception {
+		long usersBeforeRequest = countUsers();
+		UserSnapshot userBeforeRequest = userSnapshot();
 
-  private long countUsers() {
-    Long count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM users", Long.class);
-    return count == null ? 0 : count;
-  }
+		for (int i = 0; i < 10; i++) {
+			mockMvc.perform(authenticatedLogoutRequest()).andExpect(status().isNoContent());
+		}
 
-  private UserSnapshot userSnapshot() {
-    Map<String, Object> fields =
-        jdbcTemplate.queryForMap(
-            """
-            SELECT
-                id,
-                name,
-                email,
-                password_hash,
-                status,
-                active,
-                reset_password_code_hash,
-                reset_password_expires_at,
-                created_at,
-                created_by,
-                updated_at,
-                updated_by
-            FROM users
-            WHERE id = ?::uuid
-            """,
-            USER_ID);
-    List<String> roles =
-        jdbcTemplate.queryForList(
-            "SELECT role FROM users_roles WHERE user_id = ?::uuid ORDER BY role",
-            String.class,
-            USER_ID);
-    return new UserSnapshot(new TreeMap<>(fields), roles);
-  }
+		String blockedRefreshToken = tokenService.generateRefreshToken(USER_ID);
+		mockMvc.perform(authenticatedLogoutRequest(blockedRefreshToken))
+			.andExpect(status().isTooManyRequests())
+			.andExpect(content().string(""));
 
-  private void assertUserDataUnchanged(long usersBeforeRequest, UserSnapshot userBeforeRequest) {
-    assertEquals(usersBeforeRequest, countUsers());
-    assertEquals(userBeforeRequest, userSnapshot());
-  }
+		rateLimitTimeMeter.advanceBy(Duration.ofSeconds(61));
 
-  private void clearRateLimitBuckets() {
-    try {
-      clearBucketMap("loginBuckets");
-      clearBucketMap("generalBuckets");
-      clearBucketMap("passwordBuckets");
-    } catch (ReflectiveOperationException e) {
-      throw new IllegalStateException(e);
-    }
-  }
+		String refreshToken = tokenService.generateRefreshToken(USER_ID);
+		mockMvc.perform(authenticatedLogoutRequest(refreshToken))
+			.andExpect(status().isNoContent())
+			.andExpect(content().string(""));
 
-  private void clearBucketMap(String fieldName) throws ReflectiveOperationException {
-    var field = UserRateLimitConfig.class.getDeclaredField(fieldName);
-    field.setAccessible(true);
-    ((java.util.Map<?, ?>) field.get(rateLimitConfig)).clear();
-  }
+		assertFalse(Boolean.TRUE.equals(redisTemplate.hasKey("refresh_token:" + refreshToken)));
+		assertTrue(Boolean.TRUE.equals(redisTemplate.hasKey("refresh_token:" + blockedRefreshToken)));
+		assertUserDataUnchanged(usersBeforeRequest, userBeforeRequest);
+	}
 
-  private record UserSnapshot(Map<String, Object> fields, List<String> roles) {}
+	private MockHttpServletRequestBuilder authenticatedLogoutRequest() {
+		return authenticatedLogoutRequest(tokenService.generateRefreshToken(USER_ID));
+	}
+
+	private MockHttpServletRequestBuilder authenticatedLogoutRequest(String refreshToken) {
+		return delete("/api/v1/auth/sessions/current")
+			.cookie(new Cookie("access_token", jwtService.generateToken(USER_ID, Set.of(UserRole.USER))))
+			.cookie(new Cookie("refresh_token", refreshToken));
+	}
+
+	private long countUsers() {
+		Long count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM users", Long.class);
+		return count == null ? 0 : count;
+	}
+
+	private UserSnapshot userSnapshot() {
+		Map<String, Object> fields = jdbcTemplate.queryForMap("""
+				SELECT
+				    id,
+				    name,
+				    email,
+				    password_hash,
+				    status,
+				    active,
+				    reset_password_code_hash,
+				    reset_password_expires_at,
+				    created_at,
+				    created_by,
+				    updated_at,
+				    updated_by
+				FROM users
+				WHERE id = ?::uuid
+				""", USER_ID);
+		List<String> roles = jdbcTemplate
+			.queryForList("SELECT role FROM users_roles WHERE user_id = ?::uuid ORDER BY role", String.class, USER_ID);
+		return new UserSnapshot(new TreeMap<>(fields), roles);
+	}
+
+	private void assertUserDataUnchanged(long usersBeforeRequest, UserSnapshot userBeforeRequest) {
+		assertEquals(usersBeforeRequest, countUsers());
+		assertEquals(userBeforeRequest, userSnapshot());
+	}
+
+	private void clearRateLimitBuckets() {
+		try {
+			clearBucketMap("loginBuckets");
+			clearBucketMap("generalBuckets");
+			clearBucketMap("passwordBuckets");
+		}
+		catch (ReflectiveOperationException e) {
+			throw new IllegalStateException(e);
+		}
+	}
+
+	private void clearBucketMap(String fieldName) throws ReflectiveOperationException {
+		var field = UserRateLimitConfig.class.getDeclaredField(fieldName);
+		field.setAccessible(true);
+		((java.util.Map<?, ?>) field.get(rateLimitConfig)).clear();
+	}
+
+	private record UserSnapshot(Map<String, Object> fields, List<String> roles) {
+	}
+
 }

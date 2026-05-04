@@ -15,49 +15,51 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class JpaUserRepositoryAdapter implements UserRepository {
 
-  private final SpringDataUserRepository repository;
-  private final UserPersistenceMapper mapper;
+	private final SpringDataUserRepository repository;
 
-  @Override
-  public void save(User user) {
-    repository.save(mapper.toEntity(user));
-  }
+	private final UserPersistenceMapper mapper;
 
-  @Override
-  public Optional<User> findById(UUID id) {
-    return repository.findById(id).map(mapper::toDomain);
-  }
+	@Override
+	public void save(User user) {
+		repository.save(mapper.toEntity(user));
+	}
 
-  @Override
-  public Optional<User> findByEmail(Email email) {
-    return repository.findByEmail(email.value()).map(mapper::toDomain);
-  }
+	@Override
+	public Optional<User> findById(UUID id) {
+		return repository.findById(id).map(mapper::toDomain);
+	}
 
-  @Override
-  public Optional<User> findByResetPasswordCodeHash(String resetPasswordCodeHash) {
-    return repository.findByResetPasswordCodeHash(resetPasswordCodeHash).map(mapper::toDomain);
-  }
+	@Override
+	public Optional<User> findByEmail(Email email) {
+		return repository.findByEmail(email.value()).map(mapper::toDomain);
+	}
 
-  @Override
-  public List<User> findAll(String nameFilter) {
-    return repository.findAllByName(nameFilter).stream().map(mapper::toDomain).toList();
-  }
+	@Override
+	public Optional<User> findByResetPasswordCodeHash(String resetPasswordCodeHash) {
+		return repository.findByResetPasswordCodeHash(resetPasswordCodeHash).map(mapper::toDomain);
+	}
 
-  @Override
-  public Page<User> findAll(String nameFilter, Pageable pageable) {
-    if (nameFilter == null) {
-      return repository.findAll(pageable).map(mapper::toDomain);
-    }
-    return repository.findByNameContainingIgnoreCase(nameFilter, pageable).map(mapper::toDomain);
-  }
+	@Override
+	public List<User> findAll(String nameFilter) {
+		return repository.findAllByName(nameFilter).stream().map(mapper::toDomain).toList();
+	}
 
-  @Override
-  public void update(User user) {
-    repository.save(mapper.toEntity(user));
-  }
+	@Override
+	public Page<User> findAll(String nameFilter, Pageable pageable) {
+		if (nameFilter == null) {
+			return repository.findAll(pageable).map(mapper::toDomain);
+		}
+		return repository.findByNameContainingIgnoreCase(nameFilter, pageable).map(mapper::toDomain);
+	}
 
-  @Override
-  public void deleteById(UUID id) {
-    repository.deleteById(id);
-  }
+	@Override
+	public void update(User user) {
+		repository.save(mapper.toEntity(user));
+	}
+
+	@Override
+	public void deleteById(UUID id) {
+		repository.deleteById(id);
+	}
+
 }

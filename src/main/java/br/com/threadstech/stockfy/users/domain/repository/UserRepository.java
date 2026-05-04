@@ -9,19 +9,21 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 public interface UserRepository {
-  void save(User user);
 
-  Optional<User> findById(UUID id);
+	void save(User user);
 
-  Optional<User> findByEmail(Email email);
+	Optional<User> findById(UUID id);
 
-  Optional<User> findByResetPasswordCodeHash(String resetPasswordCodeHash);
+	Optional<User> findByEmail(Email email);
 
-  List<User> findAll(String nameFilter);
+	Optional<User> findByResetPasswordCodeHash(String resetPasswordCodeHash);
 
-  Page<User> findAll(String nameFilter, Pageable pageable);
+	List<User> findAll(String nameFilter);
 
-  void update(User user);
+	Page<User> findAll(String nameFilter, Pageable pageable);
 
-  void deleteById(UUID id);
+	void update(User user);
+
+	void deleteById(UUID id);
+
 }

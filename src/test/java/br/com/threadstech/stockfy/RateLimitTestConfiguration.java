@@ -7,9 +7,10 @@ import org.springframework.context.annotation.Primary;
 @TestConfiguration(proxyBeanMethods = false)
 public class RateLimitTestConfiguration {
 
-  @Bean
-  @Primary
-  public MutableTimeMeter mutableRateLimitTimeMeter() {
-    return new MutableTimeMeter();
-  }
+	@Bean
+	@Primary
+	public MutableTimeMeter mutableRateLimitTimeMeter() {
+		return new MutableTimeMeter();
+	}
+
 }

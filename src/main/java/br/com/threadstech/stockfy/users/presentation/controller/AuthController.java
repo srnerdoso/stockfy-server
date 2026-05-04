@@ -22,65 +22,66 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class AuthController {
 
-  private final LoginUseCase loginUseCase;
-  private final RefreshTokenUseCase refreshTokenUseCase;
-  private final LogoutUseCase logoutUseCase;
+	private final LoginUseCase loginUseCase;
 
-  @PostMapping
-  public ResponseEntity<Void> login(
-      @RequestBody @Valid LoginRequest request, HttpServletResponse response) {
-    AuthResponse authResponse = loginUseCase.execute(request.email(), request.password());
-    addCookies(response, authResponse);
-    return ResponseEntity.ok().build();
-  }
+	private final RefreshTokenUseCase refreshTokenUseCase;
 
-  @PostMapping("/refresh")
-  public ResponseEntity<Void> refresh(
-      @CookieValue(name = "refresh_token", required = false) String refreshToken,
-      HttpServletResponse response) {
-    AuthResponse authResponse = refreshTokenUseCase.execute(refreshToken);
-    addCookies(response, authResponse);
-    return ResponseEntity.ok().build();
-  }
+	private final LogoutUseCase logoutUseCase;
 
-  @DeleteMapping("/current")
-  public ResponseEntity<Void> logout(
-      @CookieValue(name = "refresh_token") String refreshToken, HttpServletResponse response) {
-    logoutUseCase.execute(refreshToken);
-    clearCookies(response);
-    return ResponseEntity.noContent().build();
-  }
+	@PostMapping
+	public ResponseEntity<Void> login(@RequestBody @Valid LoginRequest request, HttpServletResponse response) {
+		AuthResponse authResponse = loginUseCase.execute(request.email(), request.password());
+		addCookies(response, authResponse);
+		return ResponseEntity.ok().build();
+	}
 
-  private void addCookies(HttpServletResponse response, AuthResponse authResponse) {
-    Cookie accessCookie = new Cookie("access_token", authResponse.accessToken());
-    accessCookie.setHttpOnly(true);
-    accessCookie.setSecure(true); // Should be true in prod
-    accessCookie.setPath("/");
-    accessCookie.setMaxAge(900); // 15 min
+	@PostMapping("/refresh")
+	public ResponseEntity<Void> refresh(@CookieValue(name = "refresh_token", required = false) String refreshToken,
+			HttpServletResponse response) {
+		AuthResponse authResponse = refreshTokenUseCase.execute(refreshToken);
+		addCookies(response, authResponse);
+		return ResponseEntity.ok().build();
+	}
 
-    Cookie refreshCookie = new Cookie("refresh_token", authResponse.refreshToken());
-    refreshCookie.setHttpOnly(true);
-    refreshCookie.setSecure(true);
-    refreshCookie.setPath("/");
-    refreshCookie.setMaxAge(604800); // 7 days
+	@DeleteMapping("/current")
+	public ResponseEntity<Void> logout(@CookieValue(name = "refresh_token") String refreshToken,
+			HttpServletResponse response) {
+		logoutUseCase.execute(refreshToken);
+		clearCookies(response);
+		return ResponseEntity.noContent().build();
+	}
 
-    response.addCookie(accessCookie);
-    response.addCookie(refreshCookie);
-  }
+	private void addCookies(HttpServletResponse response, AuthResponse authResponse) {
+		Cookie accessCookie = new Cookie("access_token", authResponse.accessToken());
+		accessCookie.setHttpOnly(true);
+		accessCookie.setSecure(true); // Should be true in prod
+		accessCookie.setPath("/");
+		accessCookie.setMaxAge(900); // 15 min
 
-  private void clearCookies(HttpServletResponse response) {
-    Cookie accessCookie = expiredCookie("access_token");
-    Cookie refreshCookie = expiredCookie("refresh_token");
-    response.addCookie(accessCookie);
-    response.addCookie(refreshCookie);
-  }
+		Cookie refreshCookie = new Cookie("refresh_token", authResponse.refreshToken());
+		refreshCookie.setHttpOnly(true);
+		refreshCookie.setSecure(true);
+		refreshCookie.setPath("/");
+		refreshCookie.setMaxAge(604800); // 7 days
 
-  private Cookie expiredCookie(String name) {
-    Cookie cookie = new Cookie(name, null);
-    cookie.setHttpOnly(true);
-    cookie.setSecure(true);
-    cookie.setPath("/");
-    cookie.setMaxAge(0);
-    return cookie;
-  }
+		response.addCookie(accessCookie);
+		response.addCookie(refreshCookie);
+	}
+
+	private void clearCookies(HttpServletResponse response) {
+		Cookie accessCookie = expiredCookie("access_token");
+		Cookie refreshCookie = expiredCookie("refresh_token");
+		response.addCookie(accessCookie);
+		response.addCookie(refreshCookie);
+	}
+
+	private Cookie expiredCookie(String name) {
+		Cookie cookie = new Cookie(name, null);
+		cookie.setHttpOnly(true);
+		cookie.setSecure(true);
+		cookie.setPath("/");
+		cookie.setMaxAge(0);
+		return cookie;
+	}
+
 }

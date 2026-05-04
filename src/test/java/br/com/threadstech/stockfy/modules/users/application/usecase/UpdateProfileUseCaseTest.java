@@ -23,123 +23,121 @@ import org.junit.jupiter.api.Test;
 
 class UpdateProfileUseCaseTest {
 
-  private final UserRepository userRepository = org.mockito.Mockito.mock(UserRepository.class);
-  private final UpdateProfileUseCase useCase = new UpdateProfileUseCase(userRepository);
+	private final UserRepository userRepository = org.mockito.Mockito.mock(UserRepository.class);
 
-  @Test
-  @DisplayName("Deve atualizar nome e email quando dados forem validos")
-  void execute_whenNameAndEmailAreProvided_thenUpdatesUser() {
-    UUID userId = UUID.randomUUID();
-    User user = user(userId, "Old Name", "old@example.com");
-    when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-    when(userRepository.findByEmail(new Email("new@example.com"))).thenReturn(Optional.empty());
+	private final UpdateProfileUseCase useCase = new UpdateProfileUseCase(userRepository);
 
-    useCase.execute(userId, "New Name", "new@example.com");
+	@Test
+	@DisplayName("Deve atualizar nome e email quando dados forem validos")
+	void execute_whenNameAndEmailAreProvided_thenUpdatesUser() {
+		UUID userId = UUID.randomUUID();
+		User user = user(userId, "Old Name", "old@example.com");
+		when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+		when(userRepository.findByEmail(new Email("new@example.com"))).thenReturn(Optional.empty());
 
-    assertEquals("New Name", user.getName());
-    assertEquals("new@example.com", user.getEmail().value());
-    assertEquals(Set.of(UserRole.USER), user.getRoles());
-    assertEquals(UserStatus.ACTIVE, user.getStatus());
-    verify(userRepository).update(user);
-  }
+		useCase.execute(userId, "New Name", "new@example.com");
 
-  @Test
-  @DisplayName("Deve preservar email atual quando email for omitido")
-  void execute_whenEmailIsNull_thenKeepsCurrentEmail() {
-    UUID userId = UUID.randomUUID();
-    User user = user(userId, "Old Name", "old@example.com");
-    when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+		assertEquals("New Name", user.getName());
+		assertEquals("new@example.com", user.getEmail().value());
+		assertEquals(Set.of(UserRole.USER), user.getRoles());
+		assertEquals(UserStatus.ACTIVE, user.getStatus());
+		verify(userRepository).update(user);
+	}
 
-    useCase.execute(userId, "New Name", null);
+	@Test
+	@DisplayName("Deve preservar email atual quando email for omitido")
+	void execute_whenEmailIsNull_thenKeepsCurrentEmail() {
+		UUID userId = UUID.randomUUID();
+		User user = user(userId, "Old Name", "old@example.com");
+		when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
-    assertEquals("New Name", user.getName());
-    assertEquals("old@example.com", user.getEmail().value());
-    verify(userRepository).update(user);
-  }
+		useCase.execute(userId, "New Name", null);
 
-  @Test
-  @DisplayName("Deve preservar nome atual quando nome for omitido")
-  void execute_whenNameIsNull_thenKeepsCurrentName() {
-    UUID userId = UUID.randomUUID();
-    User user = user(userId, "Old Name", "old@example.com");
-    when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-    when(userRepository.findByEmail(new Email("new@example.com"))).thenReturn(Optional.empty());
+		assertEquals("New Name", user.getName());
+		assertEquals("old@example.com", user.getEmail().value());
+		verify(userRepository).update(user);
+	}
 
-    useCase.execute(userId, null, "new@example.com");
+	@Test
+	@DisplayName("Deve preservar nome atual quando nome for omitido")
+	void execute_whenNameIsNull_thenKeepsCurrentName() {
+		UUID userId = UUID.randomUUID();
+		User user = user(userId, "Old Name", "old@example.com");
+		when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+		when(userRepository.findByEmail(new Email("new@example.com"))).thenReturn(Optional.empty());
 
-    assertEquals("Old Name", user.getName());
-    assertEquals("new@example.com", user.getEmail().value());
-    verify(userRepository).update(user);
-  }
+		useCase.execute(userId, null, "new@example.com");
 
-  @Test
-  @DisplayName("Deve permitir manter o mesmo email sem conflito")
-  void execute_whenEmailIsCurrentUserEmail_thenDoesNotThrowConflict() {
-    UUID userId = UUID.randomUUID();
-    User user = user(userId, "Old Name", "old@example.com");
-    when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+		assertEquals("Old Name", user.getName());
+		assertEquals("new@example.com", user.getEmail().value());
+		verify(userRepository).update(user);
+	}
 
-    useCase.execute(userId, "New Name", "old@example.com");
+	@Test
+	@DisplayName("Deve permitir manter o mesmo email sem conflito")
+	void execute_whenEmailIsCurrentUserEmail_thenDoesNotThrowConflict() {
+		UUID userId = UUID.randomUUID();
+		User user = user(userId, "Old Name", "old@example.com");
+		when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
-    assertEquals("New Name", user.getName());
-    assertEquals("old@example.com", user.getEmail().value());
-    verify(userRepository, never()).findByEmail(new Email("old@example.com"));
-    verify(userRepository).update(user);
-  }
+		useCase.execute(userId, "New Name", "old@example.com");
 
-  @Test
-  @DisplayName("Deve lancar conflito quando email pertencer a outro usuario")
-  void execute_whenEmailBelongsToAnotherUser_thenThrowsEmailAlreadyExistsException() {
-    UUID userId = UUID.randomUUID();
-    UUID anotherUserId = UUID.randomUUID();
-    User user = user(userId, "Old Name", "old@example.com");
-    User anotherUser = user(anotherUserId, "Another", "taken@example.com");
-    when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-    when(userRepository.findByEmail(new Email("taken@example.com")))
-        .thenReturn(Optional.of(anotherUser));
+		assertEquals("New Name", user.getName());
+		assertEquals("old@example.com", user.getEmail().value());
+		verify(userRepository, never()).findByEmail(new Email("old@example.com"));
+		verify(userRepository).update(user);
+	}
 
-    assertThrows(
-        EmailAlreadyExistsException.class,
-        () -> useCase.execute(userId, "New Name", "taken@example.com"));
+	@Test
+	@DisplayName("Deve lancar conflito quando email pertencer a outro usuario")
+	void execute_whenEmailBelongsToAnotherUser_thenThrowsEmailAlreadyExistsException() {
+		UUID userId = UUID.randomUUID();
+		UUID anotherUserId = UUID.randomUUID();
+		User user = user(userId, "Old Name", "old@example.com");
+		User anotherUser = user(anotherUserId, "Another", "taken@example.com");
+		when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+		when(userRepository.findByEmail(new Email("taken@example.com"))).thenReturn(Optional.of(anotherUser));
 
-    assertEquals("Old Name", user.getName());
-    assertEquals("old@example.com", user.getEmail().value());
-    verify(userRepository, never()).update(user);
-  }
+		assertThrows(EmailAlreadyExistsException.class, () -> useCase.execute(userId, "New Name", "taken@example.com"));
 
-  @Test
-  @DisplayName("Nao deve persistir quando nome e email forem omitidos")
-  void execute_whenNameAndEmailAreNull_thenDoesNotUpdateUser() {
-    UUID userId = UUID.randomUUID();
-    User user = user(userId, "Old Name", "old@example.com");
-    when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+		assertEquals("Old Name", user.getName());
+		assertEquals("old@example.com", user.getEmail().value());
+		verify(userRepository, never()).update(user);
+	}
 
-    useCase.execute(userId, null, null);
+	@Test
+	@DisplayName("Nao deve persistir quando nome e email forem omitidos")
+	void execute_whenNameAndEmailAreNull_thenDoesNotUpdateUser() {
+		UUID userId = UUID.randomUUID();
+		User user = user(userId, "Old Name", "old@example.com");
+		when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
-    assertEquals("Old Name", user.getName());
-    assertEquals("old@example.com", user.getEmail().value());
-    verify(userRepository, never()).update(user);
-  }
+		useCase.execute(userId, null, null);
 
-  @Test
-  @DisplayName("Deve lancar UserNotFoundException quando usuario autenticado nao existir")
-  void execute_whenUserDoesNotExist_thenThrowsUserNotFoundException() {
-    UUID userId = UUID.randomUUID();
-    when(userRepository.findById(userId)).thenReturn(Optional.empty());
+		assertEquals("Old Name", user.getName());
+		assertEquals("old@example.com", user.getEmail().value());
+		verify(userRepository, never()).update(user);
+	}
 
-    assertThrows(
-        UserNotFoundException.class, () -> useCase.execute(userId, "New Name", "new@example.com"));
-  }
+	@Test
+	@DisplayName("Deve lancar UserNotFoundException quando usuario autenticado nao existir")
+	void execute_whenUserDoesNotExist_thenThrowsUserNotFoundException() {
+		UUID userId = UUID.randomUUID();
+		when(userRepository.findById(userId)).thenReturn(Optional.empty());
 
-  private User user(UUID id, String name, String email) {
-    return User.builder()
-        .id(id)
-        .name(name)
-        .email(new Email(email))
-        .password(new Password("password123"))
-        .roles(Set.of(UserRole.USER))
-        .status(UserStatus.ACTIVE)
-        .active(true)
-        .build();
-  }
+		assertThrows(UserNotFoundException.class, () -> useCase.execute(userId, "New Name", "new@example.com"));
+	}
+
+	private User user(UUID id, String name, String email) {
+		return User.builder()
+			.id(id)
+			.name(name)
+			.email(new Email(email))
+			.password(new Password("password123"))
+			.roles(Set.of(UserRole.USER))
+			.status(UserStatus.ACTIVE)
+			.active(true)
+			.build();
+	}
+
 }

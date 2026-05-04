@@ -29,61 +29,62 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.jdbc.Sql;
 
-@SpringBootTest(
-    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-    properties = "server.error.include-stacktrace=never")
-@Import({TestcontainersConfiguration.class, RateLimitTestConfiguration.class})
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+		properties = "server.error.include-stacktrace=never")
+@Import({ TestcontainersConfiguration.class, RateLimitTestConfiguration.class })
 @Sql(scripts = "/sql/users/cleanup.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @Sql(scripts = "/sql/users/base-users.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @Sql(scripts = "/sql/users/cleanup.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
 class DeleteUserByIdInternalErrorIT {
 
-  private static final String ADMIN_ID = "00000000-0000-0000-0000-000000000001";
-  private static final UUID OWNER_ID = UUID.fromString("00000000-0000-0000-0000-000000000002");
+	private static final String ADMIN_ID = "00000000-0000-0000-0000-000000000001";
 
-  @Autowired private TestRestTemplate restTemplate;
-  @Autowired private JdbcTemplate jdbcTemplate;
-  @Autowired private JwtService jwtService;
-  @Autowired private TokenService tokenService;
+	private static final UUID OWNER_ID = UUID.fromString("00000000-0000-0000-0000-000000000002");
 
-  @MockitoBean private DeleteUserUseCase deleteUserUseCase;
+	@Autowired
+	private TestRestTemplate restTemplate;
 
-  @Test
-  @DisplayName("Deve retornar 500 sem stacktrace quando ocorrer erro interno")
-  void deleteUserById_whenUnexpectedErrorOccurs_thenReturns500WithoutStacktrace() {
-    long usersBeforeRequest = countUsers();
-    doThrow(new RuntimeException("delete database stacktrace detail"))
-        .when(deleteUserUseCase)
-        .execute(OWNER_ID);
+	@Autowired
+	private JdbcTemplate jdbcTemplate;
 
-    ResponseEntity<String> response =
-        restTemplate.exchange(
-            "/api/v1/users/{id}",
-            HttpMethod.DELETE,
-            new HttpEntity<>(authenticatedHeaders()),
-            String.class,
-            OWNER_ID);
+	@Autowired
+	private JwtService jwtService;
 
-    assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
-    assertThat(response.getBody(), not(containsString("delete database stacktrace detail")));
-    assertThat(response.getBody(), not(containsString("RuntimeException")));
-    assertThat(response.getBody(), not(containsString("at ")));
-    assertThat(response.getBody(), not(containsString(".java:")));
+	@Autowired
+	private TokenService tokenService;
 
-    assertEquals(usersBeforeRequest, countUsers());
-  }
+	@MockitoBean
+	private DeleteUserUseCase deleteUserUseCase;
 
-  private HttpHeaders authenticatedHeaders() {
-    UUID adminId = UUID.fromString(ADMIN_ID);
-    HttpHeaders headers = new HttpHeaders();
-    headers.add(
-        HttpHeaders.COOKIE, "access_token=" + jwtService.generateToken(adminId, Set.of(UserRole.ADMIN)));
-    headers.add(HttpHeaders.COOKIE, "refresh_token=" + tokenService.generateRefreshToken(adminId));
-    return headers;
-  }
+	@Test
+	@DisplayName("Deve retornar 500 sem stacktrace quando ocorrer erro interno")
+	void deleteUserById_whenUnexpectedErrorOccurs_thenReturns500WithoutStacktrace() {
+		long usersBeforeRequest = countUsers();
+		doThrow(new RuntimeException("delete database stacktrace detail")).when(deleteUserUseCase).execute(OWNER_ID);
 
-  private long countUsers() {
-    Long count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM users", Long.class);
-    return count == null ? 0 : count;
-  }
+		ResponseEntity<String> response = restTemplate.exchange("/api/v1/users/{id}", HttpMethod.DELETE,
+				new HttpEntity<>(authenticatedHeaders()), String.class, OWNER_ID);
+
+		assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
+		assertThat(response.getBody(), not(containsString("delete database stacktrace detail")));
+		assertThat(response.getBody(), not(containsString("RuntimeException")));
+		assertThat(response.getBody(), not(containsString("at ")));
+		assertThat(response.getBody(), not(containsString(".java:")));
+
+		assertEquals(usersBeforeRequest, countUsers());
+	}
+
+	private HttpHeaders authenticatedHeaders() {
+		UUID adminId = UUID.fromString(ADMIN_ID);
+		HttpHeaders headers = new HttpHeaders();
+		headers.add(HttpHeaders.COOKIE, "access_token=" + jwtService.generateToken(adminId, Set.of(UserRole.ADMIN)));
+		headers.add(HttpHeaders.COOKIE, "refresh_token=" + tokenService.generateRefreshToken(adminId));
+		return headers;
+	}
+
+	private long countUsers() {
+		Long count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM users", Long.class);
+		return count == null ? 0 : count;
+	}
+
 }

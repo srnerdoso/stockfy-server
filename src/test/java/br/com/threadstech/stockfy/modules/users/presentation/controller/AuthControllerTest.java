@@ -26,29 +26,30 @@ import org.springframework.test.web.servlet.MockMvc;
 @Import(TestcontainersConfiguration.class)
 class AuthControllerTest {
 
-  @Autowired private MockMvc mockMvc;
+	@Autowired
+	private MockMvc mockMvc;
 
-  @Autowired private ObjectMapper objectMapper;
+	@Autowired
+	private ObjectMapper objectMapper;
 
-  @MockitoBean private LoginUseCase loginUseCase;
+	@MockitoBean
+	private LoginUseCase loginUseCase;
 
-  @Test
-  @DisplayName("Should return cookies on login")
-  void shouldReturnCookiesOnLogin() throws Exception {
-    when(loginUseCase.execute(anyString(), anyString()))
-        .thenReturn(new AuthResponse("access", "refresh"));
+	@Test
+	@DisplayName("Should return cookies on login")
+	void shouldReturnCookiesOnLogin() throws Exception {
+		when(loginUseCase.execute(anyString(), anyString())).thenReturn(new AuthResponse("access", "refresh"));
 
-    var request = new LoginRequest("test@example.com", "password");
+		var request = new LoginRequest("test@example.com", "password");
 
-    mockMvc
-        .perform(
-            post("/api/v1/auth/sessions")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
-        .andExpect(status().isOk())
-        .andExpect(cookie().exists("access_token"))
-        .andExpect(cookie().exists("refresh_token"))
-        .andExpect(cookie().httpOnly("access_token", true))
-        .andExpect(cookie().httpOnly("refresh_token", true));
-  }
+		mockMvc
+			.perform(post("/api/v1/auth/sessions").contentType(MediaType.APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(request)))
+			.andExpect(status().isOk())
+			.andExpect(cookie().exists("access_token"))
+			.andExpect(cookie().exists("refresh_token"))
+			.andExpect(cookie().httpOnly("access_token", true))
+			.andExpect(cookie().httpOnly("refresh_token", true));
+	}
+
 }

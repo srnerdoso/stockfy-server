@@ -23,46 +23,48 @@ import org.junit.jupiter.api.Test;
 
 class FindUserByIdUseCaseTest {
 
-  private final UserRepository userRepository = mock(UserRepository.class);
-  private final FindUserByIdUseCase useCase = new FindUserByIdUseCase(userRepository);
+	private final UserRepository userRepository = mock(UserRepository.class);
 
-  @Test
-  @DisplayName("Deve retornar detalhes quando usuario existir")
-  void execute_whenUserExists_thenReturnsDetailedResponse() {
-    UUID userId = UUID.randomUUID();
-    User user = user(userId, UserRole.USER);
-    when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+	private final FindUserByIdUseCase useCase = new FindUserByIdUseCase(userRepository);
 
-    UserListItemResponse response = useCase.execute(userId);
+	@Test
+	@DisplayName("Deve retornar detalhes quando usuario existir")
+	void execute_whenUserExists_thenReturnsDetailedResponse() {
+		UUID userId = UUID.randomUUID();
+		User user = user(userId, UserRole.USER);
+		when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
-    assertEquals("Owner", response.name());
-    assertEquals("owner@example.com", response.email());
-    assertEquals(Set.of(UserRole.USER), response.roles());
-    assertEquals(UserStatus.ACTIVE, response.status());
-  }
+		UserListItemResponse response = useCase.execute(userId);
 
-  @Test
-  @DisplayName("Deve lançar excecao quando usuario nao existir")
-  void execute_whenUserDoesNotExist_thenThrowsUserNotFoundException() {
-    UUID requestedId = UUID.randomUUID();
-    when(userRepository.findById(requestedId)).thenReturn(Optional.empty());
+		assertEquals("Owner", response.name());
+		assertEquals("owner@example.com", response.email());
+		assertEquals(Set.of(UserRole.USER), response.roles());
+		assertEquals(UserStatus.ACTIVE, response.status());
+	}
 
-    assertThrows(UserNotFoundException.class, () -> useCase.execute(requestedId));
-  }
+	@Test
+	@DisplayName("Deve lançar excecao quando usuario nao existir")
+	void execute_whenUserDoesNotExist_thenThrowsUserNotFoundException() {
+		UUID requestedId = UUID.randomUUID();
+		when(userRepository.findById(requestedId)).thenReturn(Optional.empty());
 
-  private User user(UUID id, UserRole role) {
-    return User.builder()
-        .id(id)
-        .name("Owner")
-        .email(new Email("owner@example.com"))
-        .password(new Password("password123"))
-        .roles(Set.of(role))
-        .status(UserStatus.ACTIVE)
-        .active(true)
-        .createdAt(LocalDateTime.of(2026, 4, 28, 10, 0))
-        .createdBy(UUID.randomUUID())
-        .updatedAt(LocalDateTime.of(2026, 4, 28, 11, 0))
-        .updatedBy(UUID.randomUUID())
-        .build();
-  }
+		assertThrows(UserNotFoundException.class, () -> useCase.execute(requestedId));
+	}
+
+	private User user(UUID id, UserRole role) {
+		return User.builder()
+			.id(id)
+			.name("Owner")
+			.email(new Email("owner@example.com"))
+			.password(new Password("password123"))
+			.roles(Set.of(role))
+			.status(UserStatus.ACTIVE)
+			.active(true)
+			.createdAt(LocalDateTime.of(2026, 4, 28, 10, 0))
+			.createdBy(UUID.randomUUID())
+			.updatedAt(LocalDateTime.of(2026, 4, 28, 11, 0))
+			.updatedBy(UUID.randomUUID())
+			.build();
+	}
+
 }

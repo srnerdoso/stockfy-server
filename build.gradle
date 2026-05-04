@@ -2,8 +2,8 @@ plugins {
     id 'java'
     id 'org.springframework.boot' version '3.5.13'
     id 'io.spring.dependency-management' version '1.1.7'
+    id 'io.spring.javaformat' version '0.0.47'
     id 'checkstyle'
-    id("com.diffplug.spotless") version "8.4.0"
 }
 
 group = 'br.com.threadstech'
@@ -24,16 +24,8 @@ configurations {
 }
 
 checkstyle {
-    toolVersion = '10.14.0'
-}
-
-spotless {
-    java {
-        googleJavaFormat()
-        importOrder()
-        removeUnusedImports()
-        formatAnnotations()
-    }
+    toolVersion = '9.3'
+    configFile = file("config/checkstyle/checkstyle.xml")
 }
 
 dependencies {
@@ -70,13 +62,12 @@ dependencies {
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     testAnnotationProcessor 'org.projectlombok:lombok'
 
+    checkstyle "io.spring.javaformat:spring-javaformat-checkstyle:0.0.47"
+    checkstyle "io.spring.javaformat:spring-javaformat-config:0.0.47"
+
     mockitoAgent('org.mockito:mockito-core') {
         transitive = false
     }
-}
-
-tasks.withType(Checkstyle) {
-    source 'src/main/java'
 }
 
 tasks.named('test') {
@@ -84,6 +75,6 @@ tasks.named('test') {
     jvmArgs += "-javaagent:${configurations.mockitoAgent.asPath}"
 }
 
-tasks.named("checkstyleTest") {
-    enabled = false
+tasks.named("check") {
+    dependsOn("checkFormat")
 }

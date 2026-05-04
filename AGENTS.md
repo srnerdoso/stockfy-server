@@ -30,14 +30,48 @@ throughout development.
 ## Project Structure
 
 ```txt
-src/
-└── main/
-    ├── java/br/com/threadstech/stockfy/
-    │   ├── shared/         # Cross-module shared components
-    │   ├── modules/        # Bounded Contexts (DDD)
-    │   ├── config/         # Global framework configurations
-    │   └── StockfyApplication.java
-    └── test/               # Mirrors main/java structure
+stockfy-server
+│   .gitattributes
+│   .gitignore
+│   build.gradle
+│   compose.yaml
+│   gradlew
+│   gradlew.bat
+│   HELP.md
+│   settings.gradle
+├───config
+│   └───checkstyle
+│           checkstyle.xml
+├───docs
+│   ├───superpowers
+│   │   └───plans
+│   └───tasks
+├───gradle
+│   └───wrapper
+│           gradle-wrapper.jar
+│           gradle-wrapper.properties
+├───specs
+├───src
+│   ├───main
+│   │   ├───generated
+│   │   ├───java
+│   │   │   └───br
+│   │   │       └───com
+│   │   │           └───threadstech
+│   │   │               └───stockfy             # Root module
+│   │   └───resources
+│   │       │   application-dev.properties      # Dev profile config
+│   │       │   application-prod.properties     # Prod profile config
+│   │       │   application.properties          # Common config
+│   │       │   messages.properties             # i18n messages
+│   │       ├───db
+│   │       │   └───migration                   # Flyway migration scripts
+│   │       ├───static
+│   │       └───templates
+│   └───test
+│       └───resources
+│           │   application.properties          # Test profile config
+│           └───sql                             # Test SQL scripts
 ```
 
 ## Technical Rules

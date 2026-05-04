@@ -7,8 +7,9 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class RateLimitTimeConfig {
 
-  @Bean
-  public TimeMeter rateLimitTimeMeter() {
-    return TimeMeter.SYSTEM_NANOTIME;
-  }
+	@Bean
+	public TimeMeter rateLimitTimeMeter() {
+		return TimeMeter.SYSTEM_NANOTIME;
+	}
+
 }

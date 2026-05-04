@@ -9,11 +9,12 @@ import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 
 class RabbitMqConfigTest {
 
-  @Test
-  @DisplayName("Deve configurar conversor JSON para eventos RabbitMQ")
-  void jsonMessageConverter_whenCreated_thenUsesJacksonJsonConverter() {
-    var converter = new RabbitMqConfig().jsonMessageConverter();
+	@Test
+	@DisplayName("Deve configurar conversor JSON para eventos RabbitMQ")
+	void jsonMessageConverter_whenCreated_thenUsesJacksonJsonConverter() {
+		var converter = new RabbitMqConfig().jsonMessageConverter();
 
-    assertInstanceOf(Jackson2JsonMessageConverter.class, converter);
-  }
+		assertInstanceOf(Jackson2JsonMessageConverter.class, converter);
+	}
+
 }

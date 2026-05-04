@@ -44,50 +44,52 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @EntityListeners(AuditingEntityListener.class)
 public class UserJpaEntity {
 
-  @Id private UUID id;
+	@Id
+	private UUID id;
 
-  @Column(nullable = false)
-  private String name;
+	@Column(nullable = false)
+	private String name;
 
-  @Column(nullable = false, unique = true)
-  private String email;
+	@Column(nullable = false, unique = true)
+	private String email;
 
-  @Column(name = "password_hash", nullable = false)
-  private String passwordHash;
+	@Column(name = "password_hash", nullable = false)
+	private String passwordHash;
 
-  @Builder.Default
-  @ElementCollection(fetch = FetchType.EAGER)
-  @CollectionTable(name = "users_roles", joinColumns = @JoinColumn(name = "user_id"))
-  @Enumerated(EnumType.STRING)
-  @Column(name = "role", nullable = false)
-  private Set<UserRole> roles = EnumSet.of(UserRole.USER);
+	@Builder.Default
+	@ElementCollection(fetch = FetchType.EAGER)
+	@CollectionTable(name = "users_roles", joinColumns = @JoinColumn(name = "user_id"))
+	@Enumerated(EnumType.STRING)
+	@Column(name = "role", nullable = false)
+	private Set<UserRole> roles = EnumSet.of(UserRole.USER);
 
-  @Enumerated(EnumType.STRING)
-  @Column(nullable = false)
-  private UserStatus status;
+	@Enumerated(EnumType.STRING)
+	@Column(nullable = false)
+	private UserStatus status;
 
-  @Column(nullable = false)
-  private boolean active;
+	@Column(nullable = false)
+	private boolean active;
 
-  @Column(name = "reset_password_code_hash")
-  private String resetPasswordCodeHash;
+	@Column(name = "reset_password_code_hash")
+	private String resetPasswordCodeHash;
 
-  @Column(name = "reset_password_expires_at")
-  private LocalDateTime resetPasswordExpiresAt;
+	@Column(name = "reset_password_expires_at")
+	private LocalDateTime resetPasswordExpiresAt;
 
-  @CreatedDate
-  @Column(name = "created_at", nullable = false, updatable = false)
-  private LocalDateTime createdAt;
+	@CreatedDate
+	@Column(name = "created_at", nullable = false, updatable = false)
+	private LocalDateTime createdAt;
 
-  @CreatedBy
-  @Column(name = "created_by", updatable = false)
-  private UUID createdBy;
+	@CreatedBy
+	@Column(name = "created_by", updatable = false)
+	private UUID createdBy;
 
-  @LastModifiedDate
-  @Column(name = "updated_at")
-  private LocalDateTime updatedAt;
+	@LastModifiedDate
+	@Column(name = "updated_at")
+	private LocalDateTime updatedAt;
 
-  @LastModifiedBy
-  @Column(name = "updated_by")
-  private UUID updatedBy;
+	@LastModifiedBy
+	@Column(name = "updated_by")
+	private UUID updatedBy;
+
 }

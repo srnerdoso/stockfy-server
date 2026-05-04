@@ -8,6 +8,8 @@ import org.springframework.context.annotation.Import;
 @SpringBootTest
 class StockfyApplicationTests {
 
-  @Test
-  void contextLoads() {}
+	@Test
+	void contextLoads() {
+	}
+
 }

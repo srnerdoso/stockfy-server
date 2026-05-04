@@ -25,56 +25,54 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.jdbc.Sql;
 
-@SpringBootTest(
-    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-    properties = "server.error.include-stacktrace=never")
-@Import({TestcontainersConfiguration.class, RateLimitTestConfiguration.class})
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+		properties = "server.error.include-stacktrace=never")
+@Import({ TestcontainersConfiguration.class, RateLimitTestConfiguration.class })
 @Sql(scripts = "/sql/users/cleanup.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @Sql(scripts = "/sql/users/base-users.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @Sql(scripts = "/sql/users/cleanup.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
 class LoginUserInternalErrorIT {
 
-  private static final String USER_ID = "00000000-0000-0000-0000-000000000002";
+	private static final String USER_ID = "00000000-0000-0000-0000-000000000002";
 
-  @Autowired private TestRestTemplate restTemplate;
-  @Autowired private JdbcTemplate jdbcTemplate;
+	@Autowired
+	private TestRestTemplate restTemplate;
 
-  @MockitoBean private LoginUseCase loginUseCase;
+	@Autowired
+	private JdbcTemplate jdbcTemplate;
 
-  @Test
-  @DisplayName("Deve retornar 500 sem stacktrace quando ocorrer erro interno")
-  void loginUser_whenUnexpectedErrorOccurs_thenReturns500WithoutStacktrace() {
-    String oldStatus = userStatus();
-    doThrow(new RuntimeException("login database stacktrace detail"))
-        .when(loginUseCase)
-        .execute("bruno.user@example.com", "password123");
+	@MockitoBean
+	private LoginUseCase loginUseCase;
 
-    ResponseEntity<String> response =
-        restTemplate.exchange(
-            "/api/v1/auth/sessions",
-            HttpMethod.POST,
-            new HttpEntity<>(
-                "{\"email\":\"bruno.user@example.com\",\"password\":\"password123\"}", headers()),
-            String.class);
+	@Test
+	@DisplayName("Deve retornar 500 sem stacktrace quando ocorrer erro interno")
+	void loginUser_whenUnexpectedErrorOccurs_thenReturns500WithoutStacktrace() {
+		String oldStatus = userStatus();
+		doThrow(new RuntimeException("login database stacktrace detail")).when(loginUseCase)
+			.execute("bruno.user@example.com", "password123");
 
-    assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
-    assertThat(response.getBody(), not(containsString("login database stacktrace detail")));
-    assertThat(response.getBody(), not(containsString("RuntimeException")));
-    assertThat(response.getBody(), not(containsString("at ")));
-    assertThat(response.getBody(), not(containsString(".java:")));
-    assertThat(response.getHeaders().toString(), not(containsString("access_token")));
-    assertThat(response.getHeaders().toString(), not(containsString("refresh_token")));
-    assertEquals(oldStatus, userStatus());
-  }
+		ResponseEntity<String> response = restTemplate.exchange("/api/v1/auth/sessions", HttpMethod.POST,
+				new HttpEntity<>("{\"email\":\"bruno.user@example.com\",\"password\":\"password123\"}", headers()),
+				String.class);
 
-  private HttpHeaders headers() {
-    HttpHeaders headers = new HttpHeaders();
-    headers.setContentType(MediaType.APPLICATION_JSON);
-    return headers;
-  }
+		assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
+		assertThat(response.getBody(), not(containsString("login database stacktrace detail")));
+		assertThat(response.getBody(), not(containsString("RuntimeException")));
+		assertThat(response.getBody(), not(containsString("at ")));
+		assertThat(response.getBody(), not(containsString(".java:")));
+		assertThat(response.getHeaders().toString(), not(containsString("access_token")));
+		assertThat(response.getHeaders().toString(), not(containsString("refresh_token")));
+		assertEquals(oldStatus, userStatus());
+	}
 
-  private String userStatus() {
-    return jdbcTemplate.queryForObject(
-        "SELECT status FROM users WHERE id = ?::uuid", String.class, USER_ID);
-  }
+	private HttpHeaders headers() {
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_JSON);
+		return headers;
+	}
+
+	private String userStatus() {
+		return jdbcTemplate.queryForObject("SELECT status FROM users WHERE id = ?::uuid", String.class, USER_ID);
+	}
+
 }

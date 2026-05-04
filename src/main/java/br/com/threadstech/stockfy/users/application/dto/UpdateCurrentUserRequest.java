@@ -7,7 +7,7 @@ import jakarta.validation.constraints.Size;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record UpdateCurrentUserRequest(
-    @Size(max = 255, message = "{user.name.size}")
-        @Pattern(regexp = "^[\\p{L}\\p{M}0-9 .'-]+$", message = "{user.name.pattern}")
-        String name,
-    @Email(message = "{user.email.email}") String email) {}
+		@Size(max = 255, message = "{user.name.size}") @Pattern(regexp = "^[\\p{L}\\p{M}0-9 .'-]+$",
+				message = "{user.name.pattern}") String name,
+		@Email(message = "{user.email.email}") String email) {
+}

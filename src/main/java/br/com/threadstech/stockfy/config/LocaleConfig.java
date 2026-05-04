@@ -9,10 +9,11 @@ import org.springframework.web.servlet.i18n.AcceptHeaderLocaleResolver;
 @Configuration
 public class LocaleConfig {
 
-  @Bean
-  public LocaleResolver localeResolver() {
-    AcceptHeaderLocaleResolver localeResolver = new AcceptHeaderLocaleResolver();
-    localeResolver.setDefaultLocale(Locale.of("pt", "BR"));
-    return localeResolver;
-  }
+	@Bean
+	public LocaleResolver localeResolver() {
+		AcceptHeaderLocaleResolver localeResolver = new AcceptHeaderLocaleResolver();
+		localeResolver.setDefaultLocale(Locale.of("pt", "BR"));
+		return localeResolver;
+	}
+
 }

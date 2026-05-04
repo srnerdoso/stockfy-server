@@ -12,14 +12,15 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface SpringDataUserRepository extends JpaRepository<UserJpaEntity, UUID> {
-  Optional<UserJpaEntity> findByEmail(String email);
 
-  Optional<UserJpaEntity> findByResetPasswordCodeHash(String resetPasswordCodeHash);
+	Optional<UserJpaEntity> findByEmail(String email);
 
-  @Query(
-      "SELECT u FROM UserJpaEntity u "
-          + "WHERE (:name IS NULL OR LOWER(u.name) LIKE LOWER(CONCAT('%', :name, '%')))")
-  List<UserJpaEntity> findAllByName(@Param("name") String name);
+	Optional<UserJpaEntity> findByResetPasswordCodeHash(String resetPasswordCodeHash);
 
-  Page<UserJpaEntity> findByNameContainingIgnoreCase(String name, Pageable pageable);
+	@Query("SELECT u FROM UserJpaEntity u "
+			+ "WHERE (:name IS NULL OR LOWER(u.name) LIKE LOWER(CONCAT('%', :name, '%')))")
+	List<UserJpaEntity> findAllByName(@Param("name") String name);
+
+	Page<UserJpaEntity> findByNameContainingIgnoreCase(String name, Pageable pageable);
+
 }

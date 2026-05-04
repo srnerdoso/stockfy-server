@@ -1,7 +1,7 @@
 package br.com.threadstech.stockfy.modules.users.infrastructure.security;
 
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -21,93 +21,98 @@ import org.springframework.mock.web.MockHttpServletResponse;
 @ExtendWith(MockitoExtension.class)
 class RateLimitFilterTest {
 
-  private static final String CLIENT_IP = "127.0.0.1";
+	private static final String CLIENT_IP = "127.0.0.1";
 
-  @Mock private UserRateLimitConfig rateLimitConfig;
-  @Mock private Bucket loginBucket;
-  @Mock private Bucket generalBucket;
-  @Mock private FilterChain filterChain;
+	@Mock
+	private UserRateLimitConfig rateLimitConfig;
 
-  @Test
-  @DisplayName("Deve usar bucket de login apenas para criacao de sessao")
-  void doFilter_whenPostLoginEndpoint_thenUsesLoginBucket() throws Exception {
-    when(rateLimitConfig.resolveLoginBucket(CLIENT_IP)).thenReturn(loginBucket);
-    when(loginBucket.tryConsume(1)).thenReturn(true);
+	@Mock
+	private Bucket loginBucket;
 
-    new RateLimitFilter(rateLimitConfig)
-        .doFilter(loginRequest(), new MockHttpServletResponse(), filterChain);
+	@Mock
+	private Bucket generalBucket;
 
-    verify(rateLimitConfig).resolveLoginBucket(CLIENT_IP);
-    verify(rateLimitConfig, never()).resolveGeneralBucket(anyString());
-  }
+	@Mock
+	private FilterChain filterChain;
 
-  @Test
-  @DisplayName("Deve usar bucket geral para renovacao de sessao")
-  void doFilter_whenPostRefreshEndpoint_thenUsesGeneralBucket() throws Exception {
-    when(rateLimitConfig.resolveGeneralBucket(CLIENT_IP)).thenReturn(generalBucket);
-    when(generalBucket.tryConsume(1)).thenReturn(true);
+	@Test
+	@DisplayName("Deve usar bucket de login apenas para criacao de sessao")
+	void doFilter_whenPostLoginEndpoint_thenUsesLoginBucket() throws Exception {
+		when(rateLimitConfig.resolveLoginBucket(CLIENT_IP)).thenReturn(loginBucket);
+		when(loginBucket.tryConsume(1)).thenReturn(true);
 
-    new RateLimitFilter(rateLimitConfig)
-        .doFilter(refreshRequest(), new MockHttpServletResponse(), filterChain);
+		new RateLimitFilter(rateLimitConfig).doFilter(loginRequest(), new MockHttpServletResponse(), filterChain);
 
-    verify(rateLimitConfig).resolveGeneralBucket(CLIENT_IP);
-    verify(rateLimitConfig, never()).resolveLoginBucket(anyString());
-  }
+		verify(rateLimitConfig).resolveLoginBucket(CLIENT_IP);
+		verify(rateLimitConfig, never()).resolveGeneralBucket(anyString());
+	}
 
-  @Test
-  @DisplayName("Deve usar bucket geral para encerramento de sessao")
-  void doFilter_whenDeleteCurrentSessionEndpoint_thenUsesGeneralBucket() throws Exception {
-    when(rateLimitConfig.resolveGeneralBucket(CLIENT_IP)).thenReturn(generalBucket);
-    when(generalBucket.tryConsume(1)).thenReturn(true);
+	@Test
+	@DisplayName("Deve usar bucket geral para renovacao de sessao")
+	void doFilter_whenPostRefreshEndpoint_thenUsesGeneralBucket() throws Exception {
+		when(rateLimitConfig.resolveGeneralBucket(CLIENT_IP)).thenReturn(generalBucket);
+		when(generalBucket.tryConsume(1)).thenReturn(true);
 
-    new RateLimitFilter(rateLimitConfig)
-        .doFilter(logoutRequest(), new MockHttpServletResponse(), filterChain);
+		new RateLimitFilter(rateLimitConfig).doFilter(refreshRequest(), new MockHttpServletResponse(), filterChain);
 
-    verify(rateLimitConfig).resolveGeneralBucket(CLIENT_IP);
-    verify(rateLimitConfig, never()).resolveLoginBucket(anyString());
-  }
+		verify(rateLimitConfig).resolveGeneralBucket(CLIENT_IP);
+		verify(rateLimitConfig, never()).resolveLoginBucket(anyString());
+	}
 
-  @Test
-  @DisplayName("Deve retornar 429 sem corpo para encerramento de sessao")
-  void doFilter_whenLogoutLimitExceeded_thenReturns429WithoutBody() throws Exception {
-    when(rateLimitConfig.resolveGeneralBucket(CLIENT_IP)).thenReturn(generalBucket);
-    when(generalBucket.tryConsume(1)).thenReturn(false);
+	@Test
+	@DisplayName("Deve usar bucket geral para encerramento de sessao")
+	void doFilter_whenDeleteCurrentSessionEndpoint_thenUsesGeneralBucket() throws Exception {
+		when(rateLimitConfig.resolveGeneralBucket(CLIENT_IP)).thenReturn(generalBucket);
+		when(generalBucket.tryConsume(1)).thenReturn(true);
 
-    var response = new MockHttpServletResponse();
-    new RateLimitFilter(rateLimitConfig).doFilter(logoutRequest(), response, filterChain);
+		new RateLimitFilter(rateLimitConfig).doFilter(logoutRequest(), new MockHttpServletResponse(), filterChain);
 
-    assertEquals(429, response.getStatus());
-    assertEquals("", response.getContentAsString());
-  }
+		verify(rateLimitConfig).resolveGeneralBucket(CLIENT_IP);
+		verify(rateLimitConfig, never()).resolveLoginBucket(anyString());
+	}
 
-  @Test
-  @DisplayName("Deve preservar corpo de rate limit para demais endpoints")
-  void doFilter_whenNonLogoutLimitExceeded_thenReturns429WithMessage() throws Exception {
-    when(rateLimitConfig.resolveGeneralBucket(CLIENT_IP)).thenReturn(generalBucket);
-    when(generalBucket.tryConsume(1)).thenReturn(false);
+	@Test
+	@DisplayName("Deve retornar 429 sem corpo para encerramento de sessao")
+	void doFilter_whenLogoutLimitExceeded_thenReturns429WithoutBody() throws Exception {
+		when(rateLimitConfig.resolveGeneralBucket(CLIENT_IP)).thenReturn(generalBucket);
+		when(generalBucket.tryConsume(1)).thenReturn(false);
 
-    var response = new MockHttpServletResponse();
-    new RateLimitFilter(rateLimitConfig).doFilter(refreshRequest(), response, filterChain);
+		var response = new MockHttpServletResponse();
+		new RateLimitFilter(rateLimitConfig).doFilter(logoutRequest(), response, filterChain);
 
-    assertEquals(429, response.getStatus());
-    assertEquals("Too many requests", response.getContentAsString());
-  }
+		assertEquals(429, response.getStatus());
+		assertEquals("", response.getContentAsString());
+	}
 
-  private MockHttpServletRequest loginRequest() {
-    var request = new MockHttpServletRequest("POST", "/api/v1/auth/sessions");
-    request.setRemoteAddr(CLIENT_IP);
-    return request;
-  }
+	@Test
+	@DisplayName("Deve preservar corpo de rate limit para demais endpoints")
+	void doFilter_whenNonLogoutLimitExceeded_thenReturns429WithMessage() throws Exception {
+		when(rateLimitConfig.resolveGeneralBucket(CLIENT_IP)).thenReturn(generalBucket);
+		when(generalBucket.tryConsume(1)).thenReturn(false);
 
-  private MockHttpServletRequest refreshRequest() {
-    var request = new MockHttpServletRequest("POST", "/api/v1/auth/sessions/refresh");
-    request.setRemoteAddr(CLIENT_IP);
-    return request;
-  }
+		var response = new MockHttpServletResponse();
+		new RateLimitFilter(rateLimitConfig).doFilter(refreshRequest(), response, filterChain);
 
-  private MockHttpServletRequest logoutRequest() {
-    var request = new MockHttpServletRequest("DELETE", "/api/v1/auth/sessions/current");
-    request.setRemoteAddr(CLIENT_IP);
-    return request;
-  }
+		assertEquals(429, response.getStatus());
+		assertEquals("Too many requests", response.getContentAsString());
+	}
+
+	private MockHttpServletRequest loginRequest() {
+		var request = new MockHttpServletRequest("POST", "/api/v1/auth/sessions");
+		request.setRemoteAddr(CLIENT_IP);
+		return request;
+	}
+
+	private MockHttpServletRequest refreshRequest() {
+		var request = new MockHttpServletRequest("POST", "/api/v1/auth/sessions/refresh");
+		request.setRemoteAddr(CLIENT_IP);
+		return request;
+	}
+
+	private MockHttpServletRequest logoutRequest() {
+		var request = new MockHttpServletRequest("DELETE", "/api/v1/auth/sessions/current");
+		request.setRemoteAddr(CLIENT_IP);
+		return request;
+	}
+
 }

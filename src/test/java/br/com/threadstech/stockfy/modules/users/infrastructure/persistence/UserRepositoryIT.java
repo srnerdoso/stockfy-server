@@ -26,66 +26,66 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 class UserRepositoryIT {
 
-  @Autowired private UserRepository userRepository;
-  @Autowired private JdbcTemplate jdbcTemplate;
+	@Autowired
+	private UserRepository userRepository;
 
-  @Test
-  @DisplayName("Should find users by name filter")
-  void shouldFindUsersByNameFilter() {
-    userRepository.save(createUser("Alice", "alice@example.com"));
-    userRepository.save(createUser("Bob", "bob@example.com"));
+	@Autowired
+	private JdbcTemplate jdbcTemplate;
 
-    var results = userRepository.findAll("Ali");
-    assertEquals(1, results.size());
-    assertEquals("Alice", results.get(0).getName());
-  }
+	@Test
+	@DisplayName("Should find users by name filter")
+	void shouldFindUsersByNameFilter() {
+		userRepository.save(createUser("Alice", "alice@example.com"));
+		userRepository.save(createUser("Bob", "bob@example.com"));
 
-  @Test
-  @DisplayName("Should update user status")
-  void shouldUpdateUserStatus() {
-    User user = createUser("Status Test", "status@example.com");
-    userRepository.save(user);
+		var results = userRepository.findAll("Ali");
+		assertEquals(1, results.size());
+		assertEquals("Alice", results.get(0).getName());
+	}
 
-    user.lock();
-    userRepository.update(user);
+	@Test
+	@DisplayName("Should update user status")
+	void shouldUpdateUserStatus() {
+		User user = createUser("Status Test", "status@example.com");
+		userRepository.save(user);
 
-    var updated = userRepository.findById(user.getId());
-    assertTrue(updated.isPresent());
-    assertEquals(UserStatus.LOCKED, updated.get().getStatus());
-  }
+		user.lock();
+		userRepository.update(user);
 
-  @Test
-  @DisplayName("Deve persistir roles ao salvar usuario")
-  void save_whenUserHasRoles_thenPersistsRoles() {
-    User user =
-        createUser("Admin User", "admin-role@example.com", Set.of(UserRole.ADMIN, UserRole.USER));
-    userRepository.save(user);
+		var updated = userRepository.findById(user.getId());
+		assertTrue(updated.isPresent());
+		assertEquals(UserStatus.LOCKED, updated.get().getStatus());
+	}
 
-    var persisted = userRepository.findByEmail(new Email("admin-role@example.com"));
-    List<String> persistedRoles =
-        jdbcTemplate.queryForList(
-            "SELECT role FROM users_roles WHERE user_id = ? ORDER BY role",
-            String.class,
-            user.getId());
+	@Test
+	@DisplayName("Deve persistir roles ao salvar usuario")
+	void save_whenUserHasRoles_thenPersistsRoles() {
+		User user = createUser("Admin User", "admin-role@example.com", Set.of(UserRole.ADMIN, UserRole.USER));
+		userRepository.save(user);
 
-    assertTrue(persisted.isPresent());
-    assertEquals(Set.of(UserRole.ADMIN, UserRole.USER), persisted.get().getRoles());
-    assertEquals(List.of("ADMIN", "USER"), persistedRoles);
-  }
+		var persisted = userRepository.findByEmail(new Email("admin-role@example.com"));
+		List<String> persistedRoles = jdbcTemplate
+			.queryForList("SELECT role FROM users_roles WHERE user_id = ? ORDER BY role", String.class, user.getId());
 
-  private User createUser(String name, String email) {
-    return createUser(name, email, Set.of(UserRole.USER));
-  }
+		assertTrue(persisted.isPresent());
+		assertEquals(Set.of(UserRole.ADMIN, UserRole.USER), persisted.get().getRoles());
+		assertEquals(List.of("ADMIN", "USER"), persistedRoles);
+	}
 
-  private User createUser(String name, String email, Set<UserRole> roles) {
-    return User.builder()
-        .id(UUID.randomUUID())
-        .name(name)
-        .email(new Email(email))
-        .password(new Password("password123"))
-        .roles(roles)
-        .status(UserStatus.ACTIVE)
-        .active(true)
-        .build();
-  }
+	private User createUser(String name, String email) {
+		return createUser(name, email, Set.of(UserRole.USER));
+	}
+
+	private User createUser(String name, String email, Set<UserRole> roles) {
+		return User.builder()
+			.id(UUID.randomUUID())
+			.name(name)
+			.email(new Email(email))
+			.password(new Password("password123"))
+			.roles(roles)
+			.status(UserStatus.ACTIVE)
+			.active(true)
+			.build();
+	}
+
 }

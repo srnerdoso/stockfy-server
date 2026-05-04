@@ -29,92 +29,87 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.jdbc.Sql;
 
-@SpringBootTest(
-    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-    properties = "server.error.include-stacktrace=never")
-@Import({TestcontainersConfiguration.class, RateLimitTestConfiguration.class})
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+		properties = "server.error.include-stacktrace=never")
+@Import({ TestcontainersConfiguration.class, RateLimitTestConfiguration.class })
 @Sql(scripts = "/sql/users/cleanup.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @Sql(scripts = "/sql/users/base-users.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @Sql(scripts = "/sql/users/cleanup.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
 class RefreshTokenInternalErrorIT {
 
-  private static final UUID USER_ID =
-      UUID.fromString("00000000-0000-0000-0000-000000000002");
+	private static final UUID USER_ID = UUID.fromString("00000000-0000-0000-0000-000000000002");
 
-  @Autowired private TestRestTemplate restTemplate;
-  @Autowired private JdbcTemplate jdbcTemplate;
-  @Autowired private TokenService tokenService;
+	@Autowired
+	private TestRestTemplate restTemplate;
 
-  @MockitoBean private RefreshTokenUseCase refreshTokenUseCase;
+	@Autowired
+	private JdbcTemplate jdbcTemplate;
 
-  @Test
-  @DisplayName("Deve retornar 500 sem stacktrace quando ocorrer erro interno")
-  void refreshToken_whenUnexpectedErrorOccurs_thenReturns500WithoutStacktrace() {
-    long usersBeforeRequest = countUsers();
-    UserSnapshot userBeforeRequest = userSnapshot();
-    String refreshToken = tokenService.generateRefreshToken(USER_ID);
-    doThrow(new RuntimeException("refresh database stacktrace detail"))
-        .when(refreshTokenUseCase)
-        .execute(refreshToken);
+	@Autowired
+	private TokenService tokenService;
 
-    HttpHeaders headers = new HttpHeaders();
-    headers.add(HttpHeaders.COOKIE, "refresh_token=" + refreshToken);
+	@MockitoBean
+	private RefreshTokenUseCase refreshTokenUseCase;
 
-    ResponseEntity<String> response =
-        restTemplate.exchange(
-            "/api/v1/auth/sessions/refresh",
-            HttpMethod.POST,
-            new HttpEntity<>(headers),
-            String.class);
+	@Test
+	@DisplayName("Deve retornar 500 sem stacktrace quando ocorrer erro interno")
+	void refreshToken_whenUnexpectedErrorOccurs_thenReturns500WithoutStacktrace() {
+		long usersBeforeRequest = countUsers();
+		UserSnapshot userBeforeRequest = userSnapshot();
+		String refreshToken = tokenService.generateRefreshToken(USER_ID);
+		doThrow(new RuntimeException("refresh database stacktrace detail")).when(refreshTokenUseCase)
+			.execute(refreshToken);
 
-    assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
-    assertThat(response.getBody(), not(containsString("refresh database stacktrace detail")));
-    assertThat(response.getBody(), not(containsString("RuntimeException")));
-    assertThat(response.getBody(), not(containsString("at ")));
-    assertThat(response.getBody(), not(containsString(".java:")));
-    assertThat(response.getHeaders().toString(), not(containsString("access_token")));
-    assertThat(response.getHeaders().toString(), not(containsString("refresh_token")));
-    assertUserDataUnchanged(usersBeforeRequest, userBeforeRequest);
-  }
+		HttpHeaders headers = new HttpHeaders();
+		headers.add(HttpHeaders.COOKIE, "refresh_token=" + refreshToken);
 
-  private long countUsers() {
-    Long count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM users", Long.class);
-    return count == null ? 0 : count;
-  }
+		ResponseEntity<String> response = restTemplate.exchange("/api/v1/auth/sessions/refresh", HttpMethod.POST,
+				new HttpEntity<>(headers), String.class);
 
-  private UserSnapshot userSnapshot() {
-    Map<String, Object> fields =
-        jdbcTemplate.queryForMap(
-            """
-            SELECT
-                id,
-                name,
-                email,
-                password_hash,
-                status,
-                active,
-                reset_password_code_hash,
-                reset_password_expires_at,
-                created_at,
-                created_by,
-                updated_at,
-                updated_by
-            FROM users
-            WHERE id = ?::uuid
-            """,
-            USER_ID);
-    List<String> roles =
-        jdbcTemplate.queryForList(
-            "SELECT role FROM users_roles WHERE user_id = ?::uuid ORDER BY role",
-            String.class,
-            USER_ID);
-    return new UserSnapshot(new TreeMap<>(fields), roles);
-  }
+		assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
+		assertThat(response.getBody(), not(containsString("refresh database stacktrace detail")));
+		assertThat(response.getBody(), not(containsString("RuntimeException")));
+		assertThat(response.getBody(), not(containsString("at ")));
+		assertThat(response.getBody(), not(containsString(".java:")));
+		assertThat(response.getHeaders().toString(), not(containsString("access_token")));
+		assertThat(response.getHeaders().toString(), not(containsString("refresh_token")));
+		assertUserDataUnchanged(usersBeforeRequest, userBeforeRequest);
+	}
 
-  private void assertUserDataUnchanged(long usersBeforeRequest, UserSnapshot userBeforeRequest) {
-    assertEquals(usersBeforeRequest, countUsers());
-    assertEquals(userBeforeRequest, userSnapshot());
-  }
+	private long countUsers() {
+		Long count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM users", Long.class);
+		return count == null ? 0 : count;
+	}
 
-  private record UserSnapshot(Map<String, Object> fields, List<String> roles) {}
+	private UserSnapshot userSnapshot() {
+		Map<String, Object> fields = jdbcTemplate.queryForMap("""
+				SELECT
+				    id,
+				    name,
+				    email,
+				    password_hash,
+				    status,
+				    active,
+				    reset_password_code_hash,
+				    reset_password_expires_at,
+				    created_at,
+				    created_by,
+				    updated_at,
+				    updated_by
+				FROM users
+				WHERE id = ?::uuid
+				""", USER_ID);
+		List<String> roles = jdbcTemplate
+			.queryForList("SELECT role FROM users_roles WHERE user_id = ?::uuid ORDER BY role", String.class, USER_ID);
+		return new UserSnapshot(new TreeMap<>(fields), roles);
+	}
+
+	private void assertUserDataUnchanged(long usersBeforeRequest, UserSnapshot userBeforeRequest) {
+		assertEquals(usersBeforeRequest, countUsers());
+		assertEquals(userBeforeRequest, userSnapshot());
+	}
+
+	private record UserSnapshot(Map<String, Object> fields, List<String> roles) {
+	}
+
 }

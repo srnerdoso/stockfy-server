@@ -13,12 +13,13 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class UpdateUserRolesUseCase {
 
-  private final UserRepository userRepository;
+	private final UserRepository userRepository;
 
-  @Transactional
-  public void execute(UUID userId, Set<UserRole> rolesToAdd, Set<UserRole> rolesToRemove) {
-    var user = userRepository.findById(userId).orElseThrow(UserNotFoundException::new);
-    user.updateRoles(rolesToAdd, rolesToRemove);
-    userRepository.update(user);
-  }
+	@Transactional
+	public void execute(UUID userId, Set<UserRole> rolesToAdd, Set<UserRole> rolesToRemove) {
+		var user = userRepository.findById(userId).orElseThrow(UserNotFoundException::new);
+		user.updateRoles(rolesToAdd, rolesToRemove);
+		userRepository.update(user);
+	}
+
 }

@@ -26,68 +26,70 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class UpdateUserRolesUseCaseTest {
 
-  @Mock private UserRepository userRepository;
+	@Mock
+	private UserRepository userRepository;
 
-  @InjectMocks private UpdateUserRolesUseCase useCase;
+	@InjectMocks
+	private UpdateUserRolesUseCase useCase;
 
-  private UUID userId;
-  private User user;
+	private UUID userId;
 
-  @BeforeEach
-  void setUp() {
-    userId = UUID.randomUUID();
-    user = User.builder().id(userId).roles(EnumSet.of(UserRole.USER)).build();
-  }
+	private User user;
 
-  @Test
-  @DisplayName("Deve adicionar role ADMIN a um usuario que possui apenas USER")
-  void execute_whenAddingAdminToUser_thenAddsRole() {
-    when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+	@BeforeEach
+	void setUp() {
+		userId = UUID.randomUUID();
+		user = User.builder().id(userId).roles(EnumSet.of(UserRole.USER)).build();
+	}
 
-    useCase.execute(userId, Set.of(UserRole.ADMIN), Set.of());
+	@Test
+	@DisplayName("Deve adicionar role ADMIN a um usuario que possui apenas USER")
+	void execute_whenAddingAdminToUser_thenAddsRole() {
+		when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
-    assertEquals(Set.of(UserRole.USER, UserRole.ADMIN), user.getRoles());
-    verify(userRepository).update(user);
-  }
+		useCase.execute(userId, Set.of(UserRole.ADMIN), Set.of());
 
-  @Test
-  @DisplayName("Deve remover role USER de um usuario que possui {USER, ADMIN}")
-  void execute_whenRemovingUserFromMultiRoleUser_thenRemovesRole() {
-    user.setRoles(Set.of(UserRole.USER, UserRole.ADMIN));
-    when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+		assertEquals(Set.of(UserRole.USER, UserRole.ADMIN), user.getRoles());
+		verify(userRepository).update(user);
+	}
 
-    useCase.execute(userId, Set.of(), Set.of(UserRole.USER));
+	@Test
+	@DisplayName("Deve remover role USER de um usuario que possui {USER, ADMIN}")
+	void execute_whenRemovingUserFromMultiRoleUser_thenRemovesRole() {
+		user.setRoles(Set.of(UserRole.USER, UserRole.ADMIN));
+		when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
-    assertEquals(Set.of(UserRole.ADMIN), user.getRoles());
-    verify(userRepository).update(user);
-  }
+		useCase.execute(userId, Set.of(), Set.of(UserRole.USER));
 
-  @Test
-  @DisplayName("Nao deve alterar roles quando add e remove forem vazios")
-  void execute_whenEmptyRoles_thenNoChange() {
-    when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+		assertEquals(Set.of(UserRole.ADMIN), user.getRoles());
+		verify(userRepository).update(user);
+	}
 
-    useCase.execute(userId, Set.of(), Set.of());
+	@Test
+	@DisplayName("Nao deve alterar roles quando add e remove forem vazios")
+	void execute_whenEmptyRoles_thenNoChange() {
+		when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
-    assertEquals(Set.of(UserRole.USER), user.getRoles());
-    verify(userRepository).update(user);
-  }
+		useCase.execute(userId, Set.of(), Set.of());
 
-  @Test
-  @DisplayName("Deve lancar excecao ao tentar remover todas as roles")
-  void execute_whenRemovingAllRoles_thenThrowsException() {
-    when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+		assertEquals(Set.of(UserRole.USER), user.getRoles());
+		verify(userRepository).update(user);
+	}
 
-    assertThrows(
-        InvalidUserRolesException.class, () -> useCase.execute(userId, Set.of(), Set.of(UserRole.USER)));
-  }
+	@Test
+	@DisplayName("Deve lancar excecao ao tentar remover todas as roles")
+	void execute_whenRemovingAllRoles_thenThrowsException() {
+		when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
-  @Test
-  @DisplayName("Deve lancar excecao quando usuario nao for encontrado")
-  void execute_whenUserNotFound_thenThrowsException() {
-    when(userRepository.findById(userId)).thenReturn(Optional.empty());
+		assertThrows(InvalidUserRolesException.class, () -> useCase.execute(userId, Set.of(), Set.of(UserRole.USER)));
+	}
 
-    assertThrows(
-        UserNotFoundException.class, () -> useCase.execute(userId, Set.of(UserRole.ADMIN), Set.of()));
-  }
+	@Test
+	@DisplayName("Deve lancar excecao quando usuario nao for encontrado")
+	void execute_whenUserNotFound_thenThrowsException() {
+		when(userRepository.findById(userId)).thenReturn(Optional.empty());
+
+		assertThrows(UserNotFoundException.class, () -> useCase.execute(userId, Set.of(UserRole.ADMIN), Set.of()));
+	}
+
 }

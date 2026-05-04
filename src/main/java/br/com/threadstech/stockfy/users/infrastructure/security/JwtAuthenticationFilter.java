@@ -19,60 +19,60 @@ import org.springframework.web.filter.OncePerRequestFilter;
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-  private final JwtService jwtService;
-  private final TokenService tokenService;
+	private final JwtService jwtService;
 
-  @Override
-  protected void doFilterInternal(
-      HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
-      throws ServletException, IOException {
+	private final TokenService tokenService;
 
-    String accessToken = null;
-    String refreshToken = null;
-    if (request.getCookies() != null) {
-      for (Cookie cookie : request.getCookies()) {
-        if ("access_token".equals(cookie.getName())) {
-          accessToken = cookie.getValue();
-        }
-        if ("refresh_token".equals(cookie.getName())) {
-          refreshToken = cookie.getValue();
-        }
-      }
-    }
+	@Override
+	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+			throws ServletException, IOException {
 
-    if (accessToken != null && refreshToken != null) {
-      try {
-        String userId = jwtService.extractUserId(accessToken);
-        List<String> roles = jwtService.extractRoles(accessToken);
-        UUID authenticatedUserId = UUID.fromString(userId);
-        UUID refreshTokenUserId = tokenService.getUserIdFromRefreshToken(refreshToken);
+		String accessToken = null;
+		String refreshToken = null;
+		if (request.getCookies() != null) {
+			for (Cookie cookie : request.getCookies()) {
+				if ("access_token".equals(cookie.getName())) {
+					accessToken = cookie.getValue();
+				}
+				if ("refresh_token".equals(cookie.getName())) {
+					refreshToken = cookie.getValue();
+				}
+			}
+		}
 
-        if (tokenService.validateRefreshToken(refreshToken)
-            && authenticatedUserId.equals(refreshTokenUserId)
-            && SecurityContextHolder.getContext().getAuthentication() == null) {
-          List<SimpleGrantedAuthority> authorities =
-              roles.stream()
-                  .map(this::toAuthority)
-                  .map(SimpleGrantedAuthority::new)
-                  .toList();
+		if (accessToken != null && refreshToken != null) {
+			try {
+				String userId = jwtService.extractUserId(accessToken);
+				List<String> roles = jwtService.extractRoles(accessToken);
+				UUID authenticatedUserId = UUID.fromString(userId);
+				UUID refreshTokenUserId = tokenService.getUserIdFromRefreshToken(refreshToken);
 
-          UsernamePasswordAuthenticationToken authToken =
-              new UsernamePasswordAuthenticationToken(authenticatedUserId, null, authorities);
-          SecurityContextHolder.getContext().setAuthentication(authToken);
-        }
-      } catch (Exception e) {
-        SecurityContextHolder.clearContext();
-      }
-    }
+				if (tokenService.validateRefreshToken(refreshToken) && authenticatedUserId.equals(refreshTokenUserId)
+						&& SecurityContextHolder.getContext().getAuthentication() == null) {
+					List<SimpleGrantedAuthority> authorities = roles.stream()
+						.map(this::toAuthority)
+						.map(SimpleGrantedAuthority::new)
+						.toList();
 
-    filterChain.doFilter(request, response);
-  }
+					UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+							authenticatedUserId, null, authorities);
+					SecurityContextHolder.getContext().setAuthentication(authToken);
+				}
+			}
+			catch (Exception e) {
+				SecurityContextHolder.clearContext();
+			}
+		}
 
-  private String toAuthority(String role) {
-    if (role.startsWith("ROLE_")) {
-      return role;
-    }
+		filterChain.doFilter(request, response);
+	}
 
-    return "ROLE_" + role;
-  }
+	private String toAuthority(String role) {
+		if (role.startsWith("ROLE_")) {
+			return role;
+		}
+
+		return "ROLE_" + role;
+	}
+
 }

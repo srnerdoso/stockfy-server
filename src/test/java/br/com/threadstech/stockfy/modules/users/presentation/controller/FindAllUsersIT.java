@@ -27,276 +27,266 @@ import org.springframework.test.web.servlet.MockMvc;
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@Import({TestcontainersConfiguration.class, RateLimitTestConfiguration.class})
+@Import({ TestcontainersConfiguration.class, RateLimitTestConfiguration.class })
 @Sql(scripts = "/sql/users/cleanup.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @Sql(scripts = "/sql/users/base-users.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @Sql(scripts = "/sql/users/cleanup.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
 class FindAllUsersIT {
 
-  @Autowired private MockMvc mockMvc;
-  @Autowired private JdbcTemplate jdbcTemplate;
-  @Autowired private UserRateLimitConfig rateLimitConfig;
-  @Autowired private MutableTimeMeter rateLimitTimeMeter;
+	@Autowired
+	private MockMvc mockMvc;
 
-  @AfterEach
-  void tearDownRateLimit() {
-    try {
-      var loginBucketsField = UserRateLimitConfig.class.getDeclaredField("loginBuckets");
-      loginBucketsField.setAccessible(true);
-      ((java.util.Map<?, ?>) loginBucketsField.get(rateLimitConfig)).clear();
+	@Autowired
+	private JdbcTemplate jdbcTemplate;
 
-      var generalBucketsField = UserRateLimitConfig.class.getDeclaredField("generalBuckets");
-      generalBucketsField.setAccessible(true);
-      ((java.util.Map<?, ?>) generalBucketsField.get(rateLimitConfig)).clear();
-      rateLimitTimeMeter.reset();
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
-  }
+	@Autowired
+	private UserRateLimitConfig rateLimitConfig;
 
-  @Test
-  @DisplayName("Deve retornar pagina SUMMARY apenas com nome, email e roles")
-  @WithMockUser(roles = "ADMIN")
-  void findAllUsers_whenTypeSummary_thenReturnsOnlySummaryFields() throws Exception {
-    long usersBeforeRequest = countUsers();
+	@Autowired
+	private MutableTimeMeter rateLimitTimeMeter;
 
-    mockMvc
-        .perform(
-            get("/api/v1/users").param("type", "SUMMARY").param("page", "0").param("size", "10"))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.content.length()").value(4))
-        .andExpect(jsonPath("$.content[0].name").exists())
-        .andExpect(jsonPath("$.content[0].email").exists())
-        .andExpect(jsonPath("$.content[0].roles").isArray())
-        .andExpect(jsonPath("$.content[0].role").doesNotExist())
-        .andExpect(jsonPath("$.content[0].id").doesNotExist())
-        .andExpect(jsonPath("$.content[0].status").doesNotExist())
-        .andExpect(jsonPath("$.content[0].active").doesNotExist())
-        .andExpect(jsonPath("$.content[0].createdAt").doesNotExist())
-        .andExpect(jsonPath("$.content[0].createdBy").doesNotExist())
-        .andExpect(jsonPath("$.content[0].updatedAt").doesNotExist())
-        .andExpect(jsonPath("$.content[0].updatedBy").doesNotExist())
-        .andExpect(jsonPath("$.content[0].password").doesNotExist())
-        .andExpect(jsonPath("$.content[0].passwordHash").doesNotExist())
-        .andExpect(jsonPath("$.content[0].resetCode").doesNotExist())
-        .andExpect(jsonPath("$.content[0].resetPasswordCodeHash").doesNotExist())
-        .andExpect(jsonPath("$.content[0].resetPasswordExpiresAt").doesNotExist())
-        .andExpect(jsonPath("$.page").value(0))
-        .andExpect(jsonPath("$.size").value(10))
-        .andExpect(jsonPath("$.totalElements").value(4));
+	@AfterEach
+	void tearDownRateLimit() {
+		try {
+			var loginBucketsField = UserRateLimitConfig.class.getDeclaredField("loginBuckets");
+			loginBucketsField.setAccessible(true);
+			((java.util.Map<?, ?>) loginBucketsField.get(rateLimitConfig)).clear();
 
-    assertEquals(usersBeforeRequest, countUsers());
-    assertTrue(userExists("ana.admin@example.com"));
-    assertTrue(userExists("bruno.user@example.com"));
-  }
+			var generalBucketsField = UserRateLimitConfig.class.getDeclaredField("generalBuckets");
+			generalBucketsField.setAccessible(true);
+			((java.util.Map<?, ?>) generalBucketsField.get(rateLimitConfig)).clear();
+			rateLimitTimeMeter.reset();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
 
-  @Test
-  @DisplayName("Deve retornar pagina DETAILED com status e auditoria")
-  @WithMockUser(roles = "ADMIN")
-  void findAllUsers_whenTypeDetailed_thenReturnsDetailedFields() throws Exception {
-    long usersBeforeRequest = countUsers();
+	@Test
+	@DisplayName("Deve retornar pagina SUMMARY apenas com nome, email e roles")
+	@WithMockUser(roles = "ADMIN")
+	void findAllUsers_whenTypeSummary_thenReturnsOnlySummaryFields() throws Exception {
+		long usersBeforeRequest = countUsers();
 
-    mockMvc
-        .perform(
-            get("/api/v1/users").param("type", "DETAILED").param("page", "0").param("size", "10"))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.content[0].name").exists())
-        .andExpect(jsonPath("$.content[0].email").exists())
-        .andExpect(jsonPath("$.content[0].roles").isArray())
-        .andExpect(jsonPath("$.content[0].role").doesNotExist())
-        .andExpect(jsonPath("$.content[0].status").exists())
-        .andExpect(jsonPath("$.content[0].createdAt").exists())
-        .andExpect(jsonPath("$.content[0].createdBy").exists())
-        .andExpect(jsonPath("$.content[0].updatedAt").exists())
-        .andExpect(jsonPath("$.content[0].updatedBy").exists())
-        .andExpect(jsonPath("$.content[0].id").doesNotExist())
-        .andExpect(jsonPath("$.content[0].active").doesNotExist())
-        .andExpect(jsonPath("$.content[0].password").doesNotExist())
-        .andExpect(jsonPath("$.content[0].passwordHash").doesNotExist())
-        .andExpect(jsonPath("$.content[0].resetCode").doesNotExist())
-        .andExpect(jsonPath("$.content[0].resetPasswordCodeHash").doesNotExist())
-        .andExpect(jsonPath("$.content[0].resetPasswordExpiresAt").doesNotExist());
+		mockMvc.perform(get("/api/v1/users").param("type", "SUMMARY").param("page", "0").param("size", "10"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.content.length()").value(4))
+			.andExpect(jsonPath("$.content[0].name").exists())
+			.andExpect(jsonPath("$.content[0].email").exists())
+			.andExpect(jsonPath("$.content[0].roles").isArray())
+			.andExpect(jsonPath("$.content[0].role").doesNotExist())
+			.andExpect(jsonPath("$.content[0].id").doesNotExist())
+			.andExpect(jsonPath("$.content[0].status").doesNotExist())
+			.andExpect(jsonPath("$.content[0].active").doesNotExist())
+			.andExpect(jsonPath("$.content[0].createdAt").doesNotExist())
+			.andExpect(jsonPath("$.content[0].createdBy").doesNotExist())
+			.andExpect(jsonPath("$.content[0].updatedAt").doesNotExist())
+			.andExpect(jsonPath("$.content[0].updatedBy").doesNotExist())
+			.andExpect(jsonPath("$.content[0].password").doesNotExist())
+			.andExpect(jsonPath("$.content[0].passwordHash").doesNotExist())
+			.andExpect(jsonPath("$.content[0].resetCode").doesNotExist())
+			.andExpect(jsonPath("$.content[0].resetPasswordCodeHash").doesNotExist())
+			.andExpect(jsonPath("$.content[0].resetPasswordExpiresAt").doesNotExist())
+			.andExpect(jsonPath("$.page").value(0))
+			.andExpect(jsonPath("$.size").value(10))
+			.andExpect(jsonPath("$.totalElements").value(4));
 
-    assertEquals(usersBeforeRequest, countUsers());
-    assertTrue(userExists("ana.admin@example.com"));
-  }
+		assertEquals(usersBeforeRequest, countUsers());
+		assertTrue(userExists("ana.admin@example.com"));
+		assertTrue(userExists("bruno.user@example.com"));
+	}
 
-  @Test
-  @DisplayName("Deve filtrar usuarios por nome parcial")
-  @WithMockUser(roles = "ADMIN")
-  void findAllUsers_whenNameFilterIsProvided_thenReturnsMatchingUsers() throws Exception {
-    long usersBeforeRequest = countUsers();
+	@Test
+	@DisplayName("Deve retornar pagina DETAILED com status e auditoria")
+	@WithMockUser(roles = "ADMIN")
+	void findAllUsers_whenTypeDetailed_thenReturnsDetailedFields() throws Exception {
+		long usersBeforeRequest = countUsers();
 
-    mockMvc
-        .perform(get("/api/v1/users").param("type", "SUMMARY").param("name", "Ali"))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.content.length()").value(1))
-        .andExpect(jsonPath("$.content[0].name").value("Alice Filter"));
+		mockMvc.perform(get("/api/v1/users").param("type", "DETAILED").param("page", "0").param("size", "10"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.content[0].name").exists())
+			.andExpect(jsonPath("$.content[0].email").exists())
+			.andExpect(jsonPath("$.content[0].roles").isArray())
+			.andExpect(jsonPath("$.content[0].role").doesNotExist())
+			.andExpect(jsonPath("$.content[0].status").exists())
+			.andExpect(jsonPath("$.content[0].createdAt").exists())
+			.andExpect(jsonPath("$.content[0].createdBy").exists())
+			.andExpect(jsonPath("$.content[0].updatedAt").exists())
+			.andExpect(jsonPath("$.content[0].updatedBy").exists())
+			.andExpect(jsonPath("$.content[0].id").doesNotExist())
+			.andExpect(jsonPath("$.content[0].active").doesNotExist())
+			.andExpect(jsonPath("$.content[0].password").doesNotExist())
+			.andExpect(jsonPath("$.content[0].passwordHash").doesNotExist())
+			.andExpect(jsonPath("$.content[0].resetCode").doesNotExist())
+			.andExpect(jsonPath("$.content[0].resetPasswordCodeHash").doesNotExist())
+			.andExpect(jsonPath("$.content[0].resetPasswordExpiresAt").doesNotExist());
 
-    assertEquals(usersBeforeRequest, countUsers());
-    assertTrue(userExists("alice.filter@example.com"));
-    assertTrue(userExists("bob.filter@example.com"));
-  }
+		assertEquals(usersBeforeRequest, countUsers());
+		assertTrue(userExists("ana.admin@example.com"));
+	}
 
-  @Test
-  @DisplayName("Deve respeitar os limites de paginacao")
-  @WithMockUser(roles = "ADMIN")
-  void findAllUsers_whenPageSizeIsOne_thenReturnsOneItemAndTotal() throws Exception {
-    long usersBeforeRequest = countUsers();
+	@Test
+	@DisplayName("Deve filtrar usuarios por nome parcial")
+	@WithMockUser(roles = "ADMIN")
+	void findAllUsers_whenNameFilterIsProvided_thenReturnsMatchingUsers() throws Exception {
+		long usersBeforeRequest = countUsers();
 
-    mockMvc
-        .perform(
-            get("/api/v1/users").param("type", "SUMMARY").param("page", "0").param("size", "1"))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.content.length()").value(1))
-        .andExpect(jsonPath("$.size").value(1))
-        .andExpect(jsonPath("$.totalElements").value(4))
-        .andExpect(jsonPath("$.totalPages").value(4));
+		mockMvc.perform(get("/api/v1/users").param("type", "SUMMARY").param("name", "Ali"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.content.length()").value(1))
+			.andExpect(jsonPath("$.content[0].name").value("Alice Filter"));
 
-    assertEquals(usersBeforeRequest, countUsers());
-    assertTrue(userExists("ana.admin@example.com"));
-    assertTrue(userExists("bruno.user@example.com"));
-  }
+		assertEquals(usersBeforeRequest, countUsers());
+		assertTrue(userExists("alice.filter@example.com"));
+		assertTrue(userExists("bob.filter@example.com"));
+	}
 
-  @Test
-  @DisplayName("Deve retornar 400 quando type for omitido")
-  @WithMockUser(roles = "ADMIN")
-  void findAllUsers_whenTypeIsMissing_thenReturns400() throws Exception {
-    long usersBeforeRequest = countUsers();
+	@Test
+	@DisplayName("Deve respeitar os limites de paginacao")
+	@WithMockUser(roles = "ADMIN")
+	void findAllUsers_whenPageSizeIsOne_thenReturnsOneItemAndTotal() throws Exception {
+		long usersBeforeRequest = countUsers();
 
-    assertBadRequestFieldValidation(
-        mockMvc.perform(get("/api/v1/users")), "type", "O parâmetro informado é obrigatório.");
+		mockMvc.perform(get("/api/v1/users").param("type", "SUMMARY").param("page", "0").param("size", "1"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.content.length()").value(1))
+			.andExpect(jsonPath("$.size").value(1))
+			.andExpect(jsonPath("$.totalElements").value(4))
+			.andExpect(jsonPath("$.totalPages").value(4));
 
-    assertEquals(usersBeforeRequest, countUsers());
-    assertTrue(userExists("ana.admin@example.com"));
-  }
+		assertEquals(usersBeforeRequest, countUsers());
+		assertTrue(userExists("ana.admin@example.com"));
+		assertTrue(userExists("bruno.user@example.com"));
+	}
 
-  @Test
-  @DisplayName("Deve retornar 400 quando type for invalido")
-  @WithMockUser(roles = "ADMIN")
-  void findAllUsers_whenTypeIsInvalid_thenReturns400() throws Exception {
-    long usersBeforeRequest = countUsers();
+	@Test
+	@DisplayName("Deve retornar 400 quando type for omitido")
+	@WithMockUser(roles = "ADMIN")
+	void findAllUsers_whenTypeIsMissing_thenReturns400() throws Exception {
+		long usersBeforeRequest = countUsers();
 
-    assertBadRequestFieldValidation(
-        mockMvc.perform(get("/api/v1/users").param("type", "FULL")),
-        "type",
-        "O parâmetro informado é inválido.");
+		assertBadRequestFieldValidation(mockMvc.perform(get("/api/v1/users")), "type",
+				"O parâmetro informado é obrigatório.");
 
-    assertEquals(usersBeforeRequest, countUsers());
-    assertTrue(userExists("bruno.user@example.com"));
-  }
+		assertEquals(usersBeforeRequest, countUsers());
+		assertTrue(userExists("ana.admin@example.com"));
+	}
 
-  @Test
-  @DisplayName("Deve retornar 400 quando name exceder o limite da coluna")
-  @WithMockUser(roles = "ADMIN")
-  void findAllUsers_whenNameExceedsColumnLimit_thenReturns400() throws Exception {
-    String longName = "a".repeat(256);
-    long usersBeforeRequest = countUsers();
+	@Test
+	@DisplayName("Deve retornar 400 quando type for invalido")
+	@WithMockUser(roles = "ADMIN")
+	void findAllUsers_whenTypeIsInvalid_thenReturns400() throws Exception {
+		long usersBeforeRequest = countUsers();
 
-    assertBadRequestFieldValidation(
-        mockMvc.perform(get("/api/v1/users").param("type", "SUMMARY").param("name", longName)),
-        "name",
-        "O nome deve ter no maximo 255 caracteres.");
+		assertBadRequestFieldValidation(mockMvc.perform(get("/api/v1/users").param("type", "FULL")), "type",
+				"O parâmetro informado é inválido.");
 
-    assertEquals(usersBeforeRequest, countUsers());
-    assertTrue(userExists("alice.filter@example.com"));
-  }
+		assertEquals(usersBeforeRequest, countUsers());
+		assertTrue(userExists("bruno.user@example.com"));
+	}
 
-  @Test
-  @DisplayName("Deve retornar 401 quando nao autenticado")
-  void findAllUsers_whenNotAuthenticated_thenReturns401() throws Exception {
-    long usersBeforeRequest = countUsers();
+	@Test
+	@DisplayName("Deve retornar 400 quando name exceder o limite da coluna")
+	@WithMockUser(roles = "ADMIN")
+	void findAllUsers_whenNameExceedsColumnLimit_thenReturns400() throws Exception {
+		String longName = "a".repeat(256);
+		long usersBeforeRequest = countUsers();
 
-    mockMvc
-        .perform(get("/api/v1/users").param("type", "SUMMARY"))
-        .andExpect(status().isUnauthorized())
-        .andExpect(content().string(""));
+		assertBadRequestFieldValidation(
+				mockMvc.perform(get("/api/v1/users").param("type", "SUMMARY").param("name", longName)), "name",
+				"O nome deve ter no maximo 255 caracteres.");
 
-    assertEquals(usersBeforeRequest, countUsers());
-    assertTrue(userExists("ana.admin@example.com"));
-  }
+		assertEquals(usersBeforeRequest, countUsers());
+		assertTrue(userExists("alice.filter@example.com"));
+	}
 
-  @Test
-  @DisplayName("Deve retornar 403 quando usuario nao for ADMIN")
-  @WithMockUser(roles = "USER")
-  void findAllUsers_whenUserIsNotAdmin_thenReturns403() throws Exception {
-    long usersBeforeRequest = countUsers();
+	@Test
+	@DisplayName("Deve retornar 401 quando nao autenticado")
+	void findAllUsers_whenNotAuthenticated_thenReturns401() throws Exception {
+		long usersBeforeRequest = countUsers();
 
-    mockMvc
-        .perform(get("/api/v1/users").param("type", "SUMMARY"))
-        .andExpect(status().isForbidden())
-        .andExpect(content().string(""));
+		mockMvc.perform(get("/api/v1/users").param("type", "SUMMARY"))
+			.andExpect(status().isUnauthorized())
+			.andExpect(content().string(""));
 
-    assertEquals(usersBeforeRequest, countUsers());
-    assertTrue(userExists("bruno.user@example.com"));
-  }
+		assertEquals(usersBeforeRequest, countUsers());
+		assertTrue(userExists("ana.admin@example.com"));
+	}
 
-  @Test
-  @DisplayName("Deve retornar 400 quando name contiver SQL Injection")
-  @WithMockUser(roles = "ADMIN")
-  void findAllUsers_whenNameContainsSqlInjection_thenReturns400() throws Exception {
-    long usersBeforeRequest = countUsers();
+	@Test
+	@DisplayName("Deve retornar 403 quando usuario nao for ADMIN")
+	@WithMockUser(roles = "USER")
+	void findAllUsers_whenUserIsNotAdmin_thenReturns403() throws Exception {
+		long usersBeforeRequest = countUsers();
 
-    assertBadRequestFieldValidation(
-        mockMvc.perform(
-            get("/api/v1/users")
-                .param("type", "SUMMARY")
-                .param("name", "x%' OR 1=1; DROP TABLE users; --")),
-        "name",
-        "O nome contém caracteres inválidos.");
+		mockMvc.perform(get("/api/v1/users").param("type", "SUMMARY"))
+			.andExpect(status().isForbidden())
+			.andExpect(content().string(""));
 
-    assertEquals(usersBeforeRequest, countUsers());
-    assertTrue(userExists("ana.admin@example.com"));
-    assertTrue(userExists("alice.filter@example.com"));
-  }
+		assertEquals(usersBeforeRequest, countUsers());
+		assertTrue(userExists("bruno.user@example.com"));
+	}
 
-  @Test
-  @DisplayName("Deve retornar 429 quando exceder limite geral de requisicoes")
-  @WithMockUser(roles = "ADMIN")
-  void findAllUsers_whenLimitExceeded_thenReturns429() throws Exception {
-    long usersBeforeRequest = countUsers();
+	@Test
+	@DisplayName("Deve retornar 400 quando name contiver SQL Injection")
+	@WithMockUser(roles = "ADMIN")
+	void findAllUsers_whenNameContainsSqlInjection_thenReturns400() throws Exception {
+		long usersBeforeRequest = countUsers();
 
-    for (int i = 0; i <= 11; i++) {
-      var result = mockMvc.perform(get("/api/v1/users").param("type", "SUMMARY"));
-      if (i > 10) {
-        result.andExpect(status().isTooManyRequests());
-      }
-    }
+		assertBadRequestFieldValidation(mockMvc
+			.perform(get("/api/v1/users").param("type", "SUMMARY").param("name", "x%' OR 1=1; DROP TABLE users; --")),
+				"name", "O nome contém caracteres inválidos.");
 
-    assertEquals(usersBeforeRequest, countUsers());
-    assertTrue(userExists("ana.admin@example.com"));
-  }
+		assertEquals(usersBeforeRequest, countUsers());
+		assertTrue(userExists("ana.admin@example.com"));
+		assertTrue(userExists("alice.filter@example.com"));
+	}
 
-  @Test
-  @DisplayName("Deve permitir nova requisicao quando a janela de rate limit expirar")
-  @WithMockUser(roles = "ADMIN")
-  void findAllUsers_whenRateLimitWindowExpires_thenReturns200() throws Exception {
-    long usersBeforeRequest = countUsers();
+	@Test
+	@DisplayName("Deve retornar 429 quando exceder limite geral de requisicoes")
+	@WithMockUser(roles = "ADMIN")
+	void findAllUsers_whenLimitExceeded_thenReturns429() throws Exception {
+		long usersBeforeRequest = countUsers();
 
-    for (int i = 0; i < 10; i++) {
-      mockMvc.perform(get("/api/v1/users").param("type", "SUMMARY")).andExpect(status().isOk());
-    }
+		for (int i = 0; i <= 11; i++) {
+			var result = mockMvc.perform(get("/api/v1/users").param("type", "SUMMARY"));
+			if (i > 10) {
+				result.andExpect(status().isTooManyRequests());
+			}
+		}
 
-    rateLimitTimeMeter.advanceBy(Duration.ofSeconds(61));
+		assertEquals(usersBeforeRequest, countUsers());
+		assertTrue(userExists("ana.admin@example.com"));
+	}
 
-    mockMvc
-        .perform(get("/api/v1/users").param("type", "SUMMARY"))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.content.length()").value(4));
+	@Test
+	@DisplayName("Deve permitir nova requisicao quando a janela de rate limit expirar")
+	@WithMockUser(roles = "ADMIN")
+	void findAllUsers_whenRateLimitWindowExpires_thenReturns200() throws Exception {
+		long usersBeforeRequest = countUsers();
 
-    assertEquals(usersBeforeRequest, countUsers());
-    assertTrue(userExists("ana.admin@example.com"));
-  }
+		for (int i = 0; i < 10; i++) {
+			mockMvc.perform(get("/api/v1/users").param("type", "SUMMARY")).andExpect(status().isOk());
+		}
 
-  private long countUsers() {
-    Long count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM users", Long.class);
-    return count == null ? 0 : count;
-  }
+		rateLimitTimeMeter.advanceBy(Duration.ofSeconds(61));
 
-  private boolean userExists(String email) {
-    Integer count =
-        jdbcTemplate.queryForObject(
-            "SELECT COUNT(*) FROM users WHERE email = ?", Integer.class, email);
-    return count != null && count == 1;
-  }
+		mockMvc.perform(get("/api/v1/users").param("type", "SUMMARY"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.content.length()").value(4));
+
+		assertEquals(usersBeforeRequest, countUsers());
+		assertTrue(userExists("ana.admin@example.com"));
+	}
+
+	private long countUsers() {
+		Long count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM users", Long.class);
+		return count == null ? 0 : count;
+	}
+
+	private boolean userExists(String email) {
+		Integer count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM users WHERE email = ?", Integer.class, email);
+		return count != null && count == 1;
+	}
+
 }
