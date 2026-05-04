@@ -2,7 +2,8 @@ package br.com.threadstech.stockfy.modules.users.application.usecase;
 
 import static org.mockito.Mockito.verify;
 
-import br.com.threadstech.stockfy.modules.users.domain.repository.UserRepository;
+import br.com.threadstech.stockfy.users.application.usecase.DeleteUserUseCase;
+import br.com.threadstech.stockfy.users.domain.repository.UserRepository;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

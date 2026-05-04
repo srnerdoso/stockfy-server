@@ -2,7 +2,9 @@ package br.com.threadstech.stockfy.modules.users.application.exception;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import br.com.threadstech.stockfy.web.application.exception.InvalidPasswordException;
+import br.com.threadstech.stockfy.users.application.exception.EmailAlreadyExistsException;
+import br.com.threadstech.stockfy.users.application.exception.InvalidPasswordException;
+import br.com.threadstech.stockfy.users.application.exception.PasswordMismatchException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 

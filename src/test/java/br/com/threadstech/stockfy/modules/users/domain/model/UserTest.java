@@ -4,9 +4,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import br.com.threadstech.stockfy.modules.users.domain.exception.InvalidUserRolesException;
 import java.util.Set;
 import java.util.UUID;
+
+import br.com.threadstech.stockfy.users.domain.model.Email;
+import br.com.threadstech.stockfy.users.domain.model.Password;
+import br.com.threadstech.stockfy.users.domain.model.User;
+import br.com.threadstech.stockfy.users.domain.model.UserRole;
+import br.com.threadstech.stockfy.users.domain.model.UserStatus;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 

@@ -12,9 +12,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import br.com.threadstech.stockfy.MutableTimeMeter;
 import br.com.threadstech.stockfy.RateLimitTestConfiguration;
 import br.com.threadstech.stockfy.TestcontainersConfiguration;
-import br.com.threadstech.stockfy.modules.users.application.exception.InvalidCredentialsException;
-import br.com.threadstech.stockfy.modules.users.application.usecase.LoginUseCase;
-import br.com.threadstech.stockfy.modules.users.infrastructure.config.UserRateLimitConfig;
+import br.com.threadstech.stockfy.users.application.exception.InvalidCredentialsException;
+import br.com.threadstech.stockfy.users.application.usecase.LoginUseCase;
+import br.com.threadstech.stockfy.users.infrastructure.config.UserRateLimitConfig;
 import java.time.Duration;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;

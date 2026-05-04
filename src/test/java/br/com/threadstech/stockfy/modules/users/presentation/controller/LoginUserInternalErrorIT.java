@@ -8,7 +8,7 @@ import static org.mockito.Mockito.doThrow;
 
 import br.com.threadstech.stockfy.RateLimitTestConfiguration;
 import br.com.threadstech.stockfy.TestcontainersConfiguration;
-import br.com.threadstech.stockfy.modules.users.application.usecase.LoginUseCase;
+import br.com.threadstech.stockfy.users.application.usecase.LoginUseCase;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -6,11 +6,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import br.com.threadstech.stockfy.TestcontainersConfiguration;
-import br.com.threadstech.stockfy.modules.users.domain.model.Email;
-import br.com.threadstech.stockfy.modules.users.domain.model.User;
-import br.com.threadstech.stockfy.modules.users.domain.model.UserRole;
-import br.com.threadstech.stockfy.modules.users.domain.model.UserStatus;
-import br.com.threadstech.stockfy.modules.users.domain.repository.UserRepository;
+import br.com.threadstech.stockfy.users.domain.model.Email;
+import br.com.threadstech.stockfy.users.domain.model.User;
+import br.com.threadstech.stockfy.users.domain.model.UserRole;
+import br.com.threadstech.stockfy.users.domain.model.UserStatus;
+import br.com.threadstech.stockfy.users.domain.repository.UserRepository;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;

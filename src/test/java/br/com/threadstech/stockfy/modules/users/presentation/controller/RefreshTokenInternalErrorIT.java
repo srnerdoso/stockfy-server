@@ -8,8 +8,8 @@ import static org.mockito.Mockito.doThrow;
 
 import br.com.threadstech.stockfy.RateLimitTestConfiguration;
 import br.com.threadstech.stockfy.TestcontainersConfiguration;
-import br.com.threadstech.stockfy.modules.users.application.usecase.RefreshTokenUseCase;
-import br.com.threadstech.stockfy.modules.users.infrastructure.security.TokenService;
+import br.com.threadstech.stockfy.users.application.usecase.RefreshTokenUseCase;
+import br.com.threadstech.stockfy.users.infrastructure.security.TokenService;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;

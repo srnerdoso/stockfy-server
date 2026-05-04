@@ -8,6 +8,8 @@ import static org.mockito.Mockito.when;
 
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+
+import br.com.threadstech.stockfy.users.infrastructure.security.TokenService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

@@ -5,11 +5,12 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import br.com.threadstech.stockfy.modules.users.application.exception.UserNotFoundException;
-import br.com.threadstech.stockfy.modules.users.domain.exception.InvalidUserRolesException;
-import br.com.threadstech.stockfy.modules.users.domain.model.User;
-import br.com.threadstech.stockfy.modules.users.domain.model.UserRole;
-import br.com.threadstech.stockfy.modules.users.domain.repository.UserRepository;
+import br.com.threadstech.stockfy.users.application.exception.UserNotFoundException;
+import br.com.threadstech.stockfy.users.application.usecase.UpdateUserRolesUseCase;
+import br.com.threadstech.stockfy.users.domain.exception.InvalidUserRolesException;
+import br.com.threadstech.stockfy.users.domain.model.User;
+import br.com.threadstech.stockfy.users.domain.model.UserRole;
+import br.com.threadstech.stockfy.users.domain.repository.UserRepository;
 import java.util.EnumSet;
 import java.util.Optional;
 import java.util.Set;

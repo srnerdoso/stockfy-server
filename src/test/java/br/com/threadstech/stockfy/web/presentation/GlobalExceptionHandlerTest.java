@@ -2,7 +2,8 @@ package br.com.threadstech.stockfy.web.presentation;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import br.com.threadstech.stockfy.web.application.dto.ApiErrorResponse;
+import br.com.threadstech.stockfy.shared.exception.ApiErrorResponse;
+import br.com.threadstech.stockfy.shared.exception.GlobalExceptionHandler;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import java.util.List;
 import java.util.Locale;

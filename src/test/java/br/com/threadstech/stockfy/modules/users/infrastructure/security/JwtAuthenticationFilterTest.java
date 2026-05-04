@@ -3,7 +3,10 @@ package br.com.threadstech.stockfy.modules.users.infrastructure.security;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
-import br.com.threadstech.stockfy.modules.users.domain.model.UserRole;
+import br.com.threadstech.stockfy.users.domain.model.UserRole;
+import br.com.threadstech.stockfy.users.infrastructure.security.JwtAuthenticationFilter;
+import br.com.threadstech.stockfy.users.infrastructure.security.JwtService;
+import br.com.threadstech.stockfy.users.infrastructure.security.TokenService;
 import jakarta.servlet.http.Cookie;
 import java.util.Set;
 import java.util.UUID;

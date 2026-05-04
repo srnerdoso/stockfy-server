@@ -6,15 +6,18 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import br.com.threadstech.stockfy.modules.users.application.dto.RegisterUserRequest;
-import br.com.threadstech.stockfy.modules.users.application.exception.EmailAlreadyExistsException;
-import br.com.threadstech.stockfy.modules.users.domain.model.Email;
-import br.com.threadstech.stockfy.modules.users.domain.model.Password;
-import br.com.threadstech.stockfy.modules.users.domain.model.User;
-import br.com.threadstech.stockfy.modules.users.domain.model.UserRole;
-import br.com.threadstech.stockfy.modules.users.domain.model.UserStatus;
-import br.com.threadstech.stockfy.modules.users.domain.repository.UserRepository;
-import java.util.List;
+import br.com.threadstech.stockfy.users.application.dto.RegisterUserRequest;
+import br.com.threadstech.stockfy.users.application.exception.EmailAlreadyExistsException;
+import br.com.threadstech.stockfy.users.application.usecase.DeleteUserUseCase;
+import br.com.threadstech.stockfy.users.application.usecase.RegisterUserUseCase;
+import br.com.threadstech.stockfy.users.application.usecase.UpdateProfileUseCase;
+import br.com.threadstech.stockfy.users.domain.model.Email;
+import br.com.threadstech.stockfy.users.domain.model.Password;
+import br.com.threadstech.stockfy.users.domain.model.User;
+import br.com.threadstech.stockfy.users.domain.model.UserRole;
+import br.com.threadstech.stockfy.users.domain.model.UserStatus;
+import br.com.threadstech.stockfy.users.domain.repository.UserRepository;
+
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;

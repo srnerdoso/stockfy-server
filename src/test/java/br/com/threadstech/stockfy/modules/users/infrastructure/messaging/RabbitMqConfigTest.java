@@ -2,6 +2,7 @@ package br.com.threadstech.stockfy.modules.users.infrastructure.messaging;
 
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
+import br.com.threadstech.stockfy.users.infrastructure.messaging.RabbitMqConfig;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;

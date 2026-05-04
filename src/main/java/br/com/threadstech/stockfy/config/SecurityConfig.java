@@ -1,7 +1,7 @@
 package br.com.threadstech.stockfy.config;
 
-import br.com.threadstech.stockfy.modules.users.infrastructure.security.JwtAuthenticationFilter;
-import br.com.threadstech.stockfy.modules.users.infrastructure.security.RateLimitFilter;
+import br.com.threadstech.stockfy.users.infrastructure.security.JwtAuthenticationFilter;
+import br.com.threadstech.stockfy.users.infrastructure.security.RateLimitFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

@@ -6,7 +6,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import br.com.threadstech.stockfy.modules.users.infrastructure.config.UserRateLimitConfig;
+import br.com.threadstech.stockfy.users.infrastructure.config.UserRateLimitConfig;
+import br.com.threadstech.stockfy.users.infrastructure.security.RateLimitFilter;
 import io.github.bucket4j.Bucket;
 import jakarta.servlet.FilterChain;
 import org.junit.jupiter.api.DisplayName;

@@ -3,6 +3,8 @@ package br.com.threadstech.stockfy.modules.users.domain.event;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import java.io.Serializable;
+
+import br.com.threadstech.stockfy.users.domain.event.AccountLockedEvent;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 

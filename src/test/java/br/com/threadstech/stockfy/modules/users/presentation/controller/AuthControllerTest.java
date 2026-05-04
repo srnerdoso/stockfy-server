@@ -7,9 +7,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import br.com.threadstech.stockfy.TestcontainersConfiguration;
-import br.com.threadstech.stockfy.modules.users.application.dto.AuthResponse;
-import br.com.threadstech.stockfy.modules.users.application.dto.LoginRequest;
-import br.com.threadstech.stockfy.modules.users.application.usecase.LoginUseCase;
+import br.com.threadstech.stockfy.users.application.dto.AuthResponse;
+import br.com.threadstech.stockfy.users.application.dto.LoginRequest;
+import br.com.threadstech.stockfy.users.application.usecase.LoginUseCase;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

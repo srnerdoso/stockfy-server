@@ -4,12 +4,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import br.com.threadstech.stockfy.TestcontainersConfiguration;
-import br.com.threadstech.stockfy.modules.users.domain.model.Email;
-import br.com.threadstech.stockfy.modules.users.domain.model.Password;
-import br.com.threadstech.stockfy.modules.users.domain.model.User;
-import br.com.threadstech.stockfy.modules.users.domain.model.UserRole;
-import br.com.threadstech.stockfy.modules.users.domain.model.UserStatus;
-import br.com.threadstech.stockfy.modules.users.domain.repository.UserRepository;
+import br.com.threadstech.stockfy.users.domain.model.Email;
+import br.com.threadstech.stockfy.users.domain.model.Password;
+import br.com.threadstech.stockfy.users.domain.model.User;
+import br.com.threadstech.stockfy.users.domain.model.UserRole;
+import br.com.threadstech.stockfy.users.domain.model.UserStatus;
+import br.com.threadstech.stockfy.users.domain.repository.UserRepository;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;

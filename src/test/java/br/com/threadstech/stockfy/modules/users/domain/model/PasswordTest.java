@@ -3,7 +3,8 @@ package br.com.threadstech.stockfy.modules.users.domain.model;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import br.com.threadstech.stockfy.web.application.exception.InvalidPasswordException;
+import br.com.threadstech.stockfy.users.application.exception.InvalidPasswordException;
+import br.com.threadstech.stockfy.users.domain.model.Password;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 

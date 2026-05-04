@@ -8,10 +8,10 @@ import static org.mockito.Mockito.doThrow;
 
 import br.com.threadstech.stockfy.RateLimitTestConfiguration;
 import br.com.threadstech.stockfy.TestcontainersConfiguration;
-import br.com.threadstech.stockfy.modules.users.application.usecase.UpdateUserRolesUseCase;
-import br.com.threadstech.stockfy.modules.users.domain.model.UserRole;
-import br.com.threadstech.stockfy.modules.users.infrastructure.security.JwtService;
-import br.com.threadstech.stockfy.modules.users.infrastructure.security.TokenService;
+import br.com.threadstech.stockfy.users.application.usecase.UpdateUserRolesUseCase;
+import br.com.threadstech.stockfy.users.domain.model.UserRole;
+import br.com.threadstech.stockfy.users.infrastructure.security.JwtService;
+import br.com.threadstech.stockfy.users.infrastructure.security.TokenService;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;

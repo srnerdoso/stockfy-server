@@ -17,8 +17,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import br.com.threadstech.stockfy.MutableTimeMeter;
 import br.com.threadstech.stockfy.RateLimitTestConfiguration;
 import br.com.threadstech.stockfy.TestcontainersConfiguration;
-import br.com.threadstech.stockfy.modules.users.infrastructure.config.UserRateLimitConfig;
-import br.com.threadstech.stockfy.modules.users.infrastructure.security.TokenService;
+import br.com.threadstech.stockfy.users.infrastructure.config.UserRateLimitConfig;
+import br.com.threadstech.stockfy.users.infrastructure.security.TokenService;
 import jakarta.servlet.http.Cookie;
 import java.time.Duration;
 import java.util.List;

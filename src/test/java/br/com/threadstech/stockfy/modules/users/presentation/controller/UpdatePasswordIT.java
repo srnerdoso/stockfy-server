@@ -13,8 +13,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import br.com.threadstech.stockfy.MutableTimeMeter;
 import br.com.threadstech.stockfy.RateLimitTestConfiguration;
 import br.com.threadstech.stockfy.TestcontainersConfiguration;
-import br.com.threadstech.stockfy.modules.users.application.port.ResetCodeHasher;
-import br.com.threadstech.stockfy.modules.users.infrastructure.config.UserRateLimitConfig;
+import br.com.threadstech.stockfy.users.application.port.ResetCodeHasher;
+import br.com.threadstech.stockfy.users.infrastructure.config.UserRateLimitConfig;
 import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.LocalDateTime;
