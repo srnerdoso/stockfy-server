@@ -17,6 +17,7 @@ exposure.
 **Database**: PostgreSQL
 **Integration**: Docker
 **Code Style**: Spring Java Format + Spotless + Checkstyle
+**Code Quality**: JaCoCo + PMD + SpotBugs + OWASP Dependency Check
 
 ## Architecture
 
