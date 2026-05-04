@@ -4,5 +4,10 @@
         "https://checkstyle.org/dtds/configuration_1_3.dtd">
 
 <module name="com.puppycrawl.tools.checkstyle.Checker">
+
+    <module name="SuppressionFilter">
+        <property name="file" value="${suppressionsFile}"/>
+    </module>
+
     <module name="io.spring.javaformat.checkstyle.SpringChecks"/>
 </module>

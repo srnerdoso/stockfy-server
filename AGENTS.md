@@ -16,6 +16,7 @@ exposure.
 **Framework**: Spring Boot 3
 **Database**: PostgreSQL
 **Integration**: Docker
+**Code Style**: Spring Java Format + Spotless + Checkstyle
 
 ## Architecture
 
