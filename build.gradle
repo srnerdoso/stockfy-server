@@ -2,9 +2,17 @@ plugins {
     id 'java'
     id 'org.springframework.boot' version '3.5.13'
     id 'io.spring.dependency-management' version '1.1.7'
+
+    // Code Style
     id 'com.diffplug.spotless' version '8.4.0'
     id 'io.spring.javaformat' version '0.0.47'
     id 'checkstyle'
+
+    // Code Quality
+    id 'jacoco'
+    id 'pmd'
+    id 'com.github.spotbugs' version '6.5.0'
+    id 'org.owasp.dependencycheck' version '12.2.1'
 }
 
 group = 'br.com.threadstech'
@@ -27,13 +35,6 @@ configurations {
 checkstyle {
     toolVersion = '9.3'
     configFile = file('config/checkstyle/checkstyle.xml')
-}
-
-tasks.withType(Checkstyle).configureEach {
-    configProperties.put(
-            'suppressionsFile',
-            file('config/checkstyle/suppressions.xml').absolutePath
-    )
 }
 
 spotless {
@@ -75,6 +76,14 @@ spotless {
     }
 }
 
+jacoco {
+    toolVersion = '0.8.13'
+}
+
+pmd {
+    toolVersion = '7.24.0'
+}
+
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-amqp'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
@@ -111,6 +120,7 @@ dependencies {
 
     checkstyle "io.spring.javaformat:spring-javaformat-checkstyle:0.0.47"
     checkstyle "io.spring.javaformat:spring-javaformat-config:0.0.47"
+    spotbugsPlugins 'com.h3xstream.findsecbugs:findsecbugs-plugin:1.14.0'
 
     mockitoAgent('org.mockito:mockito-core') {
         transitive = false
@@ -120,4 +130,21 @@ dependencies {
 tasks.named('test') {
     useJUnitPlatform()
     jvmArgs += "-javaagent:${configurations.mockitoAgent.asPath}"
+    finalizedBy tasks.jacocoTestReport
+}
+
+tasks.jacocoTestReport {
+    dependsOn tasks.test
+
+    reports {
+        xml.required = true
+        html.required = true
+    }
+}
+
+tasks.withType(Checkstyle).configureEach {
+    configProperties.put(
+            'suppressionsFile',
+            file('config/checkstyle/suppressions.xml').absolutePath
+    )
 }
