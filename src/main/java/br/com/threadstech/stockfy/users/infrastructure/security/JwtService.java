@@ -71,7 +71,11 @@ public class JwtService {
 	}
 
 	public List<String> extractRoles(String token) {
-		return extractAllClaims(token).get("roles", List.class);
+		Object roles = extractAllClaims(token).get("roles");
+		if (roles instanceof List<?> rawRoles) {
+			return rawRoles.stream().map(String.class::cast).toList();
+		}
+		return List.of();
 	}
 
 	private <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {

@@ -35,6 +35,9 @@ import br.com.threadstech.stockfy.users.domain.model.UserStatus;
 import br.com.threadstech.stockfy.users.domain.repository.UserRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
@@ -49,6 +52,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
+@ExtendWith(MockitoExtension.class)
 class UpdatePasswordUseCaseTests {
 
 	private static final String RESET_CODE = "123456";
@@ -75,7 +79,8 @@ class UpdatePasswordUseCaseTests {
 
 	private final StringRedisTemplate redisTemplate = org.mockito.Mockito.mock(StringRedisTemplate.class);
 
-	private final ValueOperations<String, String> valueOperations = org.mockito.Mockito.mock(ValueOperations.class);
+	@Mock
+	private ValueOperations<String, String> valueOperations;
 
 	private final UpdatePasswordUseCase useCase = new UpdatePasswordUseCase(this.userRepository, this.passwordEncoder,
 			this.resetCodeHasher, this.redisTemplate);
