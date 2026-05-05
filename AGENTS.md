@@ -47,7 +47,6 @@ stockfy-server
 ├───docs
 │   ├───superpowers
 │   │   └───plans
-│   └───tasks
 ├───gradle
 │   └───wrapper
 │           gradle-wrapper.jar
@@ -111,17 +110,3 @@ To ensure consistency across the project, additional `AGENTS.md` context files a
 - `src/test/AGENTS.md`: Testing-specific guidelines and conventions.
 
 Always verify the local `AGENTS.md` before performing tasks within these modules.
-
-### Agent Work Log (Mandatory)
-- Every agent must create and maintain a documentation file during task execution.
-- File location: `/docs/tasks/<TASK>.md`
-- This file must contain:
-    - What was attempted.
-    - Why it was attempted.
-    - Result (success or failure).
-    - Observations and possible improvements.
-- All actions must be recorded continuously during execution.
-- Objective:
-    - Build a knowledge base of what works and what does not.
-    - Improve future decision-making.
-    - Provide traceability for analysis and optimization of agent behavior.
