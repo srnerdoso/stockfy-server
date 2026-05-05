@@ -101,6 +101,12 @@ stockfy-server
 - **Pre-finalization:** Run all tests → validate Checkstyle.
 - **Review:** Architecture (DDD + Hexagonal) check; No cross-module coupling.
 
+## Validation & Quality Gates
+- Do not modify existing configurations only to make tests or validations pass.
+- Do not override configurations to silence warnings, errors, or validation failures.
+- Do not suppress warnings without explicit technical justification.
+- Fix the root cause instead of bypassing quality checks.
+
 ## Agent Context Documentation
 To ensure consistency across the project, additional `AGENTS.md` context files are maintained within specific directories:
 
