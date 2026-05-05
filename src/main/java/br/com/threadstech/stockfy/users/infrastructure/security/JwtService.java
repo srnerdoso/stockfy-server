@@ -16,7 +16,8 @@
 
 package br.com.threadstech.stockfy.users.infrastructure.security;
 
-import java.util.Date;
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -50,11 +51,12 @@ public class JwtService {
 	}
 
 	private String createToken(Map<String, Object> claims, String subject) {
+		Instant now = Instant.now();
 		return Jwts.builder()
 			.claims(claims)
 			.subject(subject)
-			.issuedAt(new Date(System.currentTimeMillis()))
-			.expiration(new Date(System.currentTimeMillis() + expiration))
+			.issuedAt(java.util.Date.from(now))
+			.expiration(java.util.Date.from(now.plusMillis(this.expiration)))
 			.signWith(getSigningKey())
 			.compact();
 	}
@@ -82,11 +84,11 @@ public class JwtService {
 	}
 
 	private boolean isTokenExpired(String token) {
-		return extractAllClaims(token).getExpiration().before(new Date());
+		return extractAllClaims(token).getExpiration().toInstant().isBefore(Instant.now());
 	}
 
 	private SecretKey getSigningKey() {
-		return Keys.hmacShaKeyFor(secret.getBytes());
+		return Keys.hmacShaKeyFor(this.secret.getBytes(StandardCharsets.UTF_8));
 	}
 
 }

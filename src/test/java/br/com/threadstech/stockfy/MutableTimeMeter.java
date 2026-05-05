@@ -21,13 +21,14 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import io.github.bucket4j.TimeMeter;
 
+@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
 public class MutableTimeMeter implements TimeMeter {
 
-	private final AtomicLong currentTimeNanos = new AtomicLong();
+	private final AtomicLong nanos = new AtomicLong();
 
 	@Override
 	public long currentTimeNanos() {
-		return currentTimeNanos.get();
+		return this.nanos.get();
 	}
 
 	@Override
@@ -36,11 +37,11 @@ public class MutableTimeMeter implements TimeMeter {
 	}
 
 	public void advanceBy(Duration duration) {
-		currentTimeNanos.addAndGet(duration.toNanos());
+		this.nanos.addAndGet(duration.toNanos());
 	}
 
 	public void reset() {
-		currentTimeNanos.set(0);
+		this.nanos.set(0);
 	}
 
 }

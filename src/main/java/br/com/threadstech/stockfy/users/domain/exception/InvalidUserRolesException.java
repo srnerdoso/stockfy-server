@@ -18,6 +18,8 @@ package br.com.threadstech.stockfy.users.domain.exception;
 
 public class InvalidUserRolesException extends RuntimeException {
 
+	private static final long serialVersionUID = 1L;
+
 	public InvalidUserRolesException() {
 		super("exception.user-roles-invalid");
 	}

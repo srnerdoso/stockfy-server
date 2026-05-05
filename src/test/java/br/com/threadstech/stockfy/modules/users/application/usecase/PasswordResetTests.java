@@ -38,17 +38,15 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class PasswordResetTest {
+class PasswordResetTests {
 
 	@Mock
 	private UserRepository userRepository;
@@ -65,8 +63,8 @@ class PasswordResetTest {
 
 	@BeforeEach
 	void setUp() {
-		user = User.builder()
-			.id(userId)
+		this.user = this.user.builder()
+			.id(this.userId)
 			.name("John Doe")
 			.email(new Email("john@example.com"))
 			.password(new Password("hashed_password"))
@@ -79,25 +77,26 @@ class PasswordResetTest {
 	@Test
 	@DisplayName("Deve gerar codigo de seis digitos, persistir hash e expiracao")
 	void generateResetCode_whenUserExists_thenPersistsHashedCodeAndExpiration() {
-		when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-		when(resetCodeHasher.hash(any())).thenReturn("hashed_code");
+		given(this.userRepository.findById(this.userId)).willReturn(Optional.of(this.user));
+		given(this.resetCodeHasher.hash(any())).willReturn("hashed_code");
 
-		String code = generateResetCodeUseCase.execute(userId);
+		String code = this.generateResetCodeUseCase.execute(this.userId);
 
-		assertTrue(code.matches("\\d{6}"));
-		assertEquals("hashed_code", user.getResetPasswordCodeHash());
-		assertNotNull(user.getResetPasswordExpiresAt());
-		assertTrue(user.getResetPasswordExpiresAt().isAfter(LocalDateTime.now()));
-		verify(userRepository).update(user);
+		assertThat(code.matches("\\d{6}")).isTrue();
+		assertThat(this.user.getResetPasswordCodeHash()).isEqualTo("hashed_code");
+		assertThat(this.user.getResetPasswordExpiresAt()).isNotNull();
+		assertThat(this.user.getResetPasswordExpiresAt().isAfter(LocalDateTime.now())).isTrue();
+		verify(this.userRepository).update(this.user);
 	}
 
 	@Test
 	@DisplayName("Deve lancar UserNotFoundException quando usuario nao existir")
 	void generateResetCode_whenUserDoesNotExist_thenThrowsUserNotFoundException() {
-		when(userRepository.findById(userId)).thenReturn(Optional.empty());
+		given(this.userRepository.findById(this.userId)).willReturn(Optional.empty());
 
-		assertThrows(UserNotFoundException.class, () -> generateResetCodeUseCase.execute(userId));
-		verify(userRepository, never()).update(any());
+		assertThatExceptionOfType(UserNotFoundException.class)
+			.isThrownBy(() -> this.generateResetCodeUseCase.execute(this.userId));
+		verify(this.userRepository, never()).update(any());
 	}
 
 }

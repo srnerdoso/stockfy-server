@@ -18,6 +18,8 @@ package br.com.threadstech.stockfy.users.application.exception;
 
 public class InvalidPasswordResetCodeException extends RuntimeException {
 
+	private static final long serialVersionUID = 1L;
+
 	public InvalidPasswordResetCodeException() {
 		super("exception.password-reset-code-invalid");
 	}

@@ -29,6 +29,15 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 public record UserListItemResponse(String name, String email, Set<UserRole> roles, UserStatus status,
 		LocalDateTime createdAt, UUID createdBy, LocalDateTime updatedAt, UUID updatedBy) {
 
+	public UserListItemResponse {
+		roles = Set.copyOf(roles);
+	}
+
+	@Override
+	public Set<UserRole> roles() {
+		return Set.copyOf(this.roles);
+	}
+
 	public static UserListItemResponse from(User user, UserListType type) {
 		return switch (type) {
 			case SUMMARY -> summary(user);

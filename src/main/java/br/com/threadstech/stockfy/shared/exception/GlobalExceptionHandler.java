@@ -38,30 +38,35 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 @RequiredArgsConstructor
 public class GlobalExceptionHandler {
 
+	private static final String ABOUT_BLANK = "about:blank";
+
+	private static final String VALIDATION_ERROR = "Validation Error";
+
 	private final MessageSource messageSource;
 
 	@ExceptionHandler(MethodArgumentNotValidException.class)
 	public ResponseEntity<ApiErrorResponse> handleValidationExceptions(MethodArgumentNotValidException ex) {
-		String detail = messageSource.getMessage("feedback.error.validation", null, LocaleContextHolder.getLocale());
+		String detail = this.messageSource.getMessage("feedback.error.validation", null,
+				LocaleContextHolder.getLocale());
 
-		ApiErrorResponse response = new ApiErrorResponse("about:blank", "Validation Error",
-				HttpStatus.BAD_REQUEST.value(), detail, null,
+		ApiErrorResponse response = new ApiErrorResponse(ABOUT_BLANK, VALIDATION_ERROR, HttpStatus.BAD_REQUEST.value(),
+				detail, null,
 				ex.getBindingResult()
 					.getFieldErrors()
 					.stream()
-					.map(fieldError -> new FieldError(fieldError.getField(),
-							messageSource.getMessage(fieldError, LocaleContextHolder.getLocale())))
+					.map((fieldError) -> new FieldError(fieldError.getField(),
+							this.messageSource.getMessage(fieldError, LocaleContextHolder.getLocale())))
 					.toList());
 		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
 	}
 
 	@ExceptionHandler(HttpMessageNotReadableException.class)
 	public ResponseEntity<ApiErrorResponse> handleMessageNotReadable(HttpMessageNotReadableException ex) {
-		String detail = messageSource.getMessage("feedback.error.validation", null, LocaleContextHolder.getLocale());
+		String detail = this.messageSource.getMessage("feedback.error.validation", null,
+				LocaleContextHolder.getLocale());
 
-		ApiErrorResponse response = new ApiErrorResponse("about:blank", "Validation Error",
-				HttpStatus.BAD_REQUEST.value(), detail, null,
-				List.of(new FieldError(extractFieldName(ex), resolveRequiredFieldMessage())));
+		ApiErrorResponse response = new ApiErrorResponse(ABOUT_BLANK, VALIDATION_ERROR, HttpStatus.BAD_REQUEST.value(),
+				detail, null, List.of(new FieldError(extractFieldName(ex), resolveRequiredFieldMessage())));
 		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
 	}
 
@@ -81,28 +86,28 @@ public class GlobalExceptionHandler {
 	public ResponseEntity<ApiErrorResponse> handleConstraintViolation(ConstraintViolationException ex) {
 		List<FieldError> fieldErrors = ex.getConstraintViolations()
 			.stream()
-			.map(violation -> new FieldError(extractLeafProperty(violation.getPropertyPath().toString()),
+			.map((violation) -> new FieldError(extractLeafProperty(violation.getPropertyPath().toString()),
 					violation.getMessage()))
 			.toList();
 
-		ApiErrorResponse response = new ApiErrorResponse("about:blank", "Validation Error",
-				HttpStatus.BAD_REQUEST.value(), validationDetail(), null, fieldErrors);
+		ApiErrorResponse response = new ApiErrorResponse(ABOUT_BLANK, VALIDATION_ERROR, HttpStatus.BAD_REQUEST.value(),
+				validationDetail(), null, fieldErrors);
 		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
 	}
 
 	private ResponseEntity<ApiErrorResponse> validationError(String field, String message) {
-		ApiErrorResponse response = new ApiErrorResponse("about:blank", "Validation Error",
-				HttpStatus.BAD_REQUEST.value(), validationDetail(), null, List.of(new FieldError(field, message)));
+		ApiErrorResponse response = new ApiErrorResponse(ABOUT_BLANK, VALIDATION_ERROR, HttpStatus.BAD_REQUEST.value(),
+				validationDetail(), null, List.of(new FieldError(field, message)));
 		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
 	}
 
 	private String validationDetail() {
-		return messageSource.getMessage("feedback.error.validation", null, LocaleContextHolder.getLocale());
+		return this.messageSource.getMessage("feedback.error.validation", null, LocaleContextHolder.getLocale());
 	}
 
 	private String resolveRequestParameterMessage(String field, boolean required) {
 		String key = required ? "validation.request-parameter.required" : "validation.request-parameter.invalid";
-		return messageSource.getMessage(key, null, LocaleContextHolder.getLocale());
+		return this.messageSource.getMessage(key, null, LocaleContextHolder.getLocale());
 	}
 
 	private String extractLeafProperty(String propertyPath) {
@@ -114,7 +119,7 @@ public class GlobalExceptionHandler {
 	}
 
 	private String resolveRequiredFieldMessage() {
-		return messageSource.getMessage("validation.field.not-null", null, LocaleContextHolder.getLocale());
+		return this.messageSource.getMessage("validation.field.not-null", null, LocaleContextHolder.getLocale());
 	}
 
 	private String extractFieldName(HttpMessageNotReadableException ex) {

@@ -28,6 +28,7 @@ import br.com.threadstech.stockfy.TestcontainersConfiguration;
 import br.com.threadstech.stockfy.users.infrastructure.config.UserRateLimitConfig;
 import br.com.threadstech.stockfy.users.infrastructure.security.TokenService;
 import jakarta.servlet.http.Cookie;
+import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -42,15 +43,10 @@ import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.everyItem;
 import static org.hamcrest.Matchers.not;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.cookie;
@@ -62,6 +58,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Sql(scripts = "/sql/users/cleanup.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @Sql(scripts = "/sql/users/base-users.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @Sql(scripts = "/sql/users/cleanup.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
+@SuppressWarnings({ "PMD.AvoidAccessibilityAlteration", "PMD.AvoidDuplicateLiterals" })
 class RefreshTokenIT {
 
 	private static final UUID USER_ID = UUID.fromString("00000000-0000-0000-0000-000000000002");
@@ -87,7 +84,7 @@ class RefreshTokenIT {
 	@AfterEach
 	void tearDown() {
 		clearRateLimitBuckets();
-		rateLimitTimeMeter.reset();
+		this.rateLimitTimeMeter.reset();
 	}
 
 	@Test
@@ -95,9 +92,9 @@ class RefreshTokenIT {
 	void refreshToken_whenRefreshTokenIsValid_thenReturns200WithNewCookiesAndRotatesToken() throws Exception {
 		long usersBeforeRequest = countUsers();
 		UserSnapshot userBeforeRequest = userSnapshot();
-		String oldRefreshToken = tokenService.generateRefreshToken(USER_ID);
+		String oldRefreshToken = this.tokenService.generateRefreshToken(USER_ID);
 
-		MvcResult result = mockMvc
+		MvcResult result = this.mockMvc
 			.perform(post("/api/v1/auth/sessions/refresh").cookie(new Cookie("refresh_token", oldRefreshToken)))
 			.andExpect(status().isOk())
 			.andExpect(content().string(""))
@@ -108,11 +105,11 @@ class RefreshTokenIT {
 			.andReturn();
 
 		Cookie newRefreshCookie = result.getResponse().getCookie("refresh_token");
-		assertNotNull(newRefreshCookie);
-		assertNotEquals(oldRefreshToken, newRefreshCookie.getValue());
-		assertFalse(redisTemplate.hasKey("refresh_token:" + oldRefreshToken));
-		assertTrue(redisTemplate.hasKey("refresh_token:" + newRefreshCookie.getValue()));
-		assertThat(result.getResponse().getHeaders("Set-Cookie"), everyItem(containsString("Secure")));
+		assertThat(newRefreshCookie).isNotNull();
+		assertThat(newRefreshCookie.getValue()).isNotEqualTo(oldRefreshToken);
+		assertThat(this.redisTemplate.hasKey("refresh_token:" + oldRefreshToken)).isFalse();
+		assertThat(this.redisTemplate.hasKey("refresh_token:" + newRefreshCookie.getValue())).isTrue();
+		MatcherAssert.assertThat(result.getResponse().getHeaders("Set-Cookie"), everyItem(containsString("Secure")));
 		assertNoSensitiveData(result);
 		assertUserDataUnchanged(usersBeforeRequest, userBeforeRequest);
 	}
@@ -123,7 +120,7 @@ class RefreshTokenIT {
 		long usersBeforeRequest = countUsers();
 		UserSnapshot userBeforeRequest = userSnapshot();
 
-		MvcResult result = mockMvc.perform(post("/api/v1/auth/sessions/refresh"))
+		MvcResult result = this.mockMvc.perform(post("/api/v1/auth/sessions/refresh"))
 			.andExpect(status().isUnauthorized())
 			.andExpect(content().string(""))
 			.andExpect(cookie().doesNotExist("access_token"))
@@ -140,7 +137,7 @@ class RefreshTokenIT {
 		long usersBeforeRequest = countUsers();
 		UserSnapshot userBeforeRequest = userSnapshot();
 
-		MvcResult result = mockMvc
+		MvcResult result = this.mockMvc
 			.perform(post("/api/v1/auth/sessions/refresh").cookie(new Cookie("refresh_token", "invalid-refresh-token")))
 			.andExpect(status().isUnauthorized())
 			.andExpect(content().string(""))
@@ -158,7 +155,7 @@ class RefreshTokenIT {
 		long usersBeforeRequest = countUsers();
 		UserSnapshot userBeforeRequest = userSnapshot();
 
-		MvcResult result = mockMvc
+		MvcResult result = this.mockMvc
 			.perform(post("/api/v1/auth/sessions/refresh").cookie(new Cookie("refresh_token", "")))
 			.andExpect(status().isUnauthorized())
 			.andExpect(content().string(""))
@@ -175,10 +172,10 @@ class RefreshTokenIT {
 	void refreshToken_whenRefreshTokenWasRevoked_thenReturns401WithoutBody() throws Exception {
 		long usersBeforeRequest = countUsers();
 		UserSnapshot userBeforeRequest = userSnapshot();
-		String revokedRefreshToken = tokenService.generateRefreshToken(USER_ID);
-		tokenService.revokeRefreshToken(revokedRefreshToken);
+		String revokedRefreshToken = this.tokenService.generateRefreshToken(USER_ID);
+		this.tokenService.revokeRefreshToken(revokedRefreshToken);
 
-		MvcResult result = mockMvc
+		MvcResult result = this.mockMvc
 			.perform(post("/api/v1/auth/sessions/refresh").cookie(new Cookie("refresh_token", revokedRefreshToken)))
 			.andExpect(status().isUnauthorized())
 			.andExpect(content().string(""))
@@ -195,9 +192,9 @@ class RefreshTokenIT {
 	void refreshToken_whenUserDoesNotExist_thenReturns401WithoutBody() throws Exception {
 		long usersBeforeRequest = countUsers();
 		UserSnapshot userBeforeRequest = userSnapshot();
-		String refreshToken = tokenService.generateRefreshToken(UUID.randomUUID());
+		String refreshToken = this.tokenService.generateRefreshToken(UUID.randomUUID());
 
-		MvcResult result = mockMvc
+		MvcResult result = this.mockMvc
 			.perform(post("/api/v1/auth/sessions/refresh").cookie(new Cookie("refresh_token", refreshToken)))
 			.andExpect(status().isUnauthorized())
 			.andExpect(content().string(""))
@@ -205,7 +202,7 @@ class RefreshTokenIT {
 			.andExpect(cookie().doesNotExist("refresh_token"))
 			.andReturn();
 
-		assertFalse(redisTemplate.hasKey("refresh_token:" + refreshToken));
+		assertThat(this.redisTemplate.hasKey("refresh_token:" + refreshToken)).isFalse();
 		assertNoSensitiveData(result);
 		assertUserDataUnchanged(usersBeforeRequest, userBeforeRequest);
 	}
@@ -216,9 +213,9 @@ class RefreshTokenIT {
 		long usersBeforeRequest = countUsers();
 		UserSnapshot userBeforeRequest = userSnapshot();
 		String refreshToken = "malformed-refresh-token";
-		redisTemplate.opsForValue().set("refresh_token:" + refreshToken, "not-a-uuid");
+		this.redisTemplate.opsForValue().set("refresh_token:" + refreshToken, "not-a-uuid");
 
-		MvcResult result = mockMvc
+		MvcResult result = this.mockMvc
 			.perform(post("/api/v1/auth/sessions/refresh").cookie(new Cookie("refresh_token", refreshToken)))
 			.andExpect(status().isUnauthorized())
 			.andExpect(content().string(""))
@@ -226,7 +223,7 @@ class RefreshTokenIT {
 			.andExpect(cookie().doesNotExist("refresh_token"))
 			.andReturn();
 
-		assertFalse(redisTemplate.hasKey("refresh_token:" + refreshToken));
+		assertThat(this.redisTemplate.hasKey("refresh_token:" + refreshToken)).isFalse();
 		assertNoSensitiveData(result);
 		assertUserDataUnchanged(usersBeforeRequest, userBeforeRequest);
 	}
@@ -234,12 +231,12 @@ class RefreshTokenIT {
 	@Test
 	@DisplayName("Deve retornar 401 sem corpo quando usuario estiver bloqueado")
 	void refreshToken_whenUserIsLocked_thenReturns401WithoutBody() throws Exception {
-		jdbcTemplate.update("UPDATE users SET status = 'LOCKED' WHERE id = ?::uuid", USER_ID);
+		this.jdbcTemplate.update("UPDATE users SET status = 'LOCKED' WHERE id = ?::uuid", USER_ID);
 		long usersBeforeRequest = countUsers();
 		UserSnapshot userBeforeRequest = userSnapshot();
-		String refreshToken = tokenService.generateRefreshToken(USER_ID);
+		String refreshToken = this.tokenService.generateRefreshToken(USER_ID);
 
-		MvcResult result = mockMvc
+		MvcResult result = this.mockMvc
 			.perform(post("/api/v1/auth/sessions/refresh").cookie(new Cookie("refresh_token", refreshToken)))
 			.andExpect(status().isUnauthorized())
 			.andExpect(content().string(""))
@@ -247,7 +244,7 @@ class RefreshTokenIT {
 			.andExpect(cookie().doesNotExist("refresh_token"))
 			.andReturn();
 
-		assertFalse(redisTemplate.hasKey("refresh_token:" + refreshToken));
+		assertThat(this.redisTemplate.hasKey("refresh_token:" + refreshToken)).isFalse();
 		assertNoSensitiveData(result);
 		assertUserDataUnchanged(usersBeforeRequest, userBeforeRequest);
 	}
@@ -255,12 +252,12 @@ class RefreshTokenIT {
 	@Test
 	@DisplayName("Deve retornar 401 sem corpo quando usuario estiver inativo")
 	void refreshToken_whenUserIsInactive_thenReturns401WithoutBody() throws Exception {
-		jdbcTemplate.update("UPDATE users SET active = FALSE WHERE id = ?::uuid", USER_ID);
+		this.jdbcTemplate.update("UPDATE users SET active = FALSE WHERE id = ?::uuid", USER_ID);
 		long usersBeforeRequest = countUsers();
 		UserSnapshot userBeforeRequest = userSnapshot();
-		String refreshToken = tokenService.generateRefreshToken(USER_ID);
+		String refreshToken = this.tokenService.generateRefreshToken(USER_ID);
 
-		MvcResult result = mockMvc
+		MvcResult result = this.mockMvc
 			.perform(post("/api/v1/auth/sessions/refresh").cookie(new Cookie("refresh_token", refreshToken)))
 			.andExpect(status().isUnauthorized())
 			.andExpect(content().string(""))
@@ -268,7 +265,7 @@ class RefreshTokenIT {
 			.andExpect(cookie().doesNotExist("refresh_token"))
 			.andReturn();
 
-		assertFalse(redisTemplate.hasKey("refresh_token:" + refreshToken));
+		assertThat(this.redisTemplate.hasKey("refresh_token:" + refreshToken)).isFalse();
 		assertNoSensitiveData(result);
 		assertUserDataUnchanged(usersBeforeRequest, userBeforeRequest);
 	}
@@ -280,14 +277,14 @@ class RefreshTokenIT {
 		UserSnapshot userBeforeRequest = userSnapshot();
 
 		for (int i = 0; i < 10; i++) {
-			mockMvc.perform(authenticatedRefreshRequest(tokenService.generateRefreshToken(USER_ID)))
+			this.mockMvc.perform(authenticatedRefreshRequest(this.tokenService.generateRefreshToken(USER_ID)))
 				.andExpect(status().isOk());
 		}
 
-		String blockedRefreshToken = tokenService.generateRefreshToken(USER_ID);
-		mockMvc.perform(authenticatedRefreshRequest(blockedRefreshToken)).andExpect(status().isTooManyRequests());
+		String blockedRefreshToken = this.tokenService.generateRefreshToken(USER_ID);
+		this.mockMvc.perform(authenticatedRefreshRequest(blockedRefreshToken)).andExpect(status().isTooManyRequests());
 
-		assertTrue(redisTemplate.hasKey("refresh_token:" + blockedRefreshToken));
+		assertThat(this.redisTemplate.hasKey("refresh_token:" + blockedRefreshToken)).isTrue();
 		assertUserDataUnchanged(usersBeforeRequest, userBeforeRequest);
 	}
 
@@ -298,16 +295,17 @@ class RefreshTokenIT {
 		UserSnapshot userBeforeRequest = userSnapshot();
 
 		for (int i = 0; i < 10; i++) {
-			mockMvc.perform(authenticatedRefreshRequest(tokenService.generateRefreshToken(USER_ID)))
+			this.mockMvc.perform(authenticatedRefreshRequest(this.tokenService.generateRefreshToken(USER_ID)))
 				.andExpect(status().isOk());
 		}
 
-		mockMvc.perform(authenticatedRefreshRequest(tokenService.generateRefreshToken(USER_ID)))
+		this.mockMvc.perform(authenticatedRefreshRequest(this.tokenService.generateRefreshToken(USER_ID)))
 			.andExpect(status().isTooManyRequests());
 
-		rateLimitTimeMeter.advanceBy(Duration.ofSeconds(61));
+		this.rateLimitTimeMeter.advanceBy(Duration.ofSeconds(61));
 
-		MvcResult result = mockMvc.perform(authenticatedRefreshRequest(tokenService.generateRefreshToken(USER_ID)))
+		MvcResult result = this.mockMvc
+			.perform(authenticatedRefreshRequest(this.tokenService.generateRefreshToken(USER_ID)))
 			.andExpect(status().isOk())
 			.andExpect(content().string(""))
 			.andReturn();
@@ -323,21 +321,21 @@ class RefreshTokenIT {
 
 	private void assertNoSensitiveData(MvcResult result) throws Exception {
 		String body = result.getResponse().getContentAsString();
-		assertThat(body, not(containsString("password")));
-		assertThat(body, not(containsString("password_hash")));
-		assertThat(body, not(containsString("resetCode")));
-		assertThat(body, not(containsString("resetPasswordCodeHash")));
-		assertThat(body, not(containsString("access_token")));
-		assertThat(body, not(containsString("refresh_token")));
+		MatcherAssert.assertThat(body, not(containsString("password")));
+		MatcherAssert.assertThat(body, not(containsString("password_hash")));
+		MatcherAssert.assertThat(body, not(containsString("resetCode")));
+		MatcherAssert.assertThat(body, not(containsString("resetPasswordCodeHash")));
+		MatcherAssert.assertThat(body, not(containsString("access_token")));
+		MatcherAssert.assertThat(body, not(containsString("refresh_token")));
 	}
 
 	private long countUsers() {
-		Long count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM users", Long.class);
-		return count == null ? 0 : count;
+		Long count = this.jdbcTemplate.queryForObject("SELECT COUNT(*) FROM users", Long.class);
+		return (count != null) ? count : 0;
 	}
 
 	private UserSnapshot userSnapshot() {
-		Map<String, Object> fields = jdbcTemplate.queryForMap("""
+		Map<String, Object> fields = this.jdbcTemplate.queryForMap("""
 				SELECT
 				    id,
 				    name,
@@ -354,14 +352,14 @@ class RefreshTokenIT {
 				FROM users
 				WHERE id = ?::uuid
 				""", USER_ID);
-		List<String> roles = jdbcTemplate
+		List<String> roles = this.jdbcTemplate
 			.queryForList("SELECT role FROM users_roles WHERE user_id = ?::uuid ORDER BY role", String.class, USER_ID);
 		return new UserSnapshot(new TreeMap<>(fields), roles);
 	}
 
 	private void assertUserDataUnchanged(long usersBeforeRequest, UserSnapshot userBeforeRequest) {
-		assertEquals(usersBeforeRequest, countUsers());
-		assertEquals(userBeforeRequest, userSnapshot());
+		assertThat(countUsers()).isEqualTo(usersBeforeRequest);
+		assertThat(userSnapshot()).isEqualTo(userBeforeRequest);
 	}
 
 	private void clearRateLimitBuckets() {
@@ -370,15 +368,15 @@ class RefreshTokenIT {
 			clearBucketMap("generalBuckets");
 			clearBucketMap("passwordBuckets");
 		}
-		catch (ReflectiveOperationException e) {
-			throw new IllegalStateException(e);
+		catch (ReflectiveOperationException ex) {
+			throw new IllegalStateException(ex);
 		}
 	}
 
 	private void clearBucketMap(String fieldName) throws ReflectiveOperationException {
 		var field = UserRateLimitConfig.class.getDeclaredField(fieldName);
 		field.setAccessible(true);
-		((java.util.Map<?, ?>) field.get(rateLimitConfig)).clear();
+		((java.util.Map<?, ?>) field.get(this.rateLimitConfig)).clear();
 	}
 
 	private record UserSnapshot(Map<String, Object> fields, List<String> roles) {

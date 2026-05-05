@@ -21,30 +21,30 @@ import br.com.threadstech.stockfy.users.domain.model.Password;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
-class PasswordTest {
+class PasswordTests {
 
 	@Test
 	@DisplayName("Should create password with valid length")
 	void shouldCreatePasswordWithValidLength() {
 		String validPass = "password123";
 		Password password = new Password(validPass);
-		assertEquals(validPass, password.value());
+		assertThat(password.value()).isEqualTo(validPass);
 	}
 
 	@Test
 	@DisplayName("Should throw exception for short password")
 	void shouldThrowExceptionForShortPassword() {
-		assertThrows(InvalidPasswordException.class, () -> new Password("short"));
+		assertThatExceptionOfType(InvalidPasswordException.class).isThrownBy(() -> new Password("short"));
 	}
 
 	@Test
 	@DisplayName("Should throw exception for null or empty password")
 	void shouldThrowExceptionForNullOrEmptyPassword() {
-		assertThrows(InvalidPasswordException.class, () -> new Password(null));
-		assertThrows(InvalidPasswordException.class, () -> new Password(""));
+		assertThatExceptionOfType(InvalidPasswordException.class).isThrownBy(() -> new Password(null));
+		assertThatExceptionOfType(InvalidPasswordException.class).isThrownBy(() -> new Password(""));
 	}
 
 }

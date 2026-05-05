@@ -22,7 +22,9 @@ import br.com.threadstech.stockfy.MutableTimeMeter;
 import br.com.threadstech.stockfy.RateLimitTestConfiguration;
 import br.com.threadstech.stockfy.TestcontainersConfiguration;
 import br.com.threadstech.stockfy.users.infrastructure.config.UserRateLimitConfig;
+import br.com.threadstech.stockfy.web.presentation.ApiErrorResponseAssertions;
 import jakarta.servlet.http.Cookie;
+import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -40,15 +42,10 @@ import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
-import static br.com.threadstech.stockfy.web.presentation.ApiErrorResponseAssertions.assertBadRequestFieldValidation;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.not;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.cookie;
@@ -61,6 +58,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Sql(scripts = "/sql/users/cleanup.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @Sql(scripts = "/sql/users/base-users.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @Sql(scripts = "/sql/users/cleanup.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
+@SuppressWarnings({ "PMD.AvoidAccessibilityAlteration", "PMD.AvoidDuplicateLiterals",
+		"PMD.AvoidLiteralsInIfCondition" })
 class LoginUserIT {
 
 	private static final String USER_ID = "00000000-0000-0000-0000-000000000002";
@@ -91,15 +90,15 @@ class LoginUserIT {
 
 	@BeforeEach
 	void setPassword() {
-		jdbcTemplate.update("UPDATE users SET password_hash = ? WHERE id = ?::uuid",
-				passwordEncoder.encode(RAW_PASSWORD), USER_ID);
+		this.jdbcTemplate.update("UPDATE users SET password_hash = ? WHERE id = ?::uuid",
+				this.passwordEncoder.encode(RAW_PASSWORD), USER_ID);
 	}
 
 	@AfterEach
 	void tearDown() {
 		clearRateLimitBuckets();
-		redisTemplate.delete("login_attempts:" + USER_EMAIL);
-		rateLimitTimeMeter.reset();
+		this.redisTemplate.delete("login_attempts:" + USER_EMAIL);
+		this.rateLimitTimeMeter.reset();
 	}
 
 	@Test
@@ -107,7 +106,7 @@ class LoginUserIT {
 	void loginUser_whenCredentialsAreValid_thenReturns200WithSecureHttpOnlyCookies() throws Exception {
 		long usersBeforeRequest = countUsers();
 
-		var result = mockMvc
+		var result = this.mockMvc
 			.perform(post("/api/v1/auth/sessions").contentType(MediaType.APPLICATION_JSON).content(validBody()))
 			.andExpect(status().isOk())
 			.andExpect(content().string(""))
@@ -117,14 +116,14 @@ class LoginUserIT {
 			.andExpect(cookie().httpOnly("refresh_token", true))
 			.andReturn();
 
-		assertEquals(usersBeforeRequest, countUsers());
-		assertEquals("ACTIVE", userStatus());
-		assertThat(result.getResponse().getHeaders("Set-Cookie").get(0), containsString("Secure"));
-		assertThat(result.getResponse().getHeaders("Set-Cookie").get(1), containsString("Secure"));
+		assertThat(countUsers()).isEqualTo(usersBeforeRequest);
+		assertThat(userStatus()).isEqualTo("ACTIVE");
+		MatcherAssert.assertThat(result.getResponse().getHeaders("Set-Cookie").get(0), containsString("Secure"));
+		MatcherAssert.assertThat(result.getResponse().getHeaders("Set-Cookie").get(1), containsString("Secure"));
 		Cookie refreshToken = result.getResponse().getCookie("refresh_token");
-		assertNotNull(refreshToken);
-		assertTrue(Boolean.TRUE.equals(redisTemplate.hasKey("refresh_token:" + refreshToken.getValue())));
-		assertNull(redisTemplate.opsForValue().get("login_attempts:" + USER_EMAIL));
+		assertThat(refreshToken).isNotNull();
+		assertThat(Boolean.TRUE.equals(this.redisTemplate.hasKey("refresh_token:" + refreshToken.getValue()))).isTrue();
+		assertThat(this.redisTemplate.opsForValue().get("login_attempts:" + USER_EMAIL)).isNull();
 	}
 
 	@Test
@@ -132,13 +131,13 @@ class LoginUserIT {
 	void loginUser_whenEmailIsMissing_thenReturns400() throws Exception {
 		long usersBeforeRequest = countUsers();
 
-		assertBadRequestFieldValidation(
-				mockMvc.perform(post("/api/v1/auth/sessions").contentType(MediaType.APPLICATION_JSON)
+		ApiErrorResponseAssertions.assertBadRequestFieldValidation(
+				this.mockMvc.perform(post("/api/v1/auth/sessions").contentType(MediaType.APPLICATION_JSON)
 					.content("{\"password\":\"password123\"}")),
 				"email", "O e-mail é obrigatório.");
 
-		assertEquals(usersBeforeRequest, countUsers());
-		assertEquals("ACTIVE", userStatus());
+		assertThat(countUsers()).isEqualTo(usersBeforeRequest);
+		assertThat(userStatus()).isEqualTo("ACTIVE");
 	}
 
 	@Test
@@ -146,19 +145,19 @@ class LoginUserIT {
 	void loginUser_whenEmailIsInvalid_thenReturns400() throws Exception {
 		long usersBeforeRequest = countUsers();
 
-		assertBadRequestFieldValidation(
-				mockMvc.perform(post("/api/v1/auth/sessions").contentType(MediaType.APPLICATION_JSON)
+		ApiErrorResponseAssertions.assertBadRequestFieldValidation(
+				this.mockMvc.perform(post("/api/v1/auth/sessions").contentType(MediaType.APPLICATION_JSON)
 					.content("{\"email\":\"invalid-email\",\"password\":\"password123\"}")),
 				"email", "O e-mail informado é inválido.");
 
-		assertEquals(usersBeforeRequest, countUsers());
-		assertEquals("ACTIVE", userStatus());
+		assertThat(countUsers()).isEqualTo(usersBeforeRequest);
+		assertThat(userStatus()).isEqualTo("ACTIVE");
 	}
 
 	@Test
 	@DisplayName("Deve retornar 400 com todos os erros quando email e senha forem omitidos")
 	void loginUser_whenEmailAndPasswordAreMissing_thenReturns400WithBothFieldErrors() throws Exception {
-		mockMvc.perform(post("/api/v1/auth/sessions").contentType(MediaType.APPLICATION_JSON).content("{}"))
+		this.mockMvc.perform(post("/api/v1/auth/sessions").contentType(MediaType.APPLICATION_JSON).content("{}"))
 			.andExpect(status().isBadRequest())
 			.andExpect(jsonPath("$.type").value("about:blank"))
 			.andExpect(jsonPath("$.title").value("Validation Error"))
@@ -177,13 +176,13 @@ class LoginUserIT {
 	void loginUser_whenPasswordIsMissing_thenReturns400() throws Exception {
 		long usersBeforeRequest = countUsers();
 
-		assertBadRequestFieldValidation(
-				mockMvc.perform(post("/api/v1/auth/sessions").contentType(MediaType.APPLICATION_JSON)
+		ApiErrorResponseAssertions.assertBadRequestFieldValidation(
+				this.mockMvc.perform(post("/api/v1/auth/sessions").contentType(MediaType.APPLICATION_JSON)
 					.content("{\"email\":\"bruno.user@example.com\"}")),
 				"password", "A senha é obrigatória.");
 
-		assertEquals(usersBeforeRequest, countUsers());
-		assertEquals("ACTIVE", userStatus());
+		assertThat(countUsers()).isEqualTo(usersBeforeRequest);
+		assertThat(userStatus()).isEqualTo("ACTIVE");
 	}
 
 	@Test
@@ -191,13 +190,13 @@ class LoginUserIT {
 	void loginUser_whenEmailContainsSqlInjection_thenReturns400AndDoesNotAlterData() throws Exception {
 		long usersBeforeRequest = countUsers();
 
-		assertBadRequestFieldValidation(
-				mockMvc.perform(post("/api/v1/auth/sessions").contentType(MediaType.APPLICATION_JSON)
+		ApiErrorResponseAssertions.assertBadRequestFieldValidation(
+				this.mockMvc.perform(post("/api/v1/auth/sessions").contentType(MediaType.APPLICATION_JSON)
 					.content("{\"email\":\"user@example.com' OR '1'='1\",\"password\":\"password123\"}")),
 				"email", "O e-mail informado é inválido.");
 
-		assertEquals(usersBeforeRequest, countUsers());
-		assertEquals("ACTIVE", userStatus());
+		assertThat(countUsers()).isEqualTo(usersBeforeRequest);
+		assertThat(userStatus()).isEqualTo("ACTIVE");
 	}
 
 	@Test
@@ -205,7 +204,7 @@ class LoginUserIT {
 	void loginUser_whenPasswordIsWrong_thenReturns401WithoutSensitiveData() throws Exception {
 		long usersBeforeRequest = countUsers();
 
-		var result = mockMvc
+		var result = this.mockMvc
 			.perform(post("/api/v1/auth/sessions").contentType(MediaType.APPLICATION_JSON)
 				.content("{\"email\":\"bruno.user@example.com\",\"password\":\"wrongPassword123\"}"))
 			.andExpect(status().isUnauthorized())
@@ -214,14 +213,14 @@ class LoginUserIT {
 			.andReturn();
 
 		String response = result.getResponse().getContentAsString();
-		assertThat(response, not(containsString(WRONG_PASSWORD)));
-		assertThat(response, not(containsString("password-hash")));
-		assertThat(response, not(containsString("access_token")));
-		assertThat(response, not(containsString("refresh_token")));
-		assertThat(response, not(containsString("RuntimeException")));
-		assertThat(response, not(containsString(".java:")));
-		assertEquals(usersBeforeRequest, countUsers());
-		assertEquals("ACTIVE", userStatus());
+		MatcherAssert.assertThat(response, not(containsString(WRONG_PASSWORD)));
+		MatcherAssert.assertThat(response, not(containsString("password-hash")));
+		MatcherAssert.assertThat(response, not(containsString("access_token")));
+		MatcherAssert.assertThat(response, not(containsString("refresh_token")));
+		MatcherAssert.assertThat(response, not(containsString("RuntimeException")));
+		MatcherAssert.assertThat(response, not(containsString(".java:")));
+		assertThat(countUsers()).isEqualTo(usersBeforeRequest);
+		assertThat(userStatus()).isEqualTo("ACTIVE");
 	}
 
 	@Test
@@ -229,7 +228,7 @@ class LoginUserIT {
 	void loginUser_whenEmailDoesNotExist_thenReturns401WithoutSensitiveData() throws Exception {
 		long usersBeforeRequest = countUsers();
 
-		var result = mockMvc
+		var result = this.mockMvc
 			.perform(post("/api/v1/auth/sessions").contentType(MediaType.APPLICATION_JSON)
 				.content("{\"email\":\"missing.user@example.com\",\"password\":\"password123\"}"))
 			.andExpect(status().isUnauthorized())
@@ -238,15 +237,15 @@ class LoginUserIT {
 			.andReturn();
 
 		String response = result.getResponse().getContentAsString();
-		assertThat(response, not(containsString("missing.user@example.com")));
-		assertThat(response, not(containsString("password123")));
-		assertThat(response, not(containsString("password-hash")));
-		assertThat(response, not(containsString("access_token")));
-		assertThat(response, not(containsString("refresh_token")));
-		assertThat(response, not(containsString("RuntimeException")));
-		assertThat(response, not(containsString(".java:")));
-		assertEquals(usersBeforeRequest, countUsers());
-		assertEquals("ACTIVE", userStatus());
+		MatcherAssert.assertThat(response, not(containsString("missing.user@example.com")));
+		MatcherAssert.assertThat(response, not(containsString("password123")));
+		MatcherAssert.assertThat(response, not(containsString("password-hash")));
+		MatcherAssert.assertThat(response, not(containsString("access_token")));
+		MatcherAssert.assertThat(response, not(containsString("refresh_token")));
+		MatcherAssert.assertThat(response, not(containsString("RuntimeException")));
+		MatcherAssert.assertThat(response, not(containsString(".java:")));
+		assertThat(countUsers()).isEqualTo(usersBeforeRequest);
+		assertThat(userStatus()).isEqualTo("ACTIVE");
 	}
 
 	@Test
@@ -255,15 +254,15 @@ class LoginUserIT {
 		long usersBeforeRequest = countUsers();
 		String sqlInjectionPassword = "' OR '1'='1";
 
-		var result = mockMvc
+		var result = this.mockMvc
 			.perform(post("/api/v1/auth/sessions").contentType(MediaType.APPLICATION_JSON)
 				.content("{\"email\":\"bruno.user@example.com\",\"password\":\"" + sqlInjectionPassword + "\"}"))
 			.andExpect(status().isUnauthorized())
 			.andReturn();
 
-		assertThat(result.getResponse().getContentAsString(), not(containsString(sqlInjectionPassword)));
-		assertEquals(usersBeforeRequest, countUsers());
-		assertEquals("ACTIVE", userStatus());
+		MatcherAssert.assertThat(result.getResponse().getContentAsString(), not(containsString(sqlInjectionPassword)));
+		assertThat(countUsers()).isEqualTo(usersBeforeRequest);
+		assertThat(userStatus()).isEqualTo("ACTIVE");
 	}
 
 	@Test
@@ -276,21 +275,21 @@ class LoginUserIT {
 				.andExpect(cookie().doesNotExist("access_token"))
 				.andExpect(cookie().doesNotExist("refresh_token"));
 		}
-		rateLimitTimeMeter.advanceBy(Duration.ofSeconds(61));
+		this.rateLimitTimeMeter.advanceBy(Duration.ofSeconds(61));
 		for (int i = 0; i < 5; i++) {
 			performWrongPasswordLogin().andExpect(status().isUnauthorized())
 				.andExpect(cookie().doesNotExist("access_token"))
 				.andExpect(cookie().doesNotExist("refresh_token"));
 		}
-		rateLimitTimeMeter.advanceBy(Duration.ofSeconds(61));
+		this.rateLimitTimeMeter.advanceBy(Duration.ofSeconds(61));
 		for (int i = 0; i < 5; i++) {
 			performWrongPasswordLogin().andExpect(status().isUnauthorized())
 				.andExpect(cookie().doesNotExist("access_token"))
 				.andExpect(cookie().doesNotExist("refresh_token"));
 		}
 
-		assertEquals(usersBeforeRequest, countUsers());
-		assertEquals("LOCKED", userStatus());
+		assertThat(countUsers()).isEqualTo(usersBeforeRequest);
+		assertThat(userStatus()).isEqualTo("LOCKED");
 	}
 
 	@Test
@@ -305,7 +304,7 @@ class LoginUserIT {
 			}
 		}
 
-		assertEquals("ACTIVE", userStatus());
+		assertThat(userStatus()).isEqualTo("ACTIVE");
 	}
 
 	@Test
@@ -317,9 +316,9 @@ class LoginUserIT {
 
 		performWrongPasswordLogin().andExpect(status().isTooManyRequests());
 
-		rateLimitTimeMeter.advanceBy(Duration.ofSeconds(61));
+		this.rateLimitTimeMeter.advanceBy(Duration.ofSeconds(61));
 
-		mockMvc.perform(post("/api/v1/auth/sessions").contentType(MediaType.APPLICATION_JSON).content(validBody()))
+		this.mockMvc.perform(post("/api/v1/auth/sessions").contentType(MediaType.APPLICATION_JSON).content(validBody()))
 			.andExpect(status().isOk())
 			.andExpect(content().string(""));
 	}
@@ -328,14 +327,15 @@ class LoginUserIT {
 	@DisplayName("Nao deve compartilhar rate limit entre IPs diferentes")
 	void loginUser_whenDifferentClientIp_thenDoesNotShareRateLimitBucket() throws Exception {
 		for (int i = 0; i < 5; i++) {
-			mockMvc.perform(wrongPasswordRequest().with(remoteAddress("10.0.0.1")));
+			this.mockMvc.perform(wrongPasswordRequest().with(remoteAddress("10.0.0.1")));
 		}
 
-		mockMvc.perform(wrongPasswordRequest().with(remoteAddress("10.0.0.2"))).andExpect(status().isUnauthorized());
+		this.mockMvc.perform(wrongPasswordRequest().with(remoteAddress("10.0.0.2")))
+			.andExpect(status().isUnauthorized());
 	}
 
 	private org.springframework.test.web.servlet.ResultActions performWrongPasswordLogin() throws Exception {
-		return mockMvc.perform(wrongPasswordRequest());
+		return this.mockMvc.perform(wrongPasswordRequest());
 	}
 
 	private org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder wrongPasswordRequest() {
@@ -344,7 +344,7 @@ class LoginUserIT {
 	}
 
 	private RequestPostProcessor remoteAddress(String remoteAddress) {
-		return request -> {
+		return (request) -> {
 			request.setRemoteAddr(remoteAddress);
 			return request;
 		};
@@ -355,12 +355,12 @@ class LoginUserIT {
 	}
 
 	private long countUsers() {
-		Long count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM users", Long.class);
-		return count == null ? 0 : count;
+		Long count = this.jdbcTemplate.queryForObject("SELECT COUNT(*) FROM users", Long.class);
+		return (count != null) ? count : 0;
 	}
 
 	private String userStatus() {
-		return jdbcTemplate.queryForObject("SELECT status FROM users WHERE id = ?::uuid", String.class, USER_ID);
+		return this.jdbcTemplate.queryForObject("SELECT status FROM users WHERE id = ?::uuid", String.class, USER_ID);
 	}
 
 	private void clearRateLimitBuckets() {
@@ -369,15 +369,15 @@ class LoginUserIT {
 			clearBucketMap("generalBuckets");
 			clearBucketMap("passwordBuckets");
 		}
-		catch (ReflectiveOperationException e) {
-			throw new IllegalStateException(e);
+		catch (ReflectiveOperationException ex) {
+			throw new IllegalStateException(ex);
 		}
 	}
 
 	private void clearBucketMap(String fieldName) throws ReflectiveOperationException {
 		var field = UserRateLimitConfig.class.getDeclaredField(fieldName);
 		field.setAccessible(true);
-		((java.util.Map<?, ?>) field.get(rateLimitConfig)).clear();
+		((java.util.Map<?, ?>) field.get(this.rateLimitConfig)).clear();
 	}
 
 }

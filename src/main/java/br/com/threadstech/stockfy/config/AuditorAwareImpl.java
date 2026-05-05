@@ -34,8 +34,8 @@ public class AuditorAwareImpl implements AuditorAware<UUID> {
 			.map(SecurityContext::getAuthentication)
 			.filter(Authentication::isAuthenticated)
 			.map(Authentication::getPrincipal)
-			.filter(principal -> principal instanceof UUID)
-			.map(principal -> (UUID) principal);
+			.filter((principal) -> principal instanceof UUID)
+			.map((principal) -> (UUID) principal);
 	}
 
 }

@@ -25,6 +25,7 @@ import br.com.threadstech.stockfy.RateLimitTestConfiguration;
 import br.com.threadstech.stockfy.TestcontainersConfiguration;
 import br.com.threadstech.stockfy.users.application.usecase.RefreshTokenUseCase;
 import br.com.threadstech.stockfy.users.infrastructure.security.TokenService;
+import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -41,11 +42,10 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.jdbc.Sql;
 
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.doThrow;
+import static org.mockito.BDDMockito.willThrow;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
 		properties = "server.error.include-stacktrace=never")
@@ -74,33 +74,33 @@ class RefreshTokenInternalErrorIT {
 	void refreshToken_whenUnexpectedErrorOccurs_thenReturns500WithoutStacktrace() {
 		long usersBeforeRequest = countUsers();
 		UserSnapshot userBeforeRequest = userSnapshot();
-		String refreshToken = tokenService.generateRefreshToken(USER_ID);
-		doThrow(new RuntimeException("refresh database stacktrace detail")).when(refreshTokenUseCase)
+		String refreshToken = this.tokenService.generateRefreshToken(USER_ID);
+		willThrow(new RuntimeException("refresh database stacktrace detail")).given(this.refreshTokenUseCase)
 			.execute(refreshToken);
 
 		HttpHeaders headers = new HttpHeaders();
 		headers.add(HttpHeaders.COOKIE, "refresh_token=" + refreshToken);
 
-		ResponseEntity<String> response = restTemplate.exchange("/api/v1/auth/sessions/refresh", HttpMethod.POST,
+		ResponseEntity<String> response = this.restTemplate.exchange("/api/v1/auth/sessions/refresh", HttpMethod.POST,
 				new HttpEntity<>(headers), String.class);
 
-		assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
-		assertThat(response.getBody(), not(containsString("refresh database stacktrace detail")));
-		assertThat(response.getBody(), not(containsString("RuntimeException")));
-		assertThat(response.getBody(), not(containsString("at ")));
-		assertThat(response.getBody(), not(containsString(".java:")));
-		assertThat(response.getHeaders().toString(), not(containsString("access_token")));
-		assertThat(response.getHeaders().toString(), not(containsString("refresh_token")));
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+		MatcherAssert.assertThat(response.getBody(), not(containsString("refresh database stacktrace detail")));
+		MatcherAssert.assertThat(response.getBody(), not(containsString("RuntimeException")));
+		MatcherAssert.assertThat(response.getBody(), not(containsString("at ")));
+		MatcherAssert.assertThat(response.getBody(), not(containsString(".java:")));
+		MatcherAssert.assertThat(response.getHeaders().toString(), not(containsString("access_token")));
+		MatcherAssert.assertThat(response.getHeaders().toString(), not(containsString("refresh_token")));
 		assertUserDataUnchanged(usersBeforeRequest, userBeforeRequest);
 	}
 
 	private long countUsers() {
-		Long count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM users", Long.class);
-		return count == null ? 0 : count;
+		Long count = this.jdbcTemplate.queryForObject("SELECT COUNT(*) FROM users", Long.class);
+		return (count != null) ? count : 0;
 	}
 
 	private UserSnapshot userSnapshot() {
-		Map<String, Object> fields = jdbcTemplate.queryForMap("""
+		Map<String, Object> fields = this.jdbcTemplate.queryForMap("""
 				SELECT
 				    id,
 				    name,
@@ -117,14 +117,14 @@ class RefreshTokenInternalErrorIT {
 				FROM users
 				WHERE id = ?::uuid
 				""", USER_ID);
-		List<String> roles = jdbcTemplate
+		List<String> roles = this.jdbcTemplate
 			.queryForList("SELECT role FROM users_roles WHERE user_id = ?::uuid ORDER BY role", String.class, USER_ID);
 		return new UserSnapshot(new TreeMap<>(fields), roles);
 	}
 
 	private void assertUserDataUnchanged(long usersBeforeRequest, UserSnapshot userBeforeRequest) {
-		assertEquals(usersBeforeRequest, countUsers());
-		assertEquals(userBeforeRequest, userSnapshot());
+		assertThat(countUsers()).isEqualTo(usersBeforeRequest);
+		assertThat(userSnapshot()).isEqualTo(userBeforeRequest);
 	}
 
 	private record UserSnapshot(Map<String, Object> fields, List<String> roles) {

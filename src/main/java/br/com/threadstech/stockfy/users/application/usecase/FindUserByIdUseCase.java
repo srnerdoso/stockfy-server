@@ -36,7 +36,7 @@ public class FindUserByIdUseCase {
 
 	@Transactional(readOnly = true)
 	public UserListItemResponse execute(UUID requestedUserId) {
-		User user = userRepository.findById(requestedUserId).orElseThrow(UserNotFoundException::new);
+		User user = this.userRepository.findById(requestedUserId).orElseThrow(UserNotFoundException::new);
 		return UserListItemResponse.from(user, UserListType.DETAILED);
 	}
 

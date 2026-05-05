@@ -27,4 +27,14 @@ import lombok.Builder;
 @Builder
 public record UserResponse(UUID id, String name, String email, Set<UserRole> roles, UserStatus status, boolean active,
 		LocalDateTime createdAt, UUID createdBy, LocalDateTime updatedAt, UUID updatedBy) {
+
+	public UserResponse {
+		roles = Set.copyOf(roles);
+	}
+
+	@Override
+	public Set<UserRole> roles() {
+		return Set.copyOf(this.roles);
+	}
+
 }

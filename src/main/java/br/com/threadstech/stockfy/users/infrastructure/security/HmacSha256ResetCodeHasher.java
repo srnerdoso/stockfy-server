@@ -17,6 +17,8 @@
 package br.com.threadstech.stockfy.users.infrastructure.security;
 
 import java.nio.charset.StandardCharsets;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
 
 import javax.crypto.Mac;
@@ -42,12 +44,12 @@ public class HmacSha256ResetCodeHasher implements ResetCodeHasher {
 	public String hash(String rawCode) {
 		try {
 			Mac mac = Mac.getInstance(ALGORITHM);
-			SecretKeySpec keySpec = new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), ALGORITHM);
+			SecretKeySpec keySpec = new SecretKeySpec(this.secret.getBytes(StandardCharsets.UTF_8), ALGORITHM);
 			mac.init(keySpec);
 			return HexFormat.of().formatHex(mac.doFinal(rawCode.getBytes(StandardCharsets.UTF_8)));
 		}
-		catch (Exception e) {
-			throw new IllegalStateException("Reset code hash cannot be generated", e);
+		catch (NoSuchAlgorithmException | InvalidKeyException ex) {
+			throw new IllegalStateException("Reset code hash cannot be generated", ex);
 		}
 	}
 

@@ -22,6 +22,7 @@ import br.com.threadstech.stockfy.MutableTimeMeter;
 import br.com.threadstech.stockfy.RateLimitTestConfiguration;
 import br.com.threadstech.stockfy.TestcontainersConfiguration;
 import br.com.threadstech.stockfy.users.infrastructure.config.UserRateLimitConfig;
+import br.com.threadstech.stockfy.web.presentation.ApiErrorResponseAssertions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -35,10 +36,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
 
-import static br.com.threadstech.stockfy.web.presentation.ApiErrorResponseAssertions.assertBadRequestFieldValidation;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -50,6 +48,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Sql(scripts = "/sql/users/cleanup.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @Sql(scripts = "/sql/users/base-users.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @Sql(scripts = "/sql/users/cleanup.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
+@SuppressWarnings({ "PMD.AvoidAccessibilityAlteration", "PMD.AvoidCatchingGenericException",
+		"PMD.AvoidDuplicateLiterals", "PMD.AvoidLiteralsInIfCondition" })
 class UpdateCurrentUserIT {
 
 	private static final String OWNER_ID = "00000000-0000-0000-0000-000000000002";
@@ -73,15 +73,15 @@ class UpdateCurrentUserIT {
 		try {
 			var loginBucketsField = UserRateLimitConfig.class.getDeclaredField("loginBuckets");
 			loginBucketsField.setAccessible(true);
-			((java.util.Map<?, ?>) loginBucketsField.get(rateLimitConfig)).clear();
+			((java.util.Map<?, ?>) loginBucketsField.get(this.rateLimitConfig)).clear();
 
 			var generalBucketsField = UserRateLimitConfig.class.getDeclaredField("generalBuckets");
 			generalBucketsField.setAccessible(true);
-			((java.util.Map<?, ?>) generalBucketsField.get(rateLimitConfig)).clear();
-			rateLimitTimeMeter.reset();
+			((java.util.Map<?, ?>) generalBucketsField.get(this.rateLimitConfig)).clear();
+			this.rateLimitTimeMeter.reset();
 		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
+		catch (Exception ex) {
+			throw new RuntimeException(ex);
 		}
 	}
 
@@ -97,16 +97,16 @@ class UpdateCurrentUserIT {
 				}
 				""";
 
-		mockMvc.perform(patch("/api/v1/users/me").contentType(MediaType.APPLICATION_JSON).content(json))
+		this.mockMvc.perform(patch("/api/v1/users/me").contentType(MediaType.APPLICATION_JSON).content(json))
 			.andExpect(status().isNoContent())
 			.andExpect(content().string(""));
 
-		assertEquals(usersBeforeRequest, countUsers());
-		assertEquals("Bruno Updated", userName(OWNER_ID));
-		assertEquals("bruno.updated@example.com", userEmail(OWNER_ID));
+		assertThat(countUsers()).isEqualTo(usersBeforeRequest);
+		assertThat(userName(OWNER_ID)).isEqualTo("Bruno Updated");
+		assertThat(userEmail(OWNER_ID)).isEqualTo("bruno.updated@example.com");
 		assertUserHasRoles(OWNER_ID, "USER");
-		assertEquals("ACTIVE", userStatus(OWNER_ID));
-		assertTrue(userIsActive(OWNER_ID));
+		assertThat(userStatus(OWNER_ID)).isEqualTo("ACTIVE");
+		assertThat(userIsActive(OWNER_ID)).isTrue();
 	}
 
 	@Test
@@ -115,15 +115,15 @@ class UpdateCurrentUserIT {
 	void updateCurrentUser_whenEmailIsOmitted_thenKeepsCurrentEmail() throws Exception {
 		long usersBeforeRequest = countUsers();
 
-		mockMvc
+		this.mockMvc
 			.perform(patch("/api/v1/users/me").contentType(MediaType.APPLICATION_JSON)
 				.content("{\"name\":\"Only Name\"}"))
 			.andExpect(status().isNoContent())
 			.andExpect(content().string(""));
 
-		assertEquals(usersBeforeRequest, countUsers());
-		assertEquals("Only Name", userName(OWNER_ID));
-		assertEquals("bruno.user@example.com", userEmail(OWNER_ID));
+		assertThat(countUsers()).isEqualTo(usersBeforeRequest);
+		assertThat(userName(OWNER_ID)).isEqualTo("Only Name");
+		assertThat(userEmail(OWNER_ID)).isEqualTo("bruno.user@example.com");
 	}
 
 	@Test
@@ -132,15 +132,15 @@ class UpdateCurrentUserIT {
 	void updateCurrentUser_whenNameIsOmitted_thenKeepsCurrentName() throws Exception {
 		long usersBeforeRequest = countUsers();
 
-		mockMvc
+		this.mockMvc
 			.perform(patch("/api/v1/users/me").contentType(MediaType.APPLICATION_JSON)
 				.content("{\"email\":\"only.email@example.com\"}"))
 			.andExpect(status().isNoContent())
 			.andExpect(content().string(""));
 
-		assertEquals(usersBeforeRequest, countUsers());
-		assertEquals("Bruno User", userName(OWNER_ID));
-		assertEquals("only.email@example.com", userEmail(OWNER_ID));
+		assertThat(countUsers()).isEqualTo(usersBeforeRequest);
+		assertThat(userName(OWNER_ID)).isEqualTo("Bruno User");
+		assertThat(userEmail(OWNER_ID)).isEqualTo("only.email@example.com");
 	}
 
 	@Test
@@ -150,7 +150,7 @@ class UpdateCurrentUserIT {
 		long usersBeforeRequest = countUsers();
 		String originalCreatedAt = userCreatedAt(OWNER_ID);
 		String originalCreatedBy = userCreatedBy(OWNER_ID);
-		setResetPasswordData(OWNER_ID);
+		setResetCodeData(OWNER_ID);
 		String json = """
 				{
 				  "id": "99999999-9999-9999-9999-999999999999",
@@ -171,25 +171,25 @@ class UpdateCurrentUserIT {
 				}
 				""";
 
-		mockMvc.perform(patch("/api/v1/users/me").contentType(MediaType.APPLICATION_JSON).content(json))
+		this.mockMvc.perform(patch("/api/v1/users/me").contentType(MediaType.APPLICATION_JSON).content(json))
 			.andExpect(status().isNoContent())
 			.andExpect(content().string(""));
 
-		assertEquals(usersBeforeRequest, countUsers());
-		assertTrue(userExists(OWNER_ID));
-		assertFalse(userExists("99999999-9999-9999-9999-999999999999"));
-		assertEquals("Bruno Safe", userName(OWNER_ID));
-		assertEquals("bruno.safe@example.com", userEmail(OWNER_ID));
+		assertThat(countUsers()).isEqualTo(usersBeforeRequest);
+		assertThat(userExists(OWNER_ID)).isTrue();
+		assertThat(userExists("99999999-9999-9999-9999-999999999999")).isFalse();
+		assertThat(userName(OWNER_ID)).isEqualTo("Bruno Safe");
+		assertThat(userEmail(OWNER_ID)).isEqualTo("bruno.safe@example.com");
 		assertUserHasRoles(OWNER_ID, "USER");
-		assertEquals("ACTIVE", userStatus(OWNER_ID));
-		assertTrue(userIsActive(OWNER_ID));
-		assertEquals("password-hash-2", passwordHash(OWNER_ID));
-		assertEquals("existing-reset-hash", resetPasswordCodeHash(OWNER_ID));
-		assertTrue(resetPasswordExpiresAt(OWNER_ID).startsWith("2026-05-01"));
-		assertEquals(originalCreatedAt, userCreatedAt(OWNER_ID));
-		assertEquals(originalCreatedBy, userCreatedBy(OWNER_ID));
-		assertFalse(userUpdatedAt(OWNER_ID).startsWith("1999-01-01"));
-		assertFalse("99999999-9999-9999-9999-999999999999".equals(userUpdatedBy(OWNER_ID)));
+		assertThat(userStatus(OWNER_ID)).isEqualTo("ACTIVE");
+		assertThat(userIsActive(OWNER_ID)).isTrue();
+		assertThat(passwordHash(OWNER_ID)).isEqualTo("password-hash-2");
+		assertThat(resetPasswordCodeHash(OWNER_ID)).isEqualTo("existing-reset-hash");
+		assertThat(resetPasswordExpiresAt(OWNER_ID).startsWith("2026-05-01")).isTrue();
+		assertThat(userCreatedAt(OWNER_ID)).isEqualTo(originalCreatedAt);
+		assertThat(userCreatedBy(OWNER_ID)).isEqualTo(originalCreatedBy);
+		assertThat(userUpdatedAt(OWNER_ID).startsWith("1999-01-01")).isFalse();
+		assertThat("99999999-9999-9999-9999-999999999999".equals(userUpdatedBy(OWNER_ID))).isFalse();
 	}
 
 	@Test
@@ -197,14 +197,14 @@ class UpdateCurrentUserIT {
 	void updateCurrentUser_whenNotAuthenticated_thenReturns401WithoutBody() throws Exception {
 		long usersBeforeRequest = countUsers();
 
-		mockMvc
+		this.mockMvc
 			.perform(
 					patch("/api/v1/users/me").contentType(MediaType.APPLICATION_JSON).content("{\"name\":\"No Auth\"}"))
 			.andExpect(status().isUnauthorized())
 			.andExpect(content().string(""));
 
-		assertEquals(usersBeforeRequest, countUsers());
-		assertEquals("Bruno User", userName(OWNER_ID));
+		assertThat(countUsers()).isEqualTo(usersBeforeRequest);
+		assertThat(userName(OWNER_ID)).isEqualTo("Bruno User");
 	}
 
 	@Test
@@ -213,13 +213,13 @@ class UpdateCurrentUserIT {
 	void updateCurrentUser_whenEmailIsInvalid_thenReturns400AndDoesNotAlterData() throws Exception {
 		long usersBeforeRequest = countUsers();
 
-		assertBadRequestFieldValidation(
-				mockMvc.perform(patch("/api/v1/users/me").contentType(MediaType.APPLICATION_JSON)
+		ApiErrorResponseAssertions.assertBadRequestFieldValidation(
+				this.mockMvc.perform(patch("/api/v1/users/me").contentType(MediaType.APPLICATION_JSON)
 					.content("{\"email\":\"invalid-email\"}")),
 				"email", "O e-mail informado é inválido.");
 
-		assertEquals(usersBeforeRequest, countUsers());
-		assertEquals("bruno.user@example.com", userEmail(OWNER_ID));
+		assertThat(countUsers()).isEqualTo(usersBeforeRequest);
+		assertThat(userEmail(OWNER_ID)).isEqualTo("bruno.user@example.com");
 	}
 
 	@Test
@@ -228,14 +228,14 @@ class UpdateCurrentUserIT {
 	void updateCurrentUser_whenNameContainsSqlInjection_thenReturns400AndDoesNotAlterData() throws Exception {
 		long usersBeforeRequest = countUsers();
 
-		assertBadRequestFieldValidation(
-				mockMvc.perform(patch("/api/v1/users/me").contentType(MediaType.APPLICATION_JSON)
+		ApiErrorResponseAssertions.assertBadRequestFieldValidation(
+				this.mockMvc.perform(patch("/api/v1/users/me").contentType(MediaType.APPLICATION_JSON)
 					.content("{\"name\":\"User'); DROP TABLE users; --\"}")),
 				"name", "O nome contém caracteres inválidos.");
 
-		assertEquals(usersBeforeRequest, countUsers());
-		assertTrue(userExists(OWNER_ID));
-		assertTrue(userExists(OTHER_ID));
+		assertThat(countUsers()).isEqualTo(usersBeforeRequest);
+		assertThat(userExists(OWNER_ID)).isTrue();
+		assertThat(userExists(OTHER_ID)).isTrue();
 	}
 
 	@Test
@@ -244,7 +244,7 @@ class UpdateCurrentUserIT {
 	void updateCurrentUser_whenEmailBelongsToAnotherUser_thenReturns409AndDoesNotAlterData() throws Exception {
 		long usersBeforeRequest = countUsers();
 
-		mockMvc
+		this.mockMvc
 			.perform(patch("/api/v1/users/me").contentType(MediaType.APPLICATION_JSON)
 				.content("{\"email\":\"alice.filter@example.com\"}"))
 			.andExpect(status().isConflict())
@@ -255,8 +255,8 @@ class UpdateCurrentUserIT {
 			.andExpect(jsonPath("$.instance").doesNotExist())
 			.andExpect(jsonPath("$.fieldErrors").doesNotExist());
 
-		assertEquals(usersBeforeRequest, countUsers());
-		assertEquals("bruno.user@example.com", userEmail(OWNER_ID));
+		assertThat(countUsers()).isEqualTo(usersBeforeRequest);
+		assertThat(userEmail(OWNER_ID)).isEqualTo("bruno.user@example.com");
 	}
 
 	@Test
@@ -266,15 +266,15 @@ class UpdateCurrentUserIT {
 		long usersBeforeRequest = countUsers();
 
 		for (int i = 0; i <= 10; i++) {
-			var result = mockMvc.perform(patch("/api/v1/users/me").contentType(MediaType.APPLICATION_JSON)
+			var result = this.mockMvc.perform(patch("/api/v1/users/me").contentType(MediaType.APPLICATION_JSON)
 				.content("{\"email\":\"invalid-email\"}"));
 			if (i == 10) {
 				result.andExpect(status().isTooManyRequests());
 			}
 		}
 
-		assertEquals(usersBeforeRequest, countUsers());
-		assertEquals("bruno.user@example.com", userEmail(OWNER_ID));
+		assertThat(countUsers()).isEqualTo(usersBeforeRequest);
+		assertThat(userEmail(OWNER_ID)).isEqualTo("bruno.user@example.com");
 	}
 
 	@Test
@@ -284,97 +284,103 @@ class UpdateCurrentUserIT {
 		long usersBeforeRequest = countUsers();
 
 		for (int i = 0; i < 10; i++) {
-			mockMvc.perform(patch("/api/v1/users/me").contentType(MediaType.APPLICATION_JSON)
+			this.mockMvc.perform(patch("/api/v1/users/me").contentType(MediaType.APPLICATION_JSON)
 				.content("{\"email\":\"invalid-email\"}"));
 		}
 
-		mockMvc
+		this.mockMvc
 			.perform(patch("/api/v1/users/me").contentType(MediaType.APPLICATION_JSON)
 				.content("{\"email\":\"invalid-email\"}"))
 			.andExpect(status().isTooManyRequests());
 
-		rateLimitTimeMeter.advanceBy(Duration.ofSeconds(61));
+		this.rateLimitTimeMeter.advanceBy(Duration.ofSeconds(61));
 
-		mockMvc
+		this.mockMvc
 			.perform(patch("/api/v1/users/me").contentType(MediaType.APPLICATION_JSON)
 				.content("{\"name\":\"After Window\"}"))
 			.andExpect(status().isNoContent())
 			.andExpect(content().string(""));
 
-		assertEquals(usersBeforeRequest, countUsers());
-		assertEquals("After Window", userName(OWNER_ID));
+		assertThat(countUsers()).isEqualTo(usersBeforeRequest);
+		assertThat(userName(OWNER_ID)).isEqualTo("After Window");
 	}
 
 	private long countUsers() {
-		Long count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM users", Long.class);
-		return count == null ? 0 : count;
+		Long count = this.jdbcTemplate.queryForObject("SELECT COUNT(*) FROM users", Long.class);
+		return (count != null) ? count : 0;
 	}
 
 	private boolean userExists(String id) {
-		Integer count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM users WHERE id = ?::uuid", Integer.class, id);
+		Integer count = this.jdbcTemplate.queryForObject("SELECT COUNT(*) FROM users WHERE id = ?::uuid", Integer.class,
+				id);
 		return count != null && count == 1;
 	}
 
 	private String userName(String id) {
-		return jdbcTemplate.queryForObject("SELECT name FROM users WHERE id = ?::uuid", String.class, id);
+		return this.jdbcTemplate.queryForObject("SELECT name FROM users WHERE id = ?::uuid", String.class, id);
 	}
 
 	private String userEmail(String id) {
-		return jdbcTemplate.queryForObject("SELECT email FROM users WHERE id = ?::uuid", String.class, id);
+		return this.jdbcTemplate.queryForObject("SELECT email FROM users WHERE id = ?::uuid", String.class, id);
 	}
 
 	private void assertUserHasRoles(String id, String... expectedRoles) {
-		var roles = jdbcTemplate.queryForList("SELECT role FROM users_roles WHERE user_id = ?::uuid ORDER BY role",
+		var roles = this.jdbcTemplate.queryForList("SELECT role FROM users_roles WHERE user_id = ?::uuid ORDER BY role",
 				String.class, id);
-		assertEquals(expectedRoles.length, roles.size());
+		assertThat(roles.size()).isEqualTo(expectedRoles.length);
 		for (String expectedRole : expectedRoles) {
-			assertTrue(roles.contains(expectedRole));
+			assertThat(roles.contains(expectedRole)).isTrue();
 		}
 	}
 
 	private String userStatus(String id) {
-		return jdbcTemplate.queryForObject("SELECT status FROM users WHERE id = ?::uuid", String.class, id);
+		return this.jdbcTemplate.queryForObject("SELECT status FROM users WHERE id = ?::uuid", String.class, id);
 	}
 
 	private boolean userIsActive(String id) {
-		Boolean active = jdbcTemplate.queryForObject("SELECT active FROM users WHERE id = ?::uuid", Boolean.class, id);
+		Boolean active = this.jdbcTemplate.queryForObject("SELECT active FROM users WHERE id = ?::uuid", Boolean.class,
+				id);
 		return Boolean.TRUE.equals(active);
 	}
 
 	private String passwordHash(String id) {
-		return jdbcTemplate.queryForObject("SELECT password_hash FROM users WHERE id = ?::uuid", String.class, id);
+		return this.jdbcTemplate.queryForObject("SELECT password_hash FROM users WHERE id = ?::uuid", String.class, id);
 	}
 
-	private void setResetPasswordData(String id) {
-		jdbcTemplate.update(
+	private void setResetCodeData(String id) {
+		this.jdbcTemplate.update(
 				"UPDATE users SET reset_password_code_hash = ?, reset_password_expires_at = ? " + "WHERE id = ?::uuid",
 				"existing-reset-hash", java.sql.Timestamp.valueOf("2026-05-01 10:00:00"), id);
 	}
 
 	private String resetPasswordCodeHash(String id) {
-		return jdbcTemplate.queryForObject("SELECT reset_password_code_hash FROM users WHERE id = ?::uuid",
+		return this.jdbcTemplate.queryForObject("SELECT reset_password_code_hash FROM users WHERE id = ?::uuid",
 				String.class, id);
 	}
 
 	private String resetPasswordExpiresAt(String id) {
-		return jdbcTemplate.queryForObject("SELECT reset_password_expires_at::text FROM users WHERE id = ?::uuid",
+		return this.jdbcTemplate.queryForObject("SELECT reset_password_expires_at::text FROM users WHERE id = ?::uuid",
 				String.class, id);
 	}
 
 	private String userCreatedAt(String id) {
-		return jdbcTemplate.queryForObject("SELECT created_at::text FROM users WHERE id = ?::uuid", String.class, id);
+		return this.jdbcTemplate.queryForObject("SELECT created_at::text FROM users WHERE id = ?::uuid", String.class,
+				id);
 	}
 
 	private String userCreatedBy(String id) {
-		return jdbcTemplate.queryForObject("SELECT created_by::text FROM users WHERE id = ?::uuid", String.class, id);
+		return this.jdbcTemplate.queryForObject("SELECT created_by::text FROM users WHERE id = ?::uuid", String.class,
+				id);
 	}
 
 	private String userUpdatedAt(String id) {
-		return jdbcTemplate.queryForObject("SELECT updated_at::text FROM users WHERE id = ?::uuid", String.class, id);
+		return this.jdbcTemplate.queryForObject("SELECT updated_at::text FROM users WHERE id = ?::uuid", String.class,
+				id);
 	}
 
 	private String userUpdatedBy(String id) {
-		return jdbcTemplate.queryForObject("SELECT updated_by::text FROM users WHERE id = ?::uuid", String.class, id);
+		return this.jdbcTemplate.queryForObject("SELECT updated_by::text FROM users WHERE id = ?::uuid", String.class,
+				id);
 	}
 
 }

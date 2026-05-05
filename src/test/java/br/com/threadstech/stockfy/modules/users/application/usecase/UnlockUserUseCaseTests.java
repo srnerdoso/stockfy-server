@@ -33,12 +33,12 @@ import org.junit.jupiter.api.Test;
 
 import org.springframework.data.redis.core.StringRedisTemplate;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
-class UnlockUserUseCaseTest {
+class UnlockUserUseCaseTests {
 
 	private static final String LOGIN_ATTEMPTS_KEY = "login_attempts:";
 
@@ -46,20 +46,20 @@ class UnlockUserUseCaseTest {
 
 	private final StringRedisTemplate redisTemplate = org.mockito.Mockito.mock(StringRedisTemplate.class);
 
-	private final UnlockUserUseCase useCase = new UnlockUserUseCase(userRepository, redisTemplate);
+	private final UnlockUserUseCase useCase = new UnlockUserUseCase(this.userRepository, this.redisTemplate);
 
 	@Test
 	@DisplayName("Deve desbloquear usuario bloqueado e limpar tentativas de login")
 	void execute_whenUserIsLocked_thenUnlocksUserAndClearsLoginAttempts() {
 		UUID userId = UUID.randomUUID();
 		User user = user(userId, UserStatus.LOCKED);
-		when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+		given(this.userRepository.findById(userId)).willReturn(Optional.of(user));
 
-		useCase.execute(userId);
+		this.useCase.execute(userId);
 
-		assertEquals(UserStatus.ACTIVE, user.getStatus());
-		verify(redisTemplate).delete(LOGIN_ATTEMPTS_KEY + user.getEmail().value());
-		verify(userRepository).update(user);
+		assertThat(user.getStatus()).isEqualTo(UserStatus.ACTIVE);
+		verify(this.redisTemplate).delete(LOGIN_ATTEMPTS_KEY + user.getEmail().value());
+		verify(this.userRepository).update(user);
 	}
 
 	@Test
@@ -67,22 +67,22 @@ class UnlockUserUseCaseTest {
 	void execute_whenUserIsAlreadyActive_thenKeepsActiveAndClearsLoginAttempts() {
 		UUID userId = UUID.randomUUID();
 		User user = user(userId, UserStatus.ACTIVE);
-		when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+		given(this.userRepository.findById(userId)).willReturn(Optional.of(user));
 
-		useCase.execute(userId);
+		this.useCase.execute(userId);
 
-		assertEquals(UserStatus.ACTIVE, user.getStatus());
-		verify(redisTemplate).delete(LOGIN_ATTEMPTS_KEY + user.getEmail().value());
-		verify(userRepository).update(user);
+		assertThat(user.getStatus()).isEqualTo(UserStatus.ACTIVE);
+		verify(this.redisTemplate).delete(LOGIN_ATTEMPTS_KEY + user.getEmail().value());
+		verify(this.userRepository).update(user);
 	}
 
 	@Test
 	@DisplayName("Deve lancar UserNotFoundException quando usuario nao existir")
 	void execute_whenUserDoesNotExist_thenThrowsUserNotFoundException() {
 		UUID userId = UUID.randomUUID();
-		when(userRepository.findById(userId)).thenReturn(Optional.empty());
+		given(this.userRepository.findById(userId)).willReturn(Optional.empty());
 
-		assertThrows(UserNotFoundException.class, () -> useCase.execute(userId));
+		assertThatExceptionOfType(UserNotFoundException.class).isThrownBy(() -> this.useCase.execute(userId));
 	}
 
 	private User user(UUID id, UserStatus status) {

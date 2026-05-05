@@ -33,19 +33,21 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class GenerateResetCodeUseCase {
 
+	private final SecureRandom secureRandom = new SecureRandom();
+
 	private final UserRepository userRepository;
 
 	private final ResetCodeHasher resetCodeHasher;
 
 	@Transactional
 	public String execute(UUID userId) {
-		User user = userRepository.findById(userId).orElseThrow(UserNotFoundException::new);
+		User user = this.userRepository.findById(userId).orElseThrow(UserNotFoundException::new);
 
-		String code = String.format("%06d", new SecureRandom().nextInt(1000000));
-		user.setResetPasswordCodeHash(resetCodeHasher.hash(code));
+		String code = String.format("%06d", this.secureRandom.nextInt(1000000));
+		user.setResetPasswordCodeHash(this.resetCodeHasher.hash(code));
 		user.setResetPasswordExpiresAt(LocalDateTime.now().plusHours(24));
 
-		userRepository.update(user);
+		this.userRepository.update(user);
 		return code;
 	}
 

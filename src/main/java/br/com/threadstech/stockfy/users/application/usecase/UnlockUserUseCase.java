@@ -39,11 +39,11 @@ public class UnlockUserUseCase {
 
 	@Transactional
 	public void execute(UUID userId) {
-		User user = userRepository.findById(userId).orElseThrow(UserNotFoundException::new);
+		User user = this.userRepository.findById(userId).orElseThrow(UserNotFoundException::new);
 
 		user.unlock();
-		redisTemplate.delete(LOGIN_ATTEMPTS_KEY + user.getEmail().value());
-		userRepository.update(user);
+		this.redisTemplate.delete(LOGIN_ATTEMPTS_KEY + user.getEmail().value());
+		this.userRepository.update(user);
 	}
 
 }

@@ -23,22 +23,22 @@ import br.com.threadstech.stockfy.users.domain.model.UserStatus;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
-class UserEnumsTest {
+class UserEnumsTests {
 
 	@Test
 	@DisplayName("Should verify UserRole has expected values")
 	void userRole_shouldHaveExpectedValues() {
-		assertTrue(Arrays.stream(UserRole.values()).anyMatch(role -> role.name().equals("ADMIN")));
-		assertTrue(Arrays.stream(UserRole.values()).anyMatch(role -> role.name().equals("USER")));
+		assertThat(Arrays.stream(UserRole.values()).anyMatch((role) -> role.name().equals("ADMIN"))).isTrue();
+		assertThat(Arrays.stream(UserRole.values()).anyMatch((role) -> role.name().equals("USER"))).isTrue();
 	}
 
 	@Test
 	@DisplayName("Should verify UserStatus has expected values")
 	void userStatus_shouldHaveExpectedValues() {
-		assertTrue(Arrays.stream(UserStatus.values()).anyMatch(status -> status.name().equals("ACTIVE")));
-		assertTrue(Arrays.stream(UserStatus.values()).anyMatch(status -> status.name().equals("LOCKED")));
+		assertThat(Arrays.stream(UserStatus.values()).anyMatch((status) -> status.name().equals("ACTIVE"))).isTrue();
+		assertThat(Arrays.stream(UserStatus.values()).anyMatch((status) -> status.name().equals("LOCKED"))).isTrue();
 	}
 
 }

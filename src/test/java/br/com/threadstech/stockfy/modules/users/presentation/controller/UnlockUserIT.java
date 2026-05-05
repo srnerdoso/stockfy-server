@@ -22,6 +22,7 @@ import br.com.threadstech.stockfy.MutableTimeMeter;
 import br.com.threadstech.stockfy.RateLimitTestConfiguration;
 import br.com.threadstech.stockfy.TestcontainersConfiguration;
 import br.com.threadstech.stockfy.users.infrastructure.config.UserRateLimitConfig;
+import br.com.threadstech.stockfy.web.presentation.ApiErrorResponseAssertions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -35,9 +36,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
 
-import static br.com.threadstech.stockfy.web.presentation.ApiErrorResponseAssertions.assertBadRequestFieldValidation;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -48,6 +47,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Sql(scripts = "/sql/users/cleanup.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @Sql(scripts = "/sql/users/base-users.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @Sql(scripts = "/sql/users/cleanup.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
+@SuppressWarnings({ "PMD.AvoidAccessibilityAlteration", "PMD.AvoidDuplicateLiterals",
+		"PMD.AvoidLiteralsInIfCondition" })
 class UnlockUserIT {
 
 	private static final String ADMIN_ID = "00000000-0000-0000-0000-000000000001";
@@ -78,8 +79,8 @@ class UnlockUserIT {
 	@AfterEach
 	void tearDown() {
 		clearRateLimitBuckets();
-		redisTemplate.delete(LOGIN_ATTEMPTS_KEY + LOCKED_EMAIL);
-		rateLimitTimeMeter.reset();
+		this.redisTemplate.delete(LOGIN_ATTEMPTS_KEY + LOCKED_EMAIL);
+		this.rateLimitTimeMeter.reset();
 	}
 
 	@Test
@@ -88,15 +89,15 @@ class UnlockUserIT {
 	void unlockUser_whenAdminUnlocksLockedUser_thenReturns204PersistsStatusAndClearsAttempts() throws Exception {
 		long usersBeforeRequest = countUsers();
 		lockUser(LOCKED_ID);
-		redisTemplate.opsForValue().set(LOGIN_ATTEMPTS_KEY + LOCKED_EMAIL, "15");
+		this.redisTemplate.opsForValue().set(LOGIN_ATTEMPTS_KEY + LOCKED_EMAIL, "15");
 
-		mockMvc.perform(patch("/api/v1/users/{id}/unlock", LOCKED_ID))
+		this.mockMvc.perform(patch("/api/v1/users/{id}/unlock", LOCKED_ID))
 			.andExpect(status().isNoContent())
 			.andExpect(content().string(""));
 
-		assertEquals(usersBeforeRequest, countUsers());
-		assertEquals("ACTIVE", userStatus(LOCKED_ID));
-		assertNull(redisTemplate.opsForValue().get(LOGIN_ATTEMPTS_KEY + LOCKED_EMAIL));
+		assertThat(countUsers()).isEqualTo(usersBeforeRequest);
+		assertThat(userStatus(LOCKED_ID)).isEqualTo("ACTIVE");
+		assertThat(this.redisTemplate.opsForValue().get(LOGIN_ATTEMPTS_KEY + LOCKED_EMAIL)).isNull();
 	}
 
 	@Test
@@ -104,11 +105,11 @@ class UnlockUserIT {
 	void unlockUser_whenNotAuthenticated_thenReturns401WithoutBody() throws Exception {
 		String oldStatus = userStatus(LOCKED_ID);
 
-		mockMvc.perform(patch("/api/v1/users/{id}/unlock", LOCKED_ID))
+		this.mockMvc.perform(patch("/api/v1/users/{id}/unlock", LOCKED_ID))
 			.andExpect(status().isUnauthorized())
 			.andExpect(content().string(""));
 
-		assertEquals(oldStatus, userStatus(LOCKED_ID));
+		assertThat(userStatus(LOCKED_ID)).isEqualTo(oldStatus);
 	}
 
 	@Test
@@ -117,11 +118,11 @@ class UnlockUserIT {
 	void unlockUser_whenAuthenticatedUserIsNotAdmin_thenReturns403WithoutBody() throws Exception {
 		String oldStatus = userStatus(LOCKED_ID);
 
-		mockMvc.perform(patch("/api/v1/users/{id}/unlock", LOCKED_ID))
+		this.mockMvc.perform(patch("/api/v1/users/{id}/unlock", LOCKED_ID))
 			.andExpect(status().isForbidden())
 			.andExpect(content().string(""));
 
-		assertEquals(oldStatus, userStatus(LOCKED_ID));
+		assertThat(userStatus(LOCKED_ID)).isEqualTo(oldStatus);
 	}
 
 	@Test
@@ -130,10 +131,11 @@ class UnlockUserIT {
 	void unlockUser_whenIdIsInvalidUuid_thenReturns400AndDoesNotAlterData() throws Exception {
 		String oldStatus = userStatus(LOCKED_ID);
 
-		assertBadRequestFieldValidation(mockMvc.perform(patch("/api/v1/users/{id}/unlock", "not-a-uuid")), "id",
+		ApiErrorResponseAssertions.assertBadRequestFieldValidation(
+				this.mockMvc.perform(patch("/api/v1/users/{id}/unlock", "not-a-uuid")), "id",
 				"O parâmetro informado é inválido.");
 
-		assertEquals(oldStatus, userStatus(LOCKED_ID));
+		assertThat(userStatus(LOCKED_ID)).isEqualTo(oldStatus);
 	}
 
 	@Test
@@ -142,11 +144,12 @@ class UnlockUserIT {
 	void unlockUser_whenIdContainsSqlInjection_thenReturns400AndDoesNotAlterData() throws Exception {
 		String oldStatus = userStatus(LOCKED_ID);
 
-		assertBadRequestFieldValidation(
-				mockMvc.perform(patch("/api/v1/users/{id}/unlock", "00000000-0000-0000-0000-000000000004' OR '1'='1")),
+		ApiErrorResponseAssertions.assertBadRequestFieldValidation(
+				this.mockMvc
+					.perform(patch("/api/v1/users/{id}/unlock", "00000000-0000-0000-0000-000000000004' OR '1'='1")),
 				"id", "O parâmetro informado é inválido.");
 
-		assertEquals(oldStatus, userStatus(LOCKED_ID));
+		assertThat(userStatus(LOCKED_ID)).isEqualTo(oldStatus);
 	}
 
 	@Test
@@ -156,13 +159,13 @@ class UnlockUserIT {
 		String oldStatus = userStatus(LOCKED_ID);
 
 		for (int i = 0; i <= 10; i++) {
-			var result = mockMvc.perform(patch("/api/v1/users/{id}/unlock", "not-a-uuid"));
+			var result = this.mockMvc.perform(patch("/api/v1/users/{id}/unlock", "not-a-uuid"));
 			if (i == 10) {
 				result.andExpect(status().isTooManyRequests());
 			}
 		}
 
-		assertEquals(oldStatus, userStatus(LOCKED_ID));
+		assertThat(userStatus(LOCKED_ID)).isEqualTo(oldStatus);
 	}
 
 	@Test
@@ -172,31 +175,31 @@ class UnlockUserIT {
 		lockUser(LOCKED_ID);
 
 		for (int i = 0; i < 10; i++) {
-			mockMvc.perform(patch("/api/v1/users/{id}/unlock", "not-a-uuid"));
+			this.mockMvc.perform(patch("/api/v1/users/{id}/unlock", "not-a-uuid"));
 		}
 
-		mockMvc.perform(patch("/api/v1/users/{id}/unlock", "not-a-uuid")).andExpect(status().isTooManyRequests());
+		this.mockMvc.perform(patch("/api/v1/users/{id}/unlock", "not-a-uuid")).andExpect(status().isTooManyRequests());
 
-		rateLimitTimeMeter.advanceBy(Duration.ofSeconds(61));
+		this.rateLimitTimeMeter.advanceBy(Duration.ofSeconds(61));
 
-		mockMvc.perform(patch("/api/v1/users/{id}/unlock", LOCKED_ID))
+		this.mockMvc.perform(patch("/api/v1/users/{id}/unlock", LOCKED_ID))
 			.andExpect(status().isNoContent())
 			.andExpect(content().string(""));
 
-		assertEquals("ACTIVE", userStatus(LOCKED_ID));
+		assertThat(userStatus(LOCKED_ID)).isEqualTo("ACTIVE");
 	}
 
 	private long countUsers() {
-		Long count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM users", Long.class);
-		return count == null ? 0 : count;
+		Long count = this.jdbcTemplate.queryForObject("SELECT COUNT(*) FROM users", Long.class);
+		return (count != null) ? count : 0;
 	}
 
 	private void lockUser(String id) {
-		jdbcTemplate.update("UPDATE users SET status = 'LOCKED' WHERE id = ?::uuid", id);
+		this.jdbcTemplate.update("UPDATE users SET status = 'LOCKED' WHERE id = ?::uuid", id);
 	}
 
 	private String userStatus(String id) {
-		return jdbcTemplate.queryForObject("SELECT status FROM users WHERE id = ?::uuid", String.class, id);
+		return this.jdbcTemplate.queryForObject("SELECT status FROM users WHERE id = ?::uuid", String.class, id);
 	}
 
 	private void clearRateLimitBuckets() {
@@ -204,15 +207,15 @@ class UnlockUserIT {
 			clearBucketMap("loginBuckets");
 			clearBucketMap("generalBuckets");
 		}
-		catch (ReflectiveOperationException e) {
-			throw new IllegalStateException(e);
+		catch (ReflectiveOperationException ex) {
+			throw new IllegalStateException(ex);
 		}
 	}
 
 	private void clearBucketMap(String fieldName) throws ReflectiveOperationException {
 		var field = UserRateLimitConfig.class.getDeclaredField(fieldName);
 		field.setAccessible(true);
-		((java.util.Map<?, ?>) field.get(rateLimitConfig)).clear();
+		((java.util.Map<?, ?>) field.get(this.rateLimitConfig)).clear();
 	}
 
 }

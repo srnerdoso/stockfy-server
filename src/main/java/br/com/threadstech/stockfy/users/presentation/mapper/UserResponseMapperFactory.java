@@ -30,7 +30,7 @@ public class UserResponseMapperFactory {
 
 	public UserResponse toResponse(User user) {
 		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-		boolean isAdmin = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+		boolean isAdmin = auth.getAuthorities().stream().anyMatch((a) -> a.getAuthority().equals("ROLE_ADMIN"));
 
 		UUID currentUserId = (UUID) auth.getPrincipal();
 		boolean isOwner = user.getId().equals(currentUserId);

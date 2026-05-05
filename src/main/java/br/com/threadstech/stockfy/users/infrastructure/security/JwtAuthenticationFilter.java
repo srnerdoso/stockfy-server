@@ -20,6 +20,8 @@ import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 
+import br.com.threadstech.stockfy.users.application.exception.InvalidRefreshTokenException;
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
@@ -37,6 +39,10 @@ import org.springframework.web.filter.OncePerRequestFilter;
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
+	private static final String ACCESS_TOKEN_COOKIE = "access_token";
+
+	private static final String REFRESH_TOKEN_COOKIE = "refresh_token";
+
 	private final JwtService jwtService;
 
 	private final TokenService tokenService;
@@ -49,10 +55,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 		String refreshToken = null;
 		if (request.getCookies() != null) {
 			for (Cookie cookie : request.getCookies()) {
-				if ("access_token".equals(cookie.getName())) {
+				if (ACCESS_TOKEN_COOKIE.equals(cookie.getName())) {
 					accessToken = cookie.getValue();
 				}
-				if ("refresh_token".equals(cookie.getName())) {
+				if (REFRESH_TOKEN_COOKIE.equals(cookie.getName())) {
 					refreshToken = cookie.getValue();
 				}
 			}
@@ -60,12 +66,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
 		if (accessToken != null && refreshToken != null) {
 			try {
-				String userId = jwtService.extractUserId(accessToken);
-				List<String> roles = jwtService.extractRoles(accessToken);
+				String userId = this.jwtService.extractUserId(accessToken);
+				List<String> roles = this.jwtService.extractRoles(accessToken);
 				UUID authenticatedUserId = UUID.fromString(userId);
-				UUID refreshTokenUserId = tokenService.getUserIdFromRefreshToken(refreshToken);
+				UUID refreshTokenUserId = this.tokenService.getUserIdFromRefreshToken(refreshToken);
 
-				if (tokenService.validateRefreshToken(refreshToken) && authenticatedUserId.equals(refreshTokenUserId)
+				if (this.tokenService.validateRefreshToken(refreshToken)
+						&& authenticatedUserId.equals(refreshTokenUserId)
 						&& SecurityContextHolder.getContext().getAuthentication() == null) {
 					List<SimpleGrantedAuthority> authorities = roles.stream()
 						.map(this::toAuthority)
@@ -77,7 +84,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 					SecurityContextHolder.getContext().setAuthentication(authToken);
 				}
 			}
-			catch (Exception e) {
+			catch (JwtException | IllegalArgumentException | InvalidRefreshTokenException ex) {
 				SecurityContextHolder.clearContext();
 			}
 		}

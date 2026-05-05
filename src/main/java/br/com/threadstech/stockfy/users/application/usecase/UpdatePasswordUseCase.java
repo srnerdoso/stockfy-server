@@ -58,23 +58,23 @@ public class UpdatePasswordUseCase {
 		updatePassword(user, newPassword);
 		user.setResetPasswordCodeHash(null);
 		user.setResetPasswordExpiresAt(null);
-		userRepository.update(user);
+		this.userRepository.update(user);
 	}
 
 	@Transactional(noRollbackFor = CurrentPasswordInvalidException.class)
 	public void executeAuthenticated(UUID userId, String currentPassword, String newPassword, String confirmPassword) {
 		validatePasswordConfirmation(newPassword, confirmPassword);
-		User user = userRepository.findById(userId).orElseThrow(UserNotFoundException::new);
+		User user = this.userRepository.findById(userId).orElseThrow(UserNotFoundException::new);
 
 		if (currentPassword == null || currentPassword.isBlank()
-				|| !passwordEncoder.matches(currentPassword, user.getPassword().value())) {
+				|| !this.passwordEncoder.matches(currentPassword, user.getPassword().value())) {
 			countInvalidAttempt(user);
 			throw new CurrentPasswordInvalidException();
 		}
 
-		redisTemplate.delete(INVALID_ATTEMPTS_KEY + user.getId());
+		this.redisTemplate.delete(INVALID_ATTEMPTS_KEY + user.getId());
 		updatePassword(user, newPassword);
-		userRepository.update(user);
+		this.userRepository.update(user);
 	}
 
 	private void validatePasswordConfirmation(String newPassword, String confirmPassword) {
@@ -84,8 +84,8 @@ public class UpdatePasswordUseCase {
 	}
 
 	private User findUserByResetCode(String code) {
-		String codeHash = resetCodeHasher.hash(code);
-		return userRepository.findByResetPasswordCodeHash(codeHash)
+		String codeHash = this.resetCodeHasher.hash(code);
+		return this.userRepository.findByResetPasswordCodeHash(codeHash)
 			.filter(this::resetCodeNotExpired)
 			.orElseThrow(InvalidPasswordResetCodeException::new);
 	}
@@ -96,16 +96,16 @@ public class UpdatePasswordUseCase {
 	}
 
 	private void updatePassword(User user, String newPassword) {
-		user.setPassword(new Password(passwordEncoder.encode(newPassword)));
+		user.setPassword(new Password(this.passwordEncoder.encode(newPassword)));
 	}
 
 	private void countInvalidAttempt(User user) {
 		String key = INVALID_ATTEMPTS_KEY + user.getId();
-		Long attempts = redisTemplate.opsForValue().increment(key);
-		redisTemplate.expire(key, Duration.ofMinutes(5));
+		Long attempts = this.redisTemplate.opsForValue().increment(key);
+		this.redisTemplate.expire(key, Duration.ofMinutes(5));
 		if (attempts != null && attempts >= MAX_INVALID_ATTEMPTS) {
 			user.lock();
-			userRepository.update(user);
+			this.userRepository.update(user);
 		}
 	}
 

@@ -16,8 +16,6 @@
 
 package br.com.threadstech.stockfy.users.application.usecase;
 
-import java.util.List;
-
 import br.com.threadstech.stockfy.users.application.dto.FindAllUsersResponse;
 import br.com.threadstech.stockfy.users.application.dto.UserListItemResponse;
 import br.com.threadstech.stockfy.users.application.dto.UserListType;
@@ -38,11 +36,8 @@ public class FindAllUsersUseCase {
 
 	@Transactional(readOnly = true)
 	public FindAllUsersResponse<UserListItemResponse> execute(String name, UserListType type, Pageable pageable) {
-		Page<User> users = userRepository.findAll(normalizeName(name), pageable);
-		List<UserListItemResponse> content = users.getContent()
-			.stream()
-			.map(user -> UserListItemResponse.from(user, type))
-			.toList();
+		Page<User> users = this.userRepository.findAll(normalizeName(name), pageable);
+		var content = users.getContent().stream().map((user) -> UserListItemResponse.from(user, type)).toList();
 
 		return new FindAllUsersResponse<>(content, users.getNumber(), users.getSize(), users.getTotalElements(),
 				users.getTotalPages());

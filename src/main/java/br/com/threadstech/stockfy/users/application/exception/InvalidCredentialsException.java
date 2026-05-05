@@ -18,6 +18,8 @@ package br.com.threadstech.stockfy.users.application.exception;
 
 public class InvalidCredentialsException extends RuntimeException {
 
+	private static final long serialVersionUID = 1L;
+
 	public InvalidCredentialsException() {
 		super("exception.invalid-credentials");
 	}

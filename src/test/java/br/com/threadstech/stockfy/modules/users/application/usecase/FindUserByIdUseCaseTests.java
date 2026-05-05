@@ -33,39 +33,39 @@ import br.com.threadstech.stockfy.users.domain.repository.UserRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
-class FindUserByIdUseCaseTest {
+class FindUserByIdUseCaseTests {
 
 	private final UserRepository userRepository = mock(UserRepository.class);
 
-	private final FindUserByIdUseCase useCase = new FindUserByIdUseCase(userRepository);
+	private final FindUserByIdUseCase useCase = new FindUserByIdUseCase(this.userRepository);
 
 	@Test
 	@DisplayName("Deve retornar detalhes quando usuario existir")
 	void execute_whenUserExists_thenReturnsDetailedResponse() {
 		UUID userId = UUID.randomUUID();
 		User user = user(userId, UserRole.USER);
-		when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+		given(this.userRepository.findById(userId)).willReturn(Optional.of(user));
 
-		UserListItemResponse response = useCase.execute(userId);
+		UserListItemResponse response = this.useCase.execute(userId);
 
-		assertEquals("Owner", response.name());
-		assertEquals("owner@example.com", response.email());
-		assertEquals(Set.of(UserRole.USER), response.roles());
-		assertEquals(UserStatus.ACTIVE, response.status());
+		assertThat(response.name()).isEqualTo("Owner");
+		assertThat(response.email()).isEqualTo("owner@example.com");
+		assertThat(response.roles()).isEqualTo(Set.of(UserRole.USER));
+		assertThat(response.status()).isEqualTo(UserStatus.ACTIVE);
 	}
 
 	@Test
 	@DisplayName("Deve lançar excecao quando usuario nao existir")
 	void execute_whenUserDoesNotExist_thenThrowsUserNotFoundException() {
 		UUID requestedId = UUID.randomUUID();
-		when(userRepository.findById(requestedId)).thenReturn(Optional.empty());
+		given(this.userRepository.findById(requestedId)).willReturn(Optional.empty());
 
-		assertThrows(UserNotFoundException.class, () -> useCase.execute(requestedId));
+		assertThatExceptionOfType(UserNotFoundException.class).isThrownBy(() -> this.useCase.execute(requestedId));
 	}
 
 	private User user(UUID id, UserRole role) {

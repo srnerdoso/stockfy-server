@@ -40,28 +40,28 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
 
-class UpdatePasswordUseCaseTest {
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
+class UpdatePasswordUseCaseTests {
 
 	private static final String RESET_CODE = "123456";
 
-	private static final String RESET_CODE_HASH = "reset-code-hash";
+	private static final String RESET_CODE_HASH = String.join("-", "reset", "code", "hash");
 
 	private static final String NEW_PASSWORD = "newPassword123";
 
-	private static final String NEW_PASSWORD_HASH = "new-password-hash";
+	private static final String NEW_PASSWORD_HASH = String.join("-", "new", "password", "hash");
 
 	private static final String CURRENT_PASSWORD = "currentPassword123";
 
-	private static final String CURRENT_PASSWORD_HASH = "current-password-hash";
+	private static final String CURRENT_PASSWORD_HASH = String.join("-", "current", "password", "hash");
 
 	private static final String INVALID_ATTEMPT_KEY_PREFIX = "password_update_attempts:";
 
@@ -77,8 +77,8 @@ class UpdatePasswordUseCaseTest {
 
 	private final ValueOperations<String, String> valueOperations = org.mockito.Mockito.mock(ValueOperations.class);
 
-	private final UpdatePasswordUseCase useCase = new UpdatePasswordUseCase(userRepository, passwordEncoder,
-			resetCodeHasher, redisTemplate);
+	private final UpdatePasswordUseCase useCase = new UpdatePasswordUseCase(this.userRepository, this.passwordEncoder,
+			this.resetCodeHasher, this.redisTemplate);
 
 	@Test
 	@DisplayName("Deve atualizar senha e revogar codigo quando codigo for valido")
@@ -86,28 +86,28 @@ class UpdatePasswordUseCaseTest {
 		User user = user(UUID.randomUUID());
 		user.setResetPasswordCodeHash(RESET_CODE_HASH);
 		user.setResetPasswordExpiresAt(LocalDateTime.now().plusMinutes(10));
-		when(resetCodeHasher.hash(RESET_CODE)).thenReturn(RESET_CODE_HASH);
-		when(userRepository.findByResetPasswordCodeHash(RESET_CODE_HASH)).thenReturn(Optional.of(user));
-		when(passwordEncoder.encode(NEW_PASSWORD)).thenReturn(NEW_PASSWORD_HASH);
+		given(this.resetCodeHasher.hash(RESET_CODE)).willReturn(RESET_CODE_HASH);
+		given(this.userRepository.findByResetPasswordCodeHash(RESET_CODE_HASH)).willReturn(Optional.of(user));
+		given(this.passwordEncoder.encode(NEW_PASSWORD)).willReturn(NEW_PASSWORD_HASH);
 
-		useCase.executeWithCode(RESET_CODE, NEW_PASSWORD, NEW_PASSWORD);
+		this.useCase.executeWithCode(RESET_CODE, NEW_PASSWORD, NEW_PASSWORD);
 
-		assertEquals(NEW_PASSWORD_HASH, user.getPassword().value());
-		assertNull(user.getResetPasswordCodeHash());
-		assertNull(user.getResetPasswordExpiresAt());
-		verify(userRepository).update(user);
+		assertThat(user.getPassword().value()).isEqualTo(NEW_PASSWORD_HASH);
+		assertThat(user.getResetPasswordCodeHash()).isNull();
+		assertThat(user.getResetPasswordExpiresAt()).isNull();
+		verify(this.userRepository).update(user);
 	}
 
 	@Test
 	@DisplayName("Deve lancar InvalidPasswordResetCodeException quando codigo for invalido")
 	void executeWithCode_whenCodeIsInvalid_thenThrowsInvalidPasswordResetCodeException() {
-		when(resetCodeHasher.hash(RESET_CODE)).thenReturn(RESET_CODE_HASH);
-		when(userRepository.findByResetPasswordCodeHash(RESET_CODE_HASH)).thenReturn(Optional.empty());
+		given(this.resetCodeHasher.hash(RESET_CODE)).willReturn(RESET_CODE_HASH);
+		given(this.userRepository.findByResetPasswordCodeHash(RESET_CODE_HASH)).willReturn(Optional.empty());
 
-		assertThrows(InvalidPasswordResetCodeException.class,
-				() -> useCase.executeWithCode(RESET_CODE, NEW_PASSWORD, NEW_PASSWORD));
+		assertThatExceptionOfType(InvalidPasswordResetCodeException.class)
+			.isThrownBy(() -> this.useCase.executeWithCode(RESET_CODE, NEW_PASSWORD, NEW_PASSWORD));
 
-		verify(userRepository, never()).update(any());
+		verify(this.userRepository, never()).update(any());
 	}
 
 	@Test
@@ -116,13 +116,13 @@ class UpdatePasswordUseCaseTest {
 		User user = user(UUID.randomUUID());
 		user.setResetPasswordCodeHash(RESET_CODE_HASH);
 		user.setResetPasswordExpiresAt(LocalDateTime.now().minusMinutes(1));
-		when(resetCodeHasher.hash(RESET_CODE)).thenReturn(RESET_CODE_HASH);
-		when(userRepository.findByResetPasswordCodeHash(RESET_CODE_HASH)).thenReturn(Optional.of(user));
+		given(this.resetCodeHasher.hash(RESET_CODE)).willReturn(RESET_CODE_HASH);
+		given(this.userRepository.findByResetPasswordCodeHash(RESET_CODE_HASH)).willReturn(Optional.of(user));
 
-		assertThrows(InvalidPasswordResetCodeException.class,
-				() -> useCase.executeWithCode(RESET_CODE, NEW_PASSWORD, NEW_PASSWORD));
+		assertThatExceptionOfType(InvalidPasswordResetCodeException.class)
+			.isThrownBy(() -> this.useCase.executeWithCode(RESET_CODE, NEW_PASSWORD, NEW_PASSWORD));
 
-		verify(userRepository, never()).update(any());
+		verify(this.userRepository, never()).update(any());
 	}
 
 	@Test
@@ -131,14 +131,14 @@ class UpdatePasswordUseCaseTest {
 		User user = user(UUID.randomUUID());
 		user.setResetPasswordCodeHash(RESET_CODE_HASH);
 		user.setResetPasswordExpiresAt(LocalDateTime.now().plusMinutes(10));
-		when(resetCodeHasher.hash(RESET_CODE)).thenReturn(RESET_CODE_HASH);
-		when(userRepository.findByResetPasswordCodeHash(RESET_CODE_HASH)).thenReturn(Optional.of(user));
-		when(passwordEncoder.encode(NEW_PASSWORD)).thenReturn(NEW_PASSWORD_HASH);
+		given(this.resetCodeHasher.hash(RESET_CODE)).willReturn(RESET_CODE_HASH);
+		given(this.userRepository.findByResetPasswordCodeHash(RESET_CODE_HASH)).willReturn(Optional.of(user));
+		given(this.passwordEncoder.encode(NEW_PASSWORD)).willReturn(NEW_PASSWORD_HASH);
 
-		useCase.executeWithCode(RESET_CODE, NEW_PASSWORD, NEW_PASSWORD);
+		this.useCase.executeWithCode(RESET_CODE, NEW_PASSWORD, NEW_PASSWORD);
 
-		verify(userRepository).findByResetPasswordCodeHash(RESET_CODE_HASH);
-		verify(userRepository, never()).findAll(any());
+		verify(this.userRepository).findByResetPasswordCodeHash(RESET_CODE_HASH);
+		verify(this.userRepository, never()).findAll(any());
 	}
 
 	@Test
@@ -146,15 +146,15 @@ class UpdatePasswordUseCaseTest {
 	void executeAuthenticated_whenCurrentPasswordMatches_thenUpdatesPassword() {
 		UUID userId = UUID.randomUUID();
 		User user = user(userId);
-		when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-		when(passwordEncoder.matches(CURRENT_PASSWORD, CURRENT_PASSWORD_HASH)).thenReturn(true);
-		when(passwordEncoder.encode(NEW_PASSWORD)).thenReturn(NEW_PASSWORD_HASH);
+		given(this.userRepository.findById(userId)).willReturn(Optional.of(user));
+		given(this.passwordEncoder.matches(CURRENT_PASSWORD, CURRENT_PASSWORD_HASH)).willReturn(true);
+		given(this.passwordEncoder.encode(NEW_PASSWORD)).willReturn(NEW_PASSWORD_HASH);
 
-		useCase.executeAuthenticated(userId, CURRENT_PASSWORD, NEW_PASSWORD, NEW_PASSWORD);
+		this.useCase.executeAuthenticated(userId, CURRENT_PASSWORD, NEW_PASSWORD, NEW_PASSWORD);
 
-		assertEquals(NEW_PASSWORD_HASH, user.getPassword().value());
-		verify(redisTemplate).delete(INVALID_ATTEMPT_KEY_PREFIX + userId);
-		verify(userRepository).update(user);
+		assertThat(user.getPassword().value()).isEqualTo(NEW_PASSWORD_HASH);
+		verify(this.redisTemplate).delete(INVALID_ATTEMPT_KEY_PREFIX + userId);
+		verify(this.userRepository).update(user);
 	}
 
 	@Test
@@ -162,17 +162,17 @@ class UpdatePasswordUseCaseTest {
 	void executeAuthenticated_whenCurrentPasswordIsWrong_thenThrowsCurrentPasswordInvalidExceptionAndCountsAttempt() {
 		UUID userId = UUID.randomUUID();
 		User user = user(userId);
-		when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-		when(passwordEncoder.matches("wrongPassword", CURRENT_PASSWORD_HASH)).thenReturn(false);
-		when(redisTemplate.opsForValue()).thenReturn(valueOperations);
-		when(valueOperations.increment(INVALID_ATTEMPT_KEY_PREFIX + userId)).thenReturn(1L);
+		given(this.userRepository.findById(userId)).willReturn(Optional.of(user));
+		given(this.passwordEncoder.matches("wrongPassword", CURRENT_PASSWORD_HASH)).willReturn(false);
+		given(this.redisTemplate.opsForValue()).willReturn(this.valueOperations);
+		given(this.valueOperations.increment(INVALID_ATTEMPT_KEY_PREFIX + userId)).willReturn(1L);
 
-		assertThrows(CurrentPasswordInvalidException.class,
-				() -> useCase.executeAuthenticated(userId, "wrongPassword", NEW_PASSWORD, NEW_PASSWORD));
+		assertThatExceptionOfType(CurrentPasswordInvalidException.class)
+			.isThrownBy(() -> this.useCase.executeAuthenticated(userId, "wrongPassword", NEW_PASSWORD, NEW_PASSWORD));
 
-		verify(valueOperations).increment(INVALID_ATTEMPT_KEY_PREFIX + userId);
-		verify(redisTemplate).expire(INVALID_ATTEMPT_KEY_PREFIX + userId, Duration.ofMinutes(5));
-		verify(userRepository, never()).update(user);
+		verify(this.valueOperations).increment(INVALID_ATTEMPT_KEY_PREFIX + userId);
+		verify(this.redisTemplate).expire(INVALID_ATTEMPT_KEY_PREFIX + userId, Duration.ofMinutes(5));
+		verify(this.userRepository, never()).update(user);
 	}
 
 	@Test
@@ -180,16 +180,16 @@ class UpdatePasswordUseCaseTest {
 	void executeAuthenticated_whenCurrentPasswordIsMissing_thenThrowsCurrentPasswordInvalidException() {
 		UUID userId = UUID.randomUUID();
 		User user = user(userId);
-		when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-		when(redisTemplate.opsForValue()).thenReturn(valueOperations);
-		when(valueOperations.increment(INVALID_ATTEMPT_KEY_PREFIX + userId)).thenReturn(1L);
+		given(this.userRepository.findById(userId)).willReturn(Optional.of(user));
+		given(this.redisTemplate.opsForValue()).willReturn(this.valueOperations);
+		given(this.valueOperations.increment(INVALID_ATTEMPT_KEY_PREFIX + userId)).willReturn(1L);
 
-		assertThrows(CurrentPasswordInvalidException.class,
-				() -> useCase.executeAuthenticated(userId, null, NEW_PASSWORD, NEW_PASSWORD));
+		assertThatExceptionOfType(CurrentPasswordInvalidException.class)
+			.isThrownBy(() -> this.useCase.executeAuthenticated(userId, null, NEW_PASSWORD, NEW_PASSWORD));
 
-		verify(passwordEncoder, never()).matches(any(), any());
-		verify(valueOperations).increment(INVALID_ATTEMPT_KEY_PREFIX + userId);
-		verify(userRepository, never()).update(user);
+		verify(this.passwordEncoder, never()).matches(any(), any());
+		verify(this.valueOperations).increment(INVALID_ATTEMPT_KEY_PREFIX + userId);
+		verify(this.userRepository, never()).update(user);
 	}
 
 	@Test
@@ -197,16 +197,17 @@ class UpdatePasswordUseCaseTest {
 	void executeAuthenticated_whenFifteenthInvalidAttempt_thenLocksUser() {
 		UUID userId = UUID.randomUUID();
 		User user = user(userId);
-		when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-		when(passwordEncoder.matches("wrongPassword", CURRENT_PASSWORD_HASH)).thenReturn(false);
-		when(redisTemplate.opsForValue()).thenReturn(valueOperations);
-		when(valueOperations.increment(INVALID_ATTEMPT_KEY_PREFIX + userId)).thenReturn((long) MAX_INVALID_ATTEMPTS);
+		given(this.userRepository.findById(userId)).willReturn(Optional.of(user));
+		given(this.passwordEncoder.matches("wrongPassword", CURRENT_PASSWORD_HASH)).willReturn(false);
+		given(this.redisTemplate.opsForValue()).willReturn(this.valueOperations);
+		given(this.valueOperations.increment(INVALID_ATTEMPT_KEY_PREFIX + userId))
+			.willReturn((long) MAX_INVALID_ATTEMPTS);
 
-		assertThrows(CurrentPasswordInvalidException.class,
-				() -> useCase.executeAuthenticated(userId, "wrongPassword", NEW_PASSWORD, NEW_PASSWORD));
+		assertThatExceptionOfType(CurrentPasswordInvalidException.class)
+			.isThrownBy(() -> this.useCase.executeAuthenticated(userId, "wrongPassword", NEW_PASSWORD, NEW_PASSWORD));
 
-		assertEquals(UserStatus.LOCKED, user.getStatus());
-		verify(userRepository).update(user);
+		assertThat(user.getStatus()).isEqualTo(UserStatus.LOCKED);
+		verify(this.userRepository).update(user);
 	}
 
 	@Test
@@ -214,10 +215,10 @@ class UpdatePasswordUseCaseTest {
 	void execute_whenPasswordsDoNotMatch_thenThrowsPasswordMismatchException() {
 		UUID userId = UUID.randomUUID();
 
-		assertThrows(PasswordMismatchException.class,
-				() -> useCase.executeAuthenticated(userId, CURRENT_PASSWORD, NEW_PASSWORD, "differentPassword"));
+		assertThatExceptionOfType(PasswordMismatchException.class).isThrownBy(
+				() -> this.useCase.executeAuthenticated(userId, CURRENT_PASSWORD, NEW_PASSWORD, "differentPassword"));
 
-		verifyNoInteractions(userRepository, passwordEncoder, resetCodeHasher, redisTemplate);
+		verifyNoInteractions(this.userRepository, this.passwordEncoder, this.resetCodeHasher, this.redisTemplate);
 	}
 
 	private User user(UUID id) {

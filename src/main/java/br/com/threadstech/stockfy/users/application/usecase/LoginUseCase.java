@@ -53,40 +53,40 @@ public class LoginUseCase {
 
 	public AuthResponse execute(String email, String password) {
 		Email userEmail = parseEmail(email);
-		User user = userRepository.findByEmail(userEmail).orElseThrow(InvalidCredentialsException::new);
+		User user = this.userRepository.findByEmail(userEmail).orElseThrow(InvalidCredentialsException::new);
 
 		if (!user.isActive() || user.getStatus() == UserStatus.LOCKED) {
 			throw new InvalidCredentialsException();
 		}
 
-		if (!passwordEncoder.matches(password, user.getPassword().value())) {
+		if (!this.passwordEncoder.matches(password, user.getPassword().value())) {
 			handleFailedLogin(user);
 			throw new InvalidCredentialsException();
 		}
 
 		resetFailedAttempts(email);
 
-		String accessToken = jwtService.generateToken(user.getId(), user.getRoles());
-		String refreshToken = tokenService.generateRefreshToken(user.getId());
+		String accessToken = this.jwtService.generateToken(user.getId(), user.getRoles());
+		String refreshToken = this.tokenService.generateRefreshToken(user.getId());
 
 		return new AuthResponse(accessToken, refreshToken);
 	}
 
 	private void handleFailedLogin(User user) {
 		String key = FAILED_ATTEMPTS_KEY + user.getEmail().value();
-		Long attempts = redisTemplate.opsForValue().increment(key);
-		redisTemplate.expire(key, java.time.Duration.ofDays(1));
+		Long attempts = this.redisTemplate.opsForValue().increment(key);
+		this.redisTemplate.expire(key, java.time.Duration.ofDays(1));
 
 		if (attempts != null && attempts >= MAX_FAILED_ATTEMPTS) {
 			user.lock();
-			userRepository.update(user);
-			eventPublisher
+			this.userRepository.update(user);
+			this.eventPublisher
 				.publish(new AccountLockedEvent(user.getId(), user.getEmail().value(), "Max failed attempts exceeded"));
 		}
 	}
 
 	private void resetFailedAttempts(String email) {
-		redisTemplate.delete(FAILED_ATTEMPTS_KEY + email);
+		this.redisTemplate.delete(FAILED_ATTEMPTS_KEY + email);
 	}
 
 	private Email parseEmail(String email) {

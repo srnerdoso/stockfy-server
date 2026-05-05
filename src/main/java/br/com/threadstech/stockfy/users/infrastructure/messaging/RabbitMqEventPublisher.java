@@ -33,7 +33,7 @@ public class RabbitMqEventPublisher {
 	private static final String ROUTING_KEY = "account.locked";
 
 	public void publish(AccountLockedEvent event) {
-		rabbitTemplate.convertAndSend(EXCHANGE, ROUTING_KEY, event);
+		this.rabbitTemplate.convertAndSend(EXCHANGE, ROUTING_KEY, event);
 	}
 
 }

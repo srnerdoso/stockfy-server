@@ -22,16 +22,16 @@ import org.junit.jupiter.api.Test;
 
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.assertj.core.api.Assertions.assertThat;
 
-class RabbitMqConfigTest {
+class RabbitMqConfigTests {
 
 	@Test
 	@DisplayName("Deve configurar conversor JSON para eventos RabbitMQ")
 	void jsonMessageConverter_whenCreated_thenUsesJacksonJsonConverter() {
 		var converter = new RabbitMqConfig().jsonMessageConverter();
 
-		assertInstanceOf(Jackson2JsonMessageConverter.class, converter);
+		assertThat(converter).isInstanceOf(Jackson2JsonMessageConverter.class);
 	}
 
 }

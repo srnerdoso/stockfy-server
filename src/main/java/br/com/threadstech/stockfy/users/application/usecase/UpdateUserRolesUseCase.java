@@ -35,9 +35,9 @@ public class UpdateUserRolesUseCase {
 
 	@Transactional
 	public void execute(UUID userId, Set<UserRole> rolesToAdd, Set<UserRole> rolesToRemove) {
-		var user = userRepository.findById(userId).orElseThrow(UserNotFoundException::new);
+		var user = this.userRepository.findById(userId).orElseThrow(UserNotFoundException::new);
 		user.updateRoles(rolesToAdd, rolesToRemove);
-		userRepository.update(user);
+		this.userRepository.update(user);
 	}
 
 }

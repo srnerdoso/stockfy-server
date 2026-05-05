@@ -44,7 +44,7 @@ public class RegisterUserUseCase {
 			throw new PasswordMismatchException();
 		}
 		Email userEmail = new Email(request.email());
-		if (userRepository.findByEmail(userEmail).isPresent()) {
+		if (this.userRepository.findByEmail(userEmail).isPresent()) {
 			throw new EmailAlreadyExistsException();
 		}
 
@@ -52,11 +52,11 @@ public class RegisterUserUseCase {
 			.id(UUID.randomUUID())
 			.name(request.name())
 			.email(userEmail)
-			.password(new Password(passwordEncoder.encode(request.password())))
+			.password(new Password(this.passwordEncoder.encode(request.password())))
 			.roles(Set.of(request.role()))
 			.build();
 
-		userRepository.save(user);
+		this.userRepository.save(user);
 	}
 
 }

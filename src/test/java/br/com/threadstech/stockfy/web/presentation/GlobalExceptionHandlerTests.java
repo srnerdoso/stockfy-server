@@ -16,6 +16,7 @@
 
 package br.com.threadstech.stockfy.web.presentation;
 
+import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Locale;
 
@@ -26,14 +27,16 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.context.support.StaticMessageSource;
+import org.springframework.core.MethodParameter;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.mock.http.MockHttpInputMessage;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
-class GlobalExceptionHandlerTest {
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
+class GlobalExceptionHandlerTests {
 
 	@Test
 	@DisplayName("Deve traduzir mensagem de campo inválido usando MessageSource")
@@ -49,9 +52,9 @@ class GlobalExceptionHandlerTest {
 
 		ApiErrorResponse body = handler.handleMessageNotReadable(exception).getBody();
 
-		assertEquals("Erro traduzido.", body.getDetail());
-		assertEquals("role", body.getFieldErrors().getFirst().field());
-		assertEquals("Campo traduzido.", body.getFieldErrors().getFirst().message());
+		assertThat(body.getDetail()).isEqualTo("Erro traduzido.");
+		assertThat(body.getFieldErrors().getFirst().field()).isEqualTo("role");
+		assertThat(body.getFieldErrors().getFirst().message()).isEqualTo("Campo traduzido.");
 	}
 
 	@Test
@@ -67,27 +70,28 @@ class GlobalExceptionHandlerTest {
 
 		ApiErrorResponse body = handler.handleMissingRequestParameter(exception).getBody();
 
-		assertEquals("Erro traduzido.", body.getDetail());
-		assertEquals("type", body.getFieldErrors().getFirst().field());
-		assertEquals("Parametro obrigatorio generico.", body.getFieldErrors().getFirst().message());
+		assertThat(body.getDetail()).isEqualTo("Erro traduzido.");
+		assertThat(body.getFieldErrors().getFirst().field()).isEqualTo("type");
+		assertThat(body.getFieldErrors().getFirst().message()).isEqualTo("Parametro obrigatorio generico.");
 	}
 
 	@Test
 	@DisplayName("Deve usar mensagem generica quando parametro possuir tipo invalido")
-	void handleArgumentTypeMismatch_whenTypeIsInvalid_thenUsesGenericMessage() {
+	void handleArgumentTypeMismatch_whenTypeIsInvalid_thenUsesGenericMessage() throws NoSuchMethodException {
 		StaticMessageSource messageSource = new StaticMessageSource();
 		messageSource.addMessage("feedback.error.validation", Locale.getDefault(), "Erro traduzido.");
 		messageSource.addMessage("validation.request-parameter.invalid", Locale.getDefault(),
 				"Parametro invalido generico.");
 		GlobalExceptionHandler handler = new GlobalExceptionHandler(messageSource);
+		Method method = GlobalExceptionHandlerTests.class.getDeclaredMethod("methodWithTypeParameter", String.class);
 		MethodArgumentTypeMismatchException exception = new MethodArgumentTypeMismatchException("FULL", String.class,
-				"type", null, null);
+				"type", new MethodParameter(method, 0), null);
 
 		ApiErrorResponse body = handler.handleArgumentTypeMismatch(exception).getBody();
 
-		assertEquals("Erro traduzido.", body.getDetail());
-		assertEquals("type", body.getFieldErrors().getFirst().field());
-		assertEquals("Parametro invalido generico.", body.getFieldErrors().getFirst().message());
+		assertThat(body.getDetail()).isEqualTo("Erro traduzido.");
+		assertThat(body.getFieldErrors().getFirst().field()).isEqualTo("type");
+		assertThat(body.getFieldErrors().getFirst().message()).isEqualTo("Parametro invalido generico.");
 	}
 
 	@Test
@@ -96,8 +100,11 @@ class GlobalExceptionHandlerTest {
 		ApiErrorResponse response = new ApiErrorResponse("about:blank", "Validation Error", 400, "Erro traduzido.",
 				null, List.of(new ApiErrorResponse.FieldError("role", "Campo traduzido.")));
 
-		assertEquals("role", response.getFieldErrors().getFirst().field());
-		assertEquals("Campo traduzido.", response.getFieldErrors().getFirst().message());
+		assertThat(response.getFieldErrors().getFirst().field()).isEqualTo("role");
+		assertThat(response.getFieldErrors().getFirst().message()).isEqualTo("Campo traduzido.");
+	}
+
+	private void methodWithTypeParameter(String type) {
 	}
 
 }

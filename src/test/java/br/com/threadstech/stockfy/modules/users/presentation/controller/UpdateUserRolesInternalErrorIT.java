@@ -26,6 +26,7 @@ import br.com.threadstech.stockfy.users.application.usecase.UpdateUserRolesUseCa
 import br.com.threadstech.stockfy.users.domain.model.UserRole;
 import br.com.threadstech.stockfy.users.infrastructure.security.JwtService;
 import br.com.threadstech.stockfy.users.infrastructure.security.TokenService;
+import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -43,11 +44,10 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.jdbc.Sql;
 
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.doThrow;
+import static org.mockito.BDDMockito.willThrow;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
 		properties = "server.error.include-stacktrace=never")
@@ -80,32 +80,33 @@ class UpdateUserRolesInternalErrorIT {
 	@DisplayName("Deve retornar 500 sem stacktrace quando ocorrer erro interno")
 	void updateUserRoles_whenUnexpectedErrorOccurs_thenReturns500WithoutStacktrace() {
 		List<String> oldRoles = userRoles();
-		doThrow(new RuntimeException("roles database stacktrace detail")).when(updateUserRolesUseCase)
+		willThrow(new RuntimeException("roles database stacktrace detail")).given(this.updateUserRolesUseCase)
 			.execute(USER_ID, Set.of(UserRole.ADMIN), Set.of(UserRole.USER));
 
-		ResponseEntity<String> response = restTemplate.exchange("/api/v1/users/{id}/roles", HttpMethod.PATCH,
+		ResponseEntity<String> response = this.restTemplate.exchange("/api/v1/users/{id}/roles", HttpMethod.PATCH,
 				new HttpEntity<>("{\"add\":[\"ADMIN\"],\"remove\":[\"USER\"]}", authenticatedHeaders()), String.class,
 				USER_ID);
 
-		assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
-		assertThat(response.getBody(), not(containsString("roles database stacktrace detail")));
-		assertThat(response.getBody(), not(containsString("RuntimeException")));
-		assertThat(response.getBody(), not(containsString("at ")));
-		assertThat(response.getBody(), not(containsString(".java:")));
-		assertEquals(oldRoles, userRoles());
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+		MatcherAssert.assertThat(response.getBody(), not(containsString("roles database stacktrace detail")));
+		MatcherAssert.assertThat(response.getBody(), not(containsString("RuntimeException")));
+		MatcherAssert.assertThat(response.getBody(), not(containsString("at ")));
+		MatcherAssert.assertThat(response.getBody(), not(containsString(".java:")));
+		assertThat(userRoles()).isEqualTo(oldRoles);
 	}
 
 	private HttpHeaders authenticatedHeaders() {
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
-		headers.add(HttpHeaders.COOKIE, "access_token=" + jwtService.generateToken(ADMIN_ID, Set.of(UserRole.ADMIN)));
-		headers.add(HttpHeaders.COOKIE, "refresh_token=" + tokenService.generateRefreshToken(ADMIN_ID));
+		headers.add(HttpHeaders.COOKIE,
+				"access_token=" + this.jwtService.generateToken(ADMIN_ID, Set.of(UserRole.ADMIN)));
+		headers.add(HttpHeaders.COOKIE, "refresh_token=" + this.tokenService.generateRefreshToken(ADMIN_ID));
 		return headers;
 	}
 
 	private List<String> userRoles() {
-		return jdbcTemplate.queryForList("SELECT role FROM users_roles WHERE user_id = ? ORDER BY role", String.class,
-				USER_ID);
+		return this.jdbcTemplate.queryForList("SELECT role FROM users_roles WHERE user_id = ? ORDER BY role",
+				String.class, USER_ID);
 	}
 
 }

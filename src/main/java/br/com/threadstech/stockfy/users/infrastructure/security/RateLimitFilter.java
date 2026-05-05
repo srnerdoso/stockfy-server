@@ -45,13 +45,13 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
 		Bucket bucket;
 		if ("POST".equals(request.getMethod()) && path.equals("/api/v1/auth/sessions")) {
-			bucket = rateLimitConfig.resolveLoginBucket(clientIp);
+			bucket = this.rateLimitConfig.resolveLoginBucket(clientIp);
 		}
 		else if (path.equals("/api/v1/users/password")) {
-			bucket = rateLimitConfig.resolvePasswordBucket(clientIp);
+			bucket = this.rateLimitConfig.resolvePasswordBucket(clientIp);
 		}
 		else {
-			bucket = rateLimitConfig.resolveGeneralBucket(clientIp);
+			bucket = this.rateLimitConfig.resolveGeneralBucket(clientIp);
 		}
 
 		if (bucket.tryConsume(1)) {

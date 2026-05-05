@@ -34,16 +34,16 @@ import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.when;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.BDDMockito.given;
 
-class JwtAuthenticationFilterTest {
+class JwtAuthenticationFilterTests {
 
 	private final TokenService tokenService = org.mockito.Mockito.mock(TokenService.class);
 
 	private final JwtService jwtService = new JwtService();
 
-	private final JwtAuthenticationFilter filter = new JwtAuthenticationFilter(jwtService, tokenService);
+	private final JwtAuthenticationFilter filter = new JwtAuthenticationFilter(this.jwtService, this.tokenService);
 
 	@AfterEach
 	void tearDown() {
@@ -54,22 +54,23 @@ class JwtAuthenticationFilterTest {
 	@DisplayName("Deve criar uma authority para cada role presente no token")
 	void doFilterInternal_whenTokenHasMultipleRoles_thenCreatesAuthorityForEachRole() throws Exception {
 		UUID userId = UUID.randomUUID();
-		ReflectionTestUtils.setField(jwtService, "secret",
+		ReflectionTestUtils.setField(this.jwtService, "secret",
 				"9a4f2c8d3b7a1e5f8g9h0i1j2k3l4m5n6o7p8q9r0s1t2u3v4w5x6y7z8a9b0c1d");
-		ReflectionTestUtils.setField(jwtService, "expiration", 900000L);
-		String accessToken = jwtService.generateToken(userId, Set.of(UserRole.ADMIN, UserRole.USER));
+		ReflectionTestUtils.setField(this.jwtService, "expiration", 900000L);
+		String accessToken = this.jwtService.generateToken(userId, Set.of(UserRole.ADMIN, UserRole.USER));
 		String refreshToken = "refresh-token";
 		MockHttpServletRequest request = new MockHttpServletRequest();
 		request.setCookies(new Cookie("access_token", accessToken), new Cookie("refresh_token", refreshToken));
 
-		when(tokenService.getUserIdFromRefreshToken(refreshToken)).thenReturn(userId);
-		when(tokenService.validateRefreshToken(refreshToken)).thenReturn(true);
+		given(this.tokenService.getUserIdFromRefreshToken(refreshToken)).willReturn(userId);
+		given(this.tokenService.validateRefreshToken(refreshToken)).willReturn(true);
 
-		filter.doFilter(request, new MockHttpServletResponse(), new MockFilterChain());
+		this.filter.doFilter(request, new MockHttpServletResponse(), new MockFilterChain());
 
 		var authorities = SecurityContextHolder.getContext().getAuthentication().getAuthorities();
-		assertTrue(authorities.stream().anyMatch(authority -> authority.getAuthority().equals("ROLE_ADMIN")));
-		assertTrue(authorities.stream().anyMatch(authority -> authority.getAuthority().equals("ROLE_USER")));
+		assertThat(authorities.stream().anyMatch((authority) -> authority.getAuthority().equals("ROLE_ADMIN")))
+			.isTrue();
+		assertThat(authorities.stream().anyMatch((authority) -> authority.getAuthority().equals("ROLE_USER"))).isTrue();
 	}
 
 }

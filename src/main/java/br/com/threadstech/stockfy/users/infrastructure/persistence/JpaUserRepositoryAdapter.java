@@ -39,45 +39,45 @@ public class JpaUserRepositoryAdapter implements UserRepository {
 
 	@Override
 	public void save(User user) {
-		repository.save(mapper.toEntity(user));
+		this.repository.save(this.mapper.toEntity(user));
 	}
 
 	@Override
 	public Optional<User> findById(UUID id) {
-		return repository.findById(id).map(mapper::toDomain);
+		return this.repository.findById(id).map(this.mapper::toDomain);
 	}
 
 	@Override
 	public Optional<User> findByEmail(Email email) {
-		return repository.findByEmail(email.value()).map(mapper::toDomain);
+		return this.repository.findByEmail(email.value()).map(this.mapper::toDomain);
 	}
 
 	@Override
 	public Optional<User> findByResetPasswordCodeHash(String resetPasswordCodeHash) {
-		return repository.findByResetPasswordCodeHash(resetPasswordCodeHash).map(mapper::toDomain);
+		return this.repository.findByResetPasswordCodeHash(resetPasswordCodeHash).map(this.mapper::toDomain);
 	}
 
 	@Override
 	public List<User> findAll(String nameFilter) {
-		return repository.findAllByName(nameFilter).stream().map(mapper::toDomain).toList();
+		return this.repository.findAllByName(nameFilter).stream().map(this.mapper::toDomain).toList();
 	}
 
 	@Override
 	public Page<User> findAll(String nameFilter, Pageable pageable) {
 		if (nameFilter == null) {
-			return repository.findAll(pageable).map(mapper::toDomain);
+			return this.repository.findAll(pageable).map(this.mapper::toDomain);
 		}
-		return repository.findByNameContainingIgnoreCase(nameFilter, pageable).map(mapper::toDomain);
+		return this.repository.findByNameContainingIgnoreCase(nameFilter, pageable).map(this.mapper::toDomain);
 	}
 
 	@Override
 	public void update(User user) {
-		repository.save(mapper.toEntity(user));
+		this.repository.save(this.mapper.toEntity(user));
 	}
 
 	@Override
 	public void deleteById(UUID id) {
-		repository.deleteById(id);
+		this.repository.deleteById(id);
 	}
 
 }

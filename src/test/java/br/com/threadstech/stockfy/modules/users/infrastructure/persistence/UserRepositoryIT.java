@@ -36,8 +36,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
@@ -53,41 +52,41 @@ class UserRepositoryIT {
 	@Test
 	@DisplayName("Should find users by name filter")
 	void shouldFindUsersByNameFilter() {
-		userRepository.save(createUser("Alice", "alice@example.com"));
-		userRepository.save(createUser("Bob", "bob@example.com"));
+		this.userRepository.save(createUser("Alice", "alice@example.com"));
+		this.userRepository.save(createUser("Bob", "bob@example.com"));
 
-		var results = userRepository.findAll("Ali");
-		assertEquals(1, results.size());
-		assertEquals("Alice", results.get(0).getName());
+		var results = this.userRepository.findAll("Ali");
+		assertThat(results.size()).isEqualTo(1);
+		assertThat(results.get(0).getName()).isEqualTo("Alice");
 	}
 
 	@Test
 	@DisplayName("Should update user status")
 	void shouldUpdateUserStatus() {
 		User user = createUser("Status Test", "status@example.com");
-		userRepository.save(user);
+		this.userRepository.save(user);
 
 		user.lock();
-		userRepository.update(user);
+		this.userRepository.update(user);
 
-		var updated = userRepository.findById(user.getId());
-		assertTrue(updated.isPresent());
-		assertEquals(UserStatus.LOCKED, updated.get().getStatus());
+		var updated = this.userRepository.findById(user.getId());
+		assertThat(updated.isPresent()).isTrue();
+		assertThat(updated.get().getStatus()).isEqualTo(UserStatus.LOCKED);
 	}
 
 	@Test
 	@DisplayName("Deve persistir roles ao salvar usuario")
 	void save_whenUserHasRoles_thenPersistsRoles() {
 		User user = createUser("Admin User", "admin-role@example.com", Set.of(UserRole.ADMIN, UserRole.USER));
-		userRepository.save(user);
+		this.userRepository.save(user);
 
-		var persisted = userRepository.findByEmail(new Email("admin-role@example.com"));
-		List<String> persistedRoles = jdbcTemplate
+		var persisted = this.userRepository.findByEmail(new Email("admin-role@example.com"));
+		List<String> persistedRoles = this.jdbcTemplate
 			.queryForList("SELECT role FROM users_roles WHERE user_id = ? ORDER BY role", String.class, user.getId());
 
-		assertTrue(persisted.isPresent());
-		assertEquals(Set.of(UserRole.ADMIN, UserRole.USER), persisted.get().getRoles());
-		assertEquals(List.of("ADMIN", "USER"), persistedRoles);
+		assertThat(persisted.isPresent()).isTrue();
+		assertThat(persisted.get().getRoles()).isEqualTo(Set.of(UserRole.ADMIN, UserRole.USER));
+		assertThat(persistedRoles).isEqualTo(List.of("ADMIN", "USER"));
 	}
 
 	private User createUser(String name, String email) {

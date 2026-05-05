@@ -30,7 +30,7 @@ public class WithMockUserIdSecurityContextFactory implements WithSecurityContext
 	@Override
 	public SecurityContext createSecurityContext(WithMockUserId annotation) {
 		var authorities = Arrays.stream(annotation.roles())
-			.map(role -> role.startsWith("ROLE_") ? role : "ROLE_" + role)
+			.map((role) -> role.startsWith("ROLE_") ? role : "ROLE_" + role)
 			.map(SimpleGrantedAuthority::new)
 			.toList();
 

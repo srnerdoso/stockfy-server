@@ -41,14 +41,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class UserManagementTest {
+class UserManagementTests {
 
 	@Mock
 	private UserRepository userRepository;
@@ -71,8 +71,8 @@ class UserManagementTest {
 
 	@BeforeEach
 	void setUp() {
-		user = User.builder()
-			.id(userId)
+		this.user = this.user.builder()
+			.id(this.userId)
 			.name("John Doe")
 			.email(new Email("john@example.com"))
 			.password(new Password("hashed_password"))
@@ -85,42 +85,43 @@ class UserManagementTest {
 	@Test
 	@DisplayName("Should register new user")
 	void shouldRegisterNewUser() {
-		when(userRepository.findByEmail(any())).thenReturn(Optional.empty());
-		when(passwordEncoder.encode(any())).thenReturn("hashed_password");
+		given(this.userRepository.findByEmail(any())).willReturn(Optional.empty());
+		given(this.passwordEncoder.encode(any())).willReturn("hashed_password");
 
 		var request = new RegisterUserRequest("New User", "new@example.com", "password123", null, UserRole.USER);
-		registerUserUseCase.execute(request);
+		this.registerUserUseCase.execute(request);
 
-		verify(userRepository).save(any(User.class));
+		verify(this.userRepository).save(any(User.class));
 	}
 
 	@Test
 	@DisplayName("Should throw exception if email already exists")
 	void shouldThrowExceptionIfEmailExists() {
-		when(userRepository.findByEmail(any())).thenReturn(Optional.of(user));
+		given(this.userRepository.findByEmail(any())).willReturn(Optional.of(this.user));
 
 		var request = new RegisterUserRequest("John", "john@example.com", "pass", null, UserRole.USER);
-		assertThrows(EmailAlreadyExistsException.class, () -> registerUserUseCase.execute(request));
+		assertThatExceptionOfType(EmailAlreadyExistsException.class)
+			.isThrownBy(() -> this.registerUserUseCase.execute(request));
 	}
 
 	@Test
 	@DisplayName("Should update user profile")
 	void shouldUpdateUserProfile() {
-		when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+		given(this.userRepository.findById(this.userId)).willReturn(Optional.of(this.user));
 
-		updateProfileUseCase.execute(userId, "Updated Name", "updated@example.com");
+		this.updateProfileUseCase.execute(this.userId, "Updated Name", "updated@example.com");
 
-		assertEquals("Updated Name", user.getName());
-		assertEquals("updated@example.com", user.getEmail().value());
-		verify(userRepository).update(user);
+		assertThat(this.user.getName()).isEqualTo("Updated Name");
+		assertThat(this.user.getEmail().value()).isEqualTo("updated@example.com");
+		verify(this.userRepository).update(this.user);
 	}
 
 	@Test
 	@DisplayName("Should delete user (soft delete)")
 	void shouldDeleteUser() {
-		deleteUserUseCase.execute(userId);
+		this.deleteUserUseCase.execute(this.userId);
 
-		verify(userRepository).deleteById(userId);
+		verify(this.userRepository).deleteById(this.userId);
 	}
 
 }

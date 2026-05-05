@@ -32,6 +32,7 @@ import br.com.threadstech.stockfy.users.domain.repository.UserRepository;
 import br.com.threadstech.stockfy.users.infrastructure.config.UserRateLimitConfig;
 import br.com.threadstech.stockfy.users.infrastructure.security.JwtService;
 import br.com.threadstech.stockfy.users.infrastructure.security.TokenService;
+import br.com.threadstech.stockfy.web.presentation.ApiErrorResponseAssertions;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
@@ -45,9 +46,7 @@ import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
-import static br.com.threadstech.stockfy.web.presentation.ApiErrorResponseAssertions.assertBadRequestFieldValidation;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -56,6 +55,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @Import({ TestcontainersConfiguration.class, RateLimitTestConfiguration.class })
+@SuppressWarnings({ "PMD.AvoidAccessibilityAlteration", "PMD.AvoidCatchingGenericException",
+		"PMD.AvoidDuplicateLiterals", "PMD.AvoidLiteralsInIfCondition" })
 class UserCreationIT {
 
 	@Autowired
@@ -81,15 +82,15 @@ class UserCreationIT {
 		try {
 			var loginBucketsField = UserRateLimitConfig.class.getDeclaredField("loginBuckets");
 			loginBucketsField.setAccessible(true);
-			((java.util.Map<?, ?>) loginBucketsField.get(rateLimitConfig)).clear();
+			((java.util.Map<?, ?>) loginBucketsField.get(this.rateLimitConfig)).clear();
 
 			var generalBucketsField = UserRateLimitConfig.class.getDeclaredField("generalBuckets");
 			generalBucketsField.setAccessible(true);
-			((java.util.Map<?, ?>) generalBucketsField.get(rateLimitConfig)).clear();
-			rateLimitTimeMeter.reset();
+			((java.util.Map<?, ?>) generalBucketsField.get(this.rateLimitConfig)).clear();
+			this.rateLimitTimeMeter.reset();
 		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
+		catch (Exception ex) {
+			throw new RuntimeException(ex);
 		}
 	}
 
@@ -106,20 +107,20 @@ class UserCreationIT {
 				}
 				""";
 
-		mockMvc.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(json))
+		this.mockMvc.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(json))
 			.andExpect(status().isCreated())
 			.andExpect(content().string(""));
 
-		assertTrue(userRepository.findByEmail(new Email("created@example.com")).isPresent());
+		assertThat(this.userRepository.findByEmail(new Email("created@example.com")).isPresent()).isTrue();
 	}
 
 	@Test
 	@DisplayName("Deve retornar 201 e criar usuário quando token JWT pertencer a ADMIN")
 	void registerUser_whenJwtTokenBelongsToAdmin_thenReturns201AndCreatesUser() throws Exception {
 		User admin = createUser("Jwt Admin", "jwt-admin@example.com", UserRole.ADMIN);
-		userRepository.save(admin);
-		String accessToken = jwtService.generateToken(admin.getId(), admin.getRoles());
-		String refreshToken = tokenService.generateRefreshToken(admin.getId());
+		this.userRepository.save(admin);
+		String accessToken = this.jwtService.generateToken(admin.getId(), admin.getRoles());
+		String refreshToken = this.tokenService.generateRefreshToken(admin.getId());
 		String json = """
 				{
 				    "name": "Jwt Created",
@@ -129,7 +130,7 @@ class UserCreationIT {
 				}
 				""";
 
-		mockMvc
+		this.mockMvc
 			.perform(post("/api/v1/users")
 				.cookie(new Cookie("access_token", accessToken), new Cookie("refresh_token", refreshToken))
 				.contentType(MediaType.APPLICATION_JSON)
@@ -137,15 +138,15 @@ class UserCreationIT {
 			.andExpect(status().isCreated())
 			.andExpect(content().string(""));
 
-		assertTrue(userRepository.findByEmail(new Email("jwt-created@example.com")).isPresent());
+		assertThat(this.userRepository.findByEmail(new Email("jwt-created@example.com")).isPresent()).isTrue();
 	}
 
 	@Test
 	@DisplayName("Não deve persistir usuário e deve retornar 401 quando refresh token for inválido")
 	void registerUser_whenAccessTokenIsValidAndRefreshTokenIsInvalid_thenReturns401() throws Exception {
 		User admin = createUser("Invalid Session Admin", "invalid-session-admin@example.com", UserRole.ADMIN);
-		userRepository.save(admin);
-		String accessToken = jwtService.generateToken(admin.getId(), admin.getRoles());
+		this.userRepository.save(admin);
+		String accessToken = this.jwtService.generateToken(admin.getId(), admin.getRoles());
 		String json = """
 				{
 				    "name": "Invalid Session Created",
@@ -155,7 +156,7 @@ class UserCreationIT {
 				}
 				""";
 
-		mockMvc
+		this.mockMvc
 			.perform(post("/api/v1/users")
 				.cookie(new Cookie("access_token", accessToken), new Cookie("refresh_token", "invalid-refresh-token"))
 				.contentType(MediaType.APPLICATION_JSON)
@@ -163,7 +164,8 @@ class UserCreationIT {
 			.andExpect(status().isUnauthorized())
 			.andExpect(content().string(""));
 
-		assertFalse(userRepository.findByEmail(new Email("invalid-session-created@example.com")).isPresent());
+		assertThat(this.userRepository.findByEmail(new Email("invalid-session-created@example.com")).isPresent())
+			.isFalse();
 	}
 
 	@Test
@@ -178,12 +180,12 @@ class UserCreationIT {
 				}
 				""";
 
-		mockMvc.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(json))
+		this.mockMvc.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(json))
 			.andExpect(status().isUnauthorized())
 			.andExpect(content().string(""))
-			.andExpect(result -> assertFalse(result.getResponse().isCommitted()));
+			.andExpect((result) -> assertThat(result.getResponse().isCommitted()).isFalse());
 
-		assertFalse(userRepository.findByEmail(new Email("unauth@example.com")).isPresent());
+		assertThat(this.userRepository.findByEmail(new Email("unauth@example.com")).isPresent()).isFalse();
 	}
 
 	@Test
@@ -199,12 +201,12 @@ class UserCreationIT {
 				}
 				""";
 
-		mockMvc.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(json))
+		this.mockMvc.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(json))
 			.andExpect(status().isForbidden())
 			.andExpect(content().string(""))
-			.andExpect(result -> assertFalse(result.getResponse().isCommitted()));
+			.andExpect((result) -> assertThat(result.getResponse().isCommitted()).isFalse());
 
-		assertFalse(userRepository.findByEmail(new Email("user@example.com")).isPresent());
+		assertThat(this.userRepository.findByEmail(new Email("user@example.com")).isPresent()).isFalse();
 	}
 
 	@Test
@@ -213,15 +215,17 @@ class UserCreationIT {
 	void registerUser_whenNameIsInvalid_thenReturns400() throws Exception {
 		String jsonNull = "{ \"email\": \"john@example.com\", \"password\": \"password123\", \"role\": \"USER\" }";
 
-		var result = mockMvc.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(jsonNull));
-		assertBadRequestFieldValidation(result, "name", "O nome é obrigatório.");
+		var result = this.mockMvc
+			.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(jsonNull));
+		ApiErrorResponseAssertions.assertBadRequestFieldValidation(result, "name", "O nome é obrigatório.");
 
 		String jsonInvalid = "{ \"name\": \"User'); DROP TABLE users; --\", \"email\": \"john@example.com\", \"password\": \"password123\", \"role\": \"USER\" }";
 
-		assertBadRequestFieldValidation(
-				mockMvc.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(jsonInvalid)),
+		ApiErrorResponseAssertions.assertBadRequestFieldValidation(
+				this.mockMvc
+					.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(jsonInvalid)),
 				"name", "O nome contém caracteres inválidos.");
-		assertFalse(userRepository.findByEmail(new Email("john@example.com")).isPresent());
+		assertThat(this.userRepository.findByEmail(new Email("john@example.com")).isPresent()).isFalse();
 	}
 
 	@Test
@@ -231,13 +235,14 @@ class UserCreationIT {
 		String jsonNull = "{ \"name\": \"John\", \"password\": \"password123\", \"role\": \"USER\" }";
 		String jsonInvalid = "{ \"name\": \"John\", \"email\": \"invalid-email\", \"password\": \"password123\", \"role\": \"USER\" }";
 
-		assertBadRequestFieldValidation(
-				mockMvc.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(jsonNull)),
+		ApiErrorResponseAssertions.assertBadRequestFieldValidation(
+				this.mockMvc.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(jsonNull)),
 				"email", "O e-mail é obrigatório.");
-		assertBadRequestFieldValidation(
-				mockMvc.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(jsonInvalid)),
+		ApiErrorResponseAssertions.assertBadRequestFieldValidation(
+				this.mockMvc
+					.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(jsonInvalid)),
 				"email", "O e-mail informado é inválido.");
-		assertFalse(userRepository.findByEmail(new Email("john@example.com")).isPresent());
+		assertThat(this.userRepository.findByEmail(new Email("john@example.com")).isPresent()).isFalse();
 	}
 
 	@Test
@@ -247,13 +252,13 @@ class UserCreationIT {
 		String jsonNull = "{ \"name\": \"John\", \"email\": \"john@example.com\", \"role\": \"USER\" }";
 		String jsonBlank = "{ \"name\": \"John\", \"email\": \"john@example.com\", \"password\": \" \", \"role\": \"USER\" }";
 
-		assertBadRequestFieldValidation(
-				mockMvc.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(jsonNull)),
+		ApiErrorResponseAssertions.assertBadRequestFieldValidation(
+				this.mockMvc.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(jsonNull)),
 				"password", "A senha é obrigatória.");
-		assertBadRequestFieldValidation(
-				mockMvc.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(jsonBlank)),
+		ApiErrorResponseAssertions.assertBadRequestFieldValidation(
+				this.mockMvc.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(jsonBlank)),
 				"password", "A senha é obrigatória.");
-		assertFalse(userRepository.findByEmail(new Email("john@example.com")).isPresent());
+		assertThat(this.userRepository.findByEmail(new Email("john@example.com")).isPresent()).isFalse();
 	}
 
 	@Test
@@ -263,13 +268,15 @@ class UserCreationIT {
 		String jsonMissing = "{ \"name\": \"John\", \"email\": \"john@example.com\", \"password\": \"password123\" }";
 		String jsonInvalid = "{ \"name\": \"John\", \"email\": \"john@example.com\", \"password\": \"password123\", \"role\": \"INVALID\" }";
 
-		assertBadRequestFieldValidation(
-				mockMvc.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(jsonMissing)),
+		ApiErrorResponseAssertions.assertBadRequestFieldValidation(
+				this.mockMvc
+					.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(jsonMissing)),
 				"role", "O perfil do usuário é obrigatório.");
-		assertBadRequestFieldValidation(
-				mockMvc.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(jsonInvalid)),
+		ApiErrorResponseAssertions.assertBadRequestFieldValidation(
+				this.mockMvc
+					.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(jsonInvalid)),
 				"role", "não deve ser nulo");
-		assertFalse(userRepository.findByEmail(new Email("john@example.com")).isPresent());
+		assertThat(this.userRepository.findByEmail(new Email("john@example.com")).isPresent()).isFalse();
 	}
 
 	@Test
@@ -286,7 +293,7 @@ class UserCreationIT {
 				}
 				""";
 
-		var result = mockMvc.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(json));
+		var result = this.mockMvc.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(json));
 
 		result.andExpect(status().isUnprocessableEntity())
 			.andExpect(jsonPath("$.type").value("about:blank"))
@@ -296,7 +303,7 @@ class UserCreationIT {
 			.andExpect(jsonPath("$.fieldErrors[0].field").value("confirmPassword"))
 			.andExpect(jsonPath("$.fieldErrors[0].message").value("As senhas não coincidem."));
 
-		assertFalse(userRepository.findByEmail(new Email("test@example.com")).isPresent());
+		assertThat(this.userRepository.findByEmail(new Email("test@example.com")).isPresent()).isFalse();
 	}
 
 	@Test
@@ -312,7 +319,7 @@ class UserCreationIT {
 				}
 				""";
 
-		mockMvc.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(json))
+		this.mockMvc.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(json))
 			.andExpect(status().is4xxClientError());
 	}
 
@@ -330,7 +337,7 @@ class UserCreationIT {
 				""";
 
 		for (int i = 0; i <= 11; i++) {
-			var result = mockMvc.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON)
+			var result = this.mockMvc.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON)
 				.content(json.replace("user@test.com", "user" + i + "@test.com")));
 
 			if (i > 10) {
@@ -353,13 +360,13 @@ class UserCreationIT {
 				""";
 
 		for (int i = 0; i < 11; i++) {
-			mockMvc.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON)
+			this.mockMvc.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON)
 				.content(json.replace("user@test.com", "user" + i + "@test.com")));
 		}
 
-		rateLimitTimeMeter.advanceBy(Duration.ofSeconds(61));
+		this.rateLimitTimeMeter.advanceBy(Duration.ofSeconds(61));
 
-		mockMvc
+		this.mockMvc
 			.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON)
 				.content(json.replace("user@test.com", "after-window@test.com")))
 			.andExpect(status().isCreated());

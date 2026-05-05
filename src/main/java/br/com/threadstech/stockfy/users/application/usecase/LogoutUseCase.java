@@ -28,7 +28,7 @@ public class LogoutUseCase {
 	private final TokenService tokenService;
 
 	public void execute(String refreshToken) {
-		tokenService.revokeRefreshToken(refreshToken);
+		this.tokenService.revokeRefreshToken(refreshToken);
 	}
 
 }

@@ -65,6 +65,8 @@ import org.springframework.web.bind.annotation.RestController;
 @Validated
 public class UserController {
 
+	private static final String ADMIN_ROLE_EXPRESSION = "hasRole('ADMIN')";
+
 	private final RegisterUserUseCase registerUserUseCase;
 
 	private final FindAllUsersUseCase findAllUsersUseCase;
@@ -88,24 +90,24 @@ public class UserController {
 	private final UserResponseMapperFactory mapperFactory;
 
 	@PostMapping
-	@PreAuthorize("hasRole('ADMIN')")
+	@PreAuthorize(ADMIN_ROLE_EXPRESSION)
 	public ResponseEntity<Void> register(@RequestBody @Valid RegisterUserRequest request) {
-		registerUserUseCase.execute(request);
+		this.registerUserUseCase.execute(request);
 		return ResponseEntity.status(HttpStatus.CREATED).build();
 	}
 
 	@PatchMapping("/{id}/roles")
-	@PreAuthorize("hasRole('ADMIN')")
+	@PreAuthorize(ADMIN_ROLE_EXPRESSION)
 	public ResponseEntity<Void> updateUserRoles(@PathVariable UUID id,
 			@RequestBody @Valid UpdateUserRolesRequest request) {
-		updateUserRolesUseCase.execute(id, request.rolesToAdd(), request.rolesToRemove());
+		this.updateUserRolesUseCase.execute(id, request.rolesToAdd(), request.rolesToRemove());
 		return ResponseEntity.noContent().build();
 	}
 
 	@PostMapping("/{id}/password-reset-codes")
-	@PreAuthorize("hasRole('ADMIN')")
+	@PreAuthorize(ADMIN_ROLE_EXPRESSION)
 	public ResponseEntity<ResetCodeResponse> generateResetCode(@PathVariable UUID id) {
-		String code = generateResetCodeUseCase.execute(id);
+		String code = this.generateResetCodeUseCase.execute(id);
 		return ResponseEntity.ok(new ResetCodeResponse(code));
 	}
 
@@ -114,12 +116,13 @@ public class UserController {
 	public ResponseEntity<Void> updatePassword(@RequestBody @Valid UpdatePasswordRequest request,
 			Authentication authentication) {
 		if (request.code() != null) {
-			updatePasswordUseCase.executeWithCode(request.code(), request.newPassword(), request.confirmPassword());
+			this.updatePasswordUseCase.executeWithCode(request.code(), request.newPassword(),
+					request.confirmPassword());
 			return ResponseEntity.noContent().build();
 		}
 
 		UUID userId = (UUID) authentication.getPrincipal();
-		updatePasswordUseCase.executeAuthenticated(userId, request.currentPassword(), request.newPassword(),
+		this.updatePasswordUseCase.executeAuthenticated(userId, request.currentPassword(), request.newPassword(),
 				request.confirmPassword());
 		return ResponseEntity.noContent().build();
 	}
@@ -127,8 +130,8 @@ public class UserController {
 	@GetMapping("/me")
 	public ResponseEntity<UserResponse> me(Authentication authentication) {
 		UUID userId = (UUID) authentication.getPrincipal();
-		return userRepository.findById(userId)
-			.map(mapperFactory::toResponse)
+		return this.userRepository.findById(userId)
+			.map(this.mapperFactory::toResponse)
 			.map(ResponseEntity::ok)
 			.orElse(ResponseEntity.notFound().build());
 	}
@@ -136,37 +139,37 @@ public class UserController {
 	@GetMapping("/{id}")
 	@PreAuthorize("hasRole('ADMIN') or #id == authentication.principal")
 	public ResponseEntity<UserListItemResponse> getById(@PathVariable UUID id) {
-		return ResponseEntity.ok(findUserByIdUseCase.execute(id));
+		return ResponseEntity.ok(this.findUserByIdUseCase.execute(id));
 	}
 
 	@GetMapping
-	@PreAuthorize("hasRole('ADMIN')")
+	@PreAuthorize(ADMIN_ROLE_EXPRESSION)
 	public ResponseEntity<FindAllUsersResponse<UserListItemResponse>> findAll(
 			@RequestParam(required = false) @Size(max = 255, message = "{user.name.size}") @Pattern(
 					regexp = "^[\\p{L}\\p{M}0-9 .'-]+$", message = "{user.name.pattern}") String name,
 			@RequestParam UserListType type, @PageableDefault(size = 20) Pageable pageable) {
-		return ResponseEntity.ok(findAllUsersUseCase.execute(name, type, pageable));
+		return ResponseEntity.ok(this.findAllUsersUseCase.execute(name, type, pageable));
 	}
 
 	@PatchMapping("/me")
 	public ResponseEntity<Void> updateProfile(@RequestBody @Valid UpdateCurrentUserRequest request,
 			Authentication authentication) {
 		UUID userId = (UUID) authentication.getPrincipal();
-		updateProfileUseCase.execute(userId, request.name(), request.email());
+		this.updateProfileUseCase.execute(userId, request.name(), request.email());
 		return ResponseEntity.noContent().build();
 	}
 
 	@DeleteMapping("/{id}")
-	@PreAuthorize("hasRole('ADMIN')")
+	@PreAuthorize(ADMIN_ROLE_EXPRESSION)
 	public ResponseEntity<Void> delete(@PathVariable UUID id) {
-		deleteUserUseCase.execute(id);
+		this.deleteUserUseCase.execute(id);
 		return ResponseEntity.noContent().build();
 	}
 
 	@PatchMapping("/{id}/unlock")
-	@PreAuthorize("hasRole('ADMIN')")
+	@PreAuthorize(ADMIN_ROLE_EXPRESSION)
 	public ResponseEntity<Void> unlock(@PathVariable UUID id) {
-		unlockUserUseCase.execute(id);
+		this.unlockUserUseCase.execute(id);
 		return ResponseEntity.noContent().build();
 	}
 

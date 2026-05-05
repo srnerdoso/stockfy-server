@@ -22,30 +22,30 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
-class EmailTest {
+class EmailTests {
 
 	@Test
 	@DisplayName("Should create email with valid address")
 	void shouldCreateEmailWithValidAddress() {
 		String validAddress = "test@example.com";
 		Email email = new Email(validAddress);
-		assertEquals(validAddress, email.value());
+		assertThat(email.value()).isEqualTo(validAddress);
 	}
 
 	@ParameterizedTest
 	@ValueSource(strings = { "invalid-email", "test@", "@example.com", "test@example", "" })
 	@DisplayName("Should throw exception for invalid email formats")
 	void shouldThrowExceptionForInvalidEmailFormats(String invalidAddress) {
-		assertThrows(IllegalArgumentException.class, () -> new Email(invalidAddress));
+		assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> new Email(invalidAddress));
 	}
 
 	@Test
 	@DisplayName("Should throw exception for null email")
 	void shouldThrowExceptionForNullEmail() {
-		assertThrows(IllegalArgumentException.class, () -> new Email(null));
+		assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> new Email(null));
 	}
 
 }

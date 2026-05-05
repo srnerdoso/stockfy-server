@@ -32,7 +32,7 @@ public class DeleteUserUseCase {
 
 	@Transactional
 	public void execute(UUID userId) {
-		userRepository.deleteById(userId);
+		this.userRepository.deleteById(userId);
 	}
 
 }

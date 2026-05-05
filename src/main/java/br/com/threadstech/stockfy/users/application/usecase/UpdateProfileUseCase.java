@@ -36,7 +36,7 @@ public class UpdateProfileUseCase {
 
 	@Transactional
 	public void execute(UUID userId, String name, String email) {
-		User user = userRepository.findById(userId).orElseThrow(UserNotFoundException::new);
+		User user = this.userRepository.findById(userId).orElseThrow(UserNotFoundException::new);
 		Email newEmail = resolveNewEmail(user, email);
 
 		if (name == null && newEmail == null) {
@@ -51,7 +51,7 @@ public class UpdateProfileUseCase {
 			user.setEmail(newEmail);
 		}
 
-		userRepository.update(user);
+		this.userRepository.update(user);
 	}
 
 	private Email resolveNewEmail(User user, String email) {
@@ -64,9 +64,9 @@ public class UpdateProfileUseCase {
 			return null;
 		}
 
-		userRepository.findByEmail(newEmail)
-			.filter(existingUser -> !existingUser.getId().equals(user.getId()))
-			.ifPresent(existingUser -> {
+		this.userRepository.findByEmail(newEmail)
+			.filter((existingUser) -> !existingUser.getId().equals(user.getId()))
+			.ifPresent((existingUser) -> {
 				throw new EmailAlreadyExistsException();
 			});
 

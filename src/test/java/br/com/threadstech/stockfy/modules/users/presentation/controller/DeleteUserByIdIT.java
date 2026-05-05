@@ -25,6 +25,7 @@ import br.com.threadstech.stockfy.TestcontainersConfiguration;
 import br.com.threadstech.stockfy.users.application.exception.InvalidCredentialsException;
 import br.com.threadstech.stockfy.users.application.usecase.LoginUseCase;
 import br.com.threadstech.stockfy.users.infrastructure.config.UserRateLimitConfig;
+import br.com.threadstech.stockfy.web.presentation.ApiErrorResponseAssertions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -38,11 +39,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
 
-import static br.com.threadstech.stockfy.web.presentation.ApiErrorResponseAssertions.assertBadRequestFieldValidation;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -53,6 +51,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Sql(scripts = "/sql/users/cleanup.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @Sql(scripts = "/sql/users/base-users.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @Sql(scripts = "/sql/users/cleanup.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
+@SuppressWarnings({ "PMD.AvoidAccessibilityAlteration", "PMD.AvoidCatchingGenericException",
+		"PMD.AvoidDuplicateLiterals", "PMD.AvoidLiteralsInIfCondition" })
 class DeleteUserByIdIT {
 
 	private static final String ADMIN_ID = "00000000-0000-0000-0000-000000000001";
@@ -84,15 +84,15 @@ class DeleteUserByIdIT {
 		try {
 			var loginBucketsField = UserRateLimitConfig.class.getDeclaredField("loginBuckets");
 			loginBucketsField.setAccessible(true);
-			((java.util.Map<?, ?>) loginBucketsField.get(rateLimitConfig)).clear();
+			((java.util.Map<?, ?>) loginBucketsField.get(this.rateLimitConfig)).clear();
 
 			var generalBucketsField = UserRateLimitConfig.class.getDeclaredField("generalBuckets");
 			generalBucketsField.setAccessible(true);
-			((java.util.Map<?, ?>) generalBucketsField.get(rateLimitConfig)).clear();
-			rateLimitTimeMeter.reset();
+			((java.util.Map<?, ?>) generalBucketsField.get(this.rateLimitConfig)).clear();
+			this.rateLimitTimeMeter.reset();
 		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
+		catch (Exception ex) {
+			throw new RuntimeException(ex);
 		}
 	}
 
@@ -101,31 +101,30 @@ class DeleteUserByIdIT {
 	@WithMockUserId(id = ADMIN_ID, roles = "ADMIN")
 	void deleteUserById_whenAdminDeletesExistingUser_thenReturns204AndSoftDeletesUser() throws Exception {
 		long usersBeforeRequest = countUsers();
-		assertTrue(userIsActive(OWNER_ID));
-
-		mockMvc.perform(delete("/api/v1/users/{id}", OWNER_ID))
+		assertThat(userIsActive(OWNER_ID)).isTrue();
+		this.mockMvc.perform(delete("/api/v1/users/{id}", OWNER_ID))
 			.andExpect(status().isNoContent())
 			.andExpect(content().string(""));
 
-		assertEquals(usersBeforeRequest, countUsers());
-		assertTrue(userExists(OWNER_ID));
-		assertFalse(userIsActive(OWNER_ID));
+		assertThat(countUsers()).isEqualTo(usersBeforeRequest);
+		assertThat(userExists(OWNER_ID)).isTrue();
+		assertThat(userIsActive(OWNER_ID)).isFalse();
 	}
 
 	@Test
 	@DisplayName("Deve impedir login apos usuario ser deletado")
 	@WithMockUserId(id = ADMIN_ID, roles = "ADMIN")
 	void deleteUserById_whenUserWasDeleted_thenUserCannotLogin() throws Exception {
-		jdbcTemplate.update("UPDATE users SET password_hash = ? WHERE id = ?", passwordEncoder.encode("password123"),
-				UUID.fromString(OWNER_ID));
+		this.jdbcTemplate.update("UPDATE users SET password_hash = ? WHERE id = ?",
+				this.passwordEncoder.encode("password123"), UUID.fromString(OWNER_ID));
 
-		mockMvc.perform(delete("/api/v1/users/{id}", OWNER_ID)).andExpect(status().isNoContent());
+		this.mockMvc.perform(delete("/api/v1/users/{id}", OWNER_ID)).andExpect(status().isNoContent());
 
-		assertThrows(InvalidCredentialsException.class,
-				() -> loginUseCase.execute("bruno.user@example.com", "password123"));
+		assertThatExceptionOfType(InvalidCredentialsException.class)
+			.isThrownBy(() -> this.loginUseCase.execute("bruno.user@example.com", "password123"));
 
-		assertTrue(userExists(OWNER_ID));
-		assertFalse(userIsActive(OWNER_ID));
+		assertThat(userExists(OWNER_ID)).isTrue();
+		assertThat(userIsActive(OWNER_ID)).isFalse();
 	}
 
 	@Test
@@ -134,12 +133,12 @@ class DeleteUserByIdIT {
 	void deleteUserById_whenOwnerUserDeletesOwnAccount_thenReturns403WithoutBody() throws Exception {
 		long usersBeforeRequest = countUsers();
 
-		mockMvc.perform(delete("/api/v1/users/{id}", OWNER_ID))
+		this.mockMvc.perform(delete("/api/v1/users/{id}", OWNER_ID))
 			.andExpect(status().isForbidden())
 			.andExpect(content().string(""));
 
-		assertEquals(usersBeforeRequest, countUsers());
-		assertTrue(userIsActive(OWNER_ID));
+		assertThat(countUsers()).isEqualTo(usersBeforeRequest);
+		assertThat(userIsActive(OWNER_ID)).isTrue();
 	}
 
 	@Test
@@ -147,12 +146,12 @@ class DeleteUserByIdIT {
 	void deleteUserById_whenNotAuthenticated_thenReturns401WithoutBody() throws Exception {
 		long usersBeforeRequest = countUsers();
 
-		mockMvc.perform(delete("/api/v1/users/{id}", OWNER_ID))
+		this.mockMvc.perform(delete("/api/v1/users/{id}", OWNER_ID))
 			.andExpect(status().isUnauthorized())
 			.andExpect(content().string(""));
 
-		assertEquals(usersBeforeRequest, countUsers());
-		assertTrue(userIsActive(OWNER_ID));
+		assertThat(countUsers()).isEqualTo(usersBeforeRequest);
+		assertThat(userIsActive(OWNER_ID)).isTrue();
 	}
 
 	@Test
@@ -161,11 +160,12 @@ class DeleteUserByIdIT {
 	void deleteUserById_whenIdIsInvalidUuid_thenReturns400AndDoesNotAlterData() throws Exception {
 		long usersBeforeRequest = countUsers();
 
-		assertBadRequestFieldValidation(mockMvc.perform(delete("/api/v1/users/{id}", "not-a-uuid")), "id",
+		ApiErrorResponseAssertions.assertBadRequestFieldValidation(
+				this.mockMvc.perform(delete("/api/v1/users/{id}", "not-a-uuid")), "id",
 				"O parâmetro informado é inválido.");
 
-		assertEquals(usersBeforeRequest, countUsers());
-		assertTrue(userIsActive(OWNER_ID));
+		assertThat(countUsers()).isEqualTo(usersBeforeRequest);
+		assertThat(userIsActive(OWNER_ID)).isTrue();
 	}
 
 	@Test
@@ -174,13 +174,13 @@ class DeleteUserByIdIT {
 	void deleteUserById_whenIdContainsSqlInjection_thenReturns400AndDoesNotAlterData() throws Exception {
 		long usersBeforeRequest = countUsers();
 
-		assertBadRequestFieldValidation(
-				mockMvc.perform(delete("/api/v1/users/{id}", "00000000-0000-0000-0000-000000000002' OR '1'='1")), "id",
-				"O parâmetro informado é inválido.");
+		ApiErrorResponseAssertions.assertBadRequestFieldValidation(
+				this.mockMvc.perform(delete("/api/v1/users/{id}", "00000000-0000-0000-0000-000000000002' OR '1'='1")),
+				"id", "O parâmetro informado é inválido.");
 
-		assertEquals(usersBeforeRequest, countUsers());
-		assertTrue(userIsActive(OWNER_ID));
-		assertTrue(userIsActive(OTHER_ID));
+		assertThat(countUsers()).isEqualTo(usersBeforeRequest);
+		assertThat(userIsActive(OWNER_ID)).isTrue();
+		assertThat(userIsActive(OTHER_ID)).isTrue();
 	}
 
 	@Test
@@ -190,15 +190,15 @@ class DeleteUserByIdIT {
 		long usersBeforeRequest = countUsers();
 
 		for (int i = 0; i <= 10; i++) {
-			var result = mockMvc.perform(delete("/api/v1/users/{id}", "not-a-uuid"));
+			var result = this.mockMvc.perform(delete("/api/v1/users/{id}", "not-a-uuid"));
 			if (i == 10) {
 				result.andExpect(status().isTooManyRequests());
 			}
 		}
 
-		assertEquals(usersBeforeRequest, countUsers());
-		assertTrue(userIsActive(OWNER_ID));
-		assertTrue(userIsActive(OTHER_ID));
+		assertThat(countUsers()).isEqualTo(usersBeforeRequest);
+		assertThat(userIsActive(OWNER_ID)).isTrue();
+		assertThat(userIsActive(OTHER_ID)).isTrue();
 	}
 
 	@Test
@@ -208,32 +208,34 @@ class DeleteUserByIdIT {
 		long usersBeforeRequest = countUsers();
 
 		for (int i = 0; i < 10; i++) {
-			mockMvc.perform(delete("/api/v1/users/{id}", "not-a-uuid"));
+			this.mockMvc.perform(delete("/api/v1/users/{id}", "not-a-uuid"));
 		}
 
-		mockMvc.perform(delete("/api/v1/users/{id}", "not-a-uuid")).andExpect(status().isTooManyRequests());
+		this.mockMvc.perform(delete("/api/v1/users/{id}", "not-a-uuid")).andExpect(status().isTooManyRequests());
 
-		rateLimitTimeMeter.advanceBy(Duration.ofSeconds(61));
+		this.rateLimitTimeMeter.advanceBy(Duration.ofSeconds(61));
 
-		mockMvc.perform(delete("/api/v1/users/{id}", OTHER_ID)).andExpect(status().isNoContent());
+		this.mockMvc.perform(delete("/api/v1/users/{id}", OTHER_ID)).andExpect(status().isNoContent());
 
-		assertEquals(usersBeforeRequest, countUsers());
-		assertTrue(userIsActive(OWNER_ID));
-		assertFalse(userIsActive(OTHER_ID));
+		assertThat(countUsers()).isEqualTo(usersBeforeRequest);
+		assertThat(userIsActive(OWNER_ID)).isTrue();
+		assertThat(userIsActive(OTHER_ID)).isFalse();
 	}
 
 	private long countUsers() {
-		Long count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM users", Long.class);
-		return count == null ? 0 : count;
+		Long count = this.jdbcTemplate.queryForObject("SELECT COUNT(*) FROM users", Long.class);
+		return (count != null) ? count : 0;
 	}
 
 	private boolean userExists(String id) {
-		Integer count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM users WHERE id = ?::uuid", Integer.class, id);
+		Integer count = this.jdbcTemplate.queryForObject("SELECT COUNT(*) FROM users WHERE id = ?::uuid", Integer.class,
+				id);
 		return count != null && count == 1;
 	}
 
 	private boolean userIsActive(String id) {
-		Boolean active = jdbcTemplate.queryForObject("SELECT active FROM users WHERE id = ?::uuid", Boolean.class, id);
+		Boolean active = this.jdbcTemplate.queryForObject("SELECT active FROM users WHERE id = ?::uuid", Boolean.class,
+				id);
 		return Boolean.TRUE.equals(active);
 	}
 

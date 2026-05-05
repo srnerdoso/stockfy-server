@@ -30,6 +30,8 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class TokenService {
 
+	private static final String REFRESH_TOKEN_PREFIX = "refresh_token:";
+
 	private final StringRedisTemplate redisTemplate;
 
 	@Value("${jwt.refresh-token-expiration}")
@@ -37,22 +39,23 @@ public class TokenService {
 
 	public String generateRefreshToken(UUID userId) {
 		String refreshToken = UUID.randomUUID().toString();
-		redisTemplate.opsForValue()
-			.set("refresh_token:" + refreshToken, userId.toString(), refreshTokenExpiration, TimeUnit.MILLISECONDS);
+		this.redisTemplate.opsForValue()
+			.set(REFRESH_TOKEN_PREFIX + refreshToken, userId.toString(), this.refreshTokenExpiration,
+					TimeUnit.MILLISECONDS);
 		return refreshToken;
 	}
 
 	public boolean validateRefreshToken(String refreshToken) {
-		return Boolean.TRUE.equals(redisTemplate.hasKey("refresh_token:" + refreshToken));
+		return Boolean.TRUE.equals(this.redisTemplate.hasKey(REFRESH_TOKEN_PREFIX + refreshToken));
 	}
 
 	public UUID getUserIdFromRefreshToken(String refreshToken) {
-		String userId = redisTemplate.opsForValue().get("refresh_token:" + refreshToken);
-		return userId != null ? UUID.fromString(userId) : null;
+		String userId = this.redisTemplate.opsForValue().get(REFRESH_TOKEN_PREFIX + refreshToken);
+		return (userId != null) ? UUID.fromString(userId) : null;
 	}
 
 	public Optional<UUID> consumeRefreshToken(String refreshToken) {
-		String userId = redisTemplate.opsForValue().getAndDelete("refresh_token:" + refreshToken);
+		String userId = this.redisTemplate.opsForValue().getAndDelete(REFRESH_TOKEN_PREFIX + refreshToken);
 		if (userId == null) {
 			return Optional.empty();
 		}
@@ -66,7 +69,7 @@ public class TokenService {
 	}
 
 	public void revokeRefreshToken(String refreshToken) {
-		redisTemplate.delete("refresh_token:" + refreshToken);
+		this.redisTemplate.delete(REFRESH_TOKEN_PREFIX + refreshToken);
 	}
 
 }

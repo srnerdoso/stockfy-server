@@ -22,14 +22,14 @@ import br.com.threadstech.stockfy.users.domain.event.AccountLockedEvent;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.assertj.core.api.Assertions.assertThat;
 
-class AccountLockedEventTest {
+class AccountLockedEventTests {
 
 	@Test
 	@DisplayName("Nao deve depender de serializacao Java")
 	void accountLockedEvent_whenCreated_thenDoesNotImplementSerializable() {
-		assertFalse(Serializable.class.isAssignableFrom(AccountLockedEvent.class));
+		assertThat(Serializable.class.isAssignableFrom(AccountLockedEvent.class)).isFalse();
 	}
 
 }

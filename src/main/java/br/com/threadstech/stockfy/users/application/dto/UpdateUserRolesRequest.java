@@ -16,6 +16,8 @@
 
 package br.com.threadstech.stockfy.users.application.dto;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -25,17 +27,34 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 
 public record UpdateUserRolesRequest(
-		List<@NotNull(message = "{user.roles.invalid}") @Pattern(regexp = "ADMIN|USER",
-				message = "{user.roles.invalid}") String> add,
-		List<@NotNull(message = "{user.roles.invalid}") @Pattern(regexp = "ADMIN|USER",
-				message = "{user.roles.invalid}") String> remove) {
+		List<@NotNull(message = ROLES_INVALID_MESSAGE) @Pattern(regexp = "ADMIN|USER",
+				message = ROLES_INVALID_MESSAGE) String> add,
+		List<@NotNull(message = ROLES_INVALID_MESSAGE) @Pattern(regexp = "ADMIN|USER",
+				message = ROLES_INVALID_MESSAGE) String> remove) {
+
+	private static final String ROLES_INVALID_MESSAGE = "{user.roles.invalid}";
+
+	public UpdateUserRolesRequest {
+		add = copyNullableList(add);
+		remove = copyNullableList(remove);
+	}
+
+	@Override
+	public List<String> add() {
+		return copyNullableList(this.add);
+	}
+
+	@Override
+	public List<String> remove() {
+		return copyNullableList(this.remove);
+	}
 
 	public Set<UserRole> rolesToAdd() {
-		return toRoles(add);
+		return toRoles(this.add);
 	}
 
 	public Set<UserRole> rolesToRemove() {
-		return toRoles(remove);
+		return toRoles(this.remove);
 	}
 
 	private Set<UserRole> toRoles(List<String> roles) {
@@ -44,4 +63,9 @@ public record UpdateUserRolesRequest(
 		}
 		return roles.stream().map(UserRole::valueOf).collect(Collectors.toUnmodifiableSet());
 	}
+
+	private static List<String> copyNullableList(List<String> roles) {
+		return (roles != null) ? Collections.unmodifiableList(new ArrayList<>(roles)) : null;
+	}
+
 }

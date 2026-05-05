@@ -40,25 +40,25 @@ public class RefreshTokenUseCase {
 	private final UserRepository userRepository;
 
 	public AuthResponse execute(String refreshToken) {
-		if (refreshToken == null || refreshToken.isBlank() || !tokenService.validateRefreshToken(refreshToken)) {
+		if (refreshToken == null || refreshToken.isBlank() || !this.tokenService.validateRefreshToken(refreshToken)) {
 			throw new InvalidRefreshTokenException();
 		}
 
 		UUID userId = consumeRefreshToken(refreshToken);
-		User user = userRepository.findById(userId).orElseThrow(InvalidRefreshTokenException::new);
+		User user = this.userRepository.findById(userId).orElseThrow(InvalidRefreshTokenException::new);
 
 		if (!user.isActive() || user.getStatus() == UserStatus.LOCKED) {
 			throw new InvalidRefreshTokenException();
 		}
 
-		String accessToken = jwtService.generateToken(user.getId(), user.getRoles());
-		String newRefreshToken = tokenService.generateRefreshToken(user.getId());
+		String accessToken = this.jwtService.generateToken(user.getId(), user.getRoles());
+		String newRefreshToken = this.tokenService.generateRefreshToken(user.getId());
 
 		return new AuthResponse(accessToken, newRefreshToken);
 	}
 
 	private UUID consumeRefreshToken(String refreshToken) {
-		return tokenService.consumeRefreshToken(refreshToken).orElseThrow(InvalidRefreshTokenException::new);
+		return this.tokenService.consumeRefreshToken(refreshToken).orElseThrow(InvalidRefreshTokenException::new);
 	}
 
 }

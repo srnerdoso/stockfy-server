@@ -40,7 +40,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import static org.mockito.Mockito.when;
+import static org.mockito.BDDMockito.given;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -48,7 +48,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @Import(TestcontainersConfiguration.class)
-class UserControllerTest {
+class UserControllerTests {
 
 	@Autowired
 	private MockMvc mockMvc;
@@ -62,7 +62,7 @@ class UserControllerTest {
 	@DisplayName("Should return user profile when authenticated")
 	void shouldReturnUserProfile() throws Exception {
 		User user = User.builder()
-			.id(userId)
+			.id(this.userId)
 			.name("John Doe")
 			.email(new Email("john@example.com"))
 			.roles(Set.of(UserRole.USER))
@@ -70,14 +70,14 @@ class UserControllerTest {
 			.active(true)
 			.build();
 
-		when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+		given(this.userRepository.findById(this.userId)).willReturn(Optional.of(user));
 
 		// Manually set security context for test
 		SecurityContextHolder.getContext()
-			.setAuthentication(new UsernamePasswordAuthenticationToken(userId, null,
+			.setAuthentication(new UsernamePasswordAuthenticationToken(this.userId, null,
 					List.of(new SimpleGrantedAuthority("ROLE_USER"))));
 
-		mockMvc.perform(get("/api/v1/users/me"))
+		this.mockMvc.perform(get("/api/v1/users/me"))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.name").value("John Doe"))
 			.andExpect(jsonPath("$.email").value("john@example.com"))

@@ -46,7 +46,7 @@ public class ApiErrorResponse {
 		this.status = status;
 		this.detail = detail;
 		this.instance = instance;
-		this.fieldErrors = fieldErrors;
+		this.fieldErrors = (fieldErrors != null) ? List.copyOf(fieldErrors) : null;
 	}
 
 	public record FieldError(String field, String message) {

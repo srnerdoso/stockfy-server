@@ -18,6 +18,8 @@ package br.com.threadstech.stockfy.users.application.exception;
 
 public class CurrentPasswordInvalidException extends RuntimeException {
 
+	private static final long serialVersionUID = 1L;
+
 	public CurrentPasswordInvalidException() {
 		super("exception.current-password-invalid");
 	}

@@ -22,16 +22,16 @@ import br.com.threadstech.stockfy.users.application.exception.PasswordMismatchEx
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
-class UserExceptionMessageKeyTest {
+class UserExceptionMessageKeyTests {
 
 	@Test
 	@DisplayName("Deve expor chaves de mensagem seguindo kebab-case e hierarquia")
 	void constructor_whenExceptionIsCreated_thenUsesStructuredMessageKey() {
-		assertEquals("exception.email-already-exists", new EmailAlreadyExistsException().getMessage());
-		assertEquals("user.password.mismatch", new PasswordMismatchException().getMessage());
-		assertEquals("user.password.invalid", new InvalidPasswordException().getMessage());
+		assertThat(new EmailAlreadyExistsException().getMessage()).isEqualTo("exception.email-already-exists");
+		assertThat(new PasswordMismatchException().getMessage()).isEqualTo("user.password.mismatch");
+		assertThat(new InvalidPasswordException().getMessage()).isEqualTo("user.password.invalid");
 	}
 
 }

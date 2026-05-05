@@ -27,18 +27,16 @@ import br.com.threadstech.stockfy.users.domain.model.UserStatus;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
-class UserTest {
+class UserTests {
 
 	@Test
 	@DisplayName("Should create active user by default")
 	void shouldCreateActiveUserByDefault() {
 		User user = createUser();
-		assertTrue(user.isActive());
-		assertEquals(UserStatus.ACTIVE, user.getStatus());
+		assertThat(user.isActive()).isTrue();
+		assertThat(user.getStatus()).isEqualTo(UserStatus.ACTIVE);
 	}
 
 	@Test
@@ -46,7 +44,7 @@ class UserTest {
 	void shouldLockUserAccount() {
 		User user = createUser();
 		user.lock();
-		assertEquals(UserStatus.LOCKED, user.getStatus());
+		assertThat(user.getStatus()).isEqualTo(UserStatus.LOCKED);
 	}
 
 	@Test
@@ -55,7 +53,7 @@ class UserTest {
 		User user = createUser();
 		user.lock();
 		user.unlock();
-		assertEquals(UserStatus.ACTIVE, user.getStatus());
+		assertThat(user.getStatus()).isEqualTo(UserStatus.ACTIVE);
 	}
 
 	@Test
@@ -63,7 +61,7 @@ class UserTest {
 	void shouldDeactivateUser() {
 		User user = createUser();
 		user.deactivate();
-		assertFalse(user.isActive());
+		assertThat(user.isActive()).isFalse();
 	}
 
 	private User createUser() {

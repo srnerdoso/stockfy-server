@@ -22,6 +22,7 @@ import br.com.threadstech.stockfy.MutableTimeMeter;
 import br.com.threadstech.stockfy.RateLimitTestConfiguration;
 import br.com.threadstech.stockfy.TestcontainersConfiguration;
 import br.com.threadstech.stockfy.users.infrastructure.config.UserRateLimitConfig;
+import br.com.threadstech.stockfy.web.presentation.ApiErrorResponseAssertions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -34,9 +35,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
 
-import static br.com.threadstech.stockfy.web.presentation.ApiErrorResponseAssertions.assertBadRequestFieldValidation;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -48,6 +47,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Sql(scripts = "/sql/users/cleanup.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @Sql(scripts = "/sql/users/base-users.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @Sql(scripts = "/sql/users/cleanup.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
+@SuppressWarnings({ "PMD.AvoidAccessibilityAlteration", "PMD.AvoidCatchingGenericException",
+		"PMD.AvoidDuplicateLiterals", "PMD.AvoidLiteralsInIfCondition" })
 class FindUserByIdIT {
 
 	private static final String ADMIN_ID = "00000000-0000-0000-0000-000000000001";
@@ -75,15 +76,15 @@ class FindUserByIdIT {
 		try {
 			var loginBucketsField = UserRateLimitConfig.class.getDeclaredField("loginBuckets");
 			loginBucketsField.setAccessible(true);
-			((java.util.Map<?, ?>) loginBucketsField.get(rateLimitConfig)).clear();
+			((java.util.Map<?, ?>) loginBucketsField.get(this.rateLimitConfig)).clear();
 
 			var generalBucketsField = UserRateLimitConfig.class.getDeclaredField("generalBuckets");
 			generalBucketsField.setAccessible(true);
-			((java.util.Map<?, ?>) generalBucketsField.get(rateLimitConfig)).clear();
-			rateLimitTimeMeter.reset();
+			((java.util.Map<?, ?>) generalBucketsField.get(this.rateLimitConfig)).clear();
+			this.rateLimitTimeMeter.reset();
 		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
+		catch (Exception ex) {
+			throw new RuntimeException(ex);
 		}
 	}
 
@@ -93,7 +94,7 @@ class FindUserByIdIT {
 	void findUserById_whenOwnerRequestsOwnId_thenReturnsDetailedFields() throws Exception {
 		long usersBeforeRequest = countUsers();
 
-		mockMvc.perform(get("/api/v1/users/{id}", OWNER_ID))
+		this.mockMvc.perform(get("/api/v1/users/{id}", OWNER_ID))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.name").value("Bruno User"))
 			.andExpect(jsonPath("$.email").value("bruno.user@example.com"))
@@ -113,8 +114,8 @@ class FindUserByIdIT {
 			.andExpect(jsonPath("$.resetPasswordCodeHash").doesNotExist())
 			.andExpect(jsonPath("$.resetPasswordExpiresAt").doesNotExist());
 
-		assertEquals(usersBeforeRequest, countUsers());
-		assertTrue(userExists("bruno.user@example.com"));
+		assertThat(countUsers()).isEqualTo(usersBeforeRequest);
+		assertThat(userExists("bruno.user@example.com")).isTrue();
 	}
 
 	@Test
@@ -123,7 +124,7 @@ class FindUserByIdIT {
 	void findUserById_whenAdminRequestsUserId_thenReturnsDetailedFields() throws Exception {
 		long usersBeforeRequest = countUsers();
 
-		mockMvc.perform(get("/api/v1/users/{id}", OTHER_ID))
+		this.mockMvc.perform(get("/api/v1/users/{id}", OTHER_ID))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.name").value("Alice Filter"))
 			.andExpect(jsonPath("$.email").value("alice.filter@example.com"))
@@ -143,8 +144,8 @@ class FindUserByIdIT {
 			.andExpect(jsonPath("$.resetPasswordCodeHash").doesNotExist())
 			.andExpect(jsonPath("$.resetPasswordExpiresAt").doesNotExist());
 
-		assertEquals(usersBeforeRequest, countUsers());
-		assertTrue(userExists("alice.filter@example.com"));
+		assertThat(countUsers()).isEqualTo(usersBeforeRequest);
+		assertThat(userExists("alice.filter@example.com")).isTrue();
 	}
 
 	@Test
@@ -153,13 +154,13 @@ class FindUserByIdIT {
 	void findUserById_whenUserRequestsAnotherUserId_thenReturns403WithoutBody() throws Exception {
 		long usersBeforeRequest = countUsers();
 
-		mockMvc.perform(get("/api/v1/users/{id}", OTHER_ID))
+		this.mockMvc.perform(get("/api/v1/users/{id}", OTHER_ID))
 			.andExpect(status().isForbidden())
 			.andExpect(content().string(""));
 
-		assertEquals(usersBeforeRequest, countUsers());
-		assertTrue(userExists("bruno.user@example.com"));
-		assertTrue(userExists("alice.filter@example.com"));
+		assertThat(countUsers()).isEqualTo(usersBeforeRequest);
+		assertThat(userExists("bruno.user@example.com")).isTrue();
+		assertThat(userExists("alice.filter@example.com")).isTrue();
 	}
 
 	@Test
@@ -167,12 +168,12 @@ class FindUserByIdIT {
 	void findUserById_whenNotAuthenticated_thenReturns401WithoutBody() throws Exception {
 		long usersBeforeRequest = countUsers();
 
-		mockMvc.perform(get("/api/v1/users/{id}", OWNER_ID))
+		this.mockMvc.perform(get("/api/v1/users/{id}", OWNER_ID))
 			.andExpect(status().isUnauthorized())
 			.andExpect(content().string(""));
 
-		assertEquals(usersBeforeRequest, countUsers());
-		assertTrue(userExists("bruno.user@example.com"));
+		assertThat(countUsers()).isEqualTo(usersBeforeRequest);
+		assertThat(userExists("bruno.user@example.com")).isTrue();
 	}
 
 	@Test
@@ -181,11 +182,12 @@ class FindUserByIdIT {
 	void findUserById_whenIdIsInvalidUuid_thenReturns400() throws Exception {
 		long usersBeforeRequest = countUsers();
 
-		assertBadRequestFieldValidation(mockMvc.perform(get("/api/v1/users/{id}", "not-a-uuid")), "id",
+		ApiErrorResponseAssertions.assertBadRequestFieldValidation(
+				this.mockMvc.perform(get("/api/v1/users/{id}", "not-a-uuid")), "id",
 				"O parâmetro informado é inválido.");
 
-		assertEquals(usersBeforeRequest, countUsers());
-		assertTrue(userExists("ana.admin@example.com"));
+		assertThat(countUsers()).isEqualTo(usersBeforeRequest);
+		assertThat(userExists("ana.admin@example.com")).isTrue();
 	}
 
 	@Test
@@ -194,13 +196,13 @@ class FindUserByIdIT {
 	void findUserById_whenIdContainsSqlInjection_thenReturns400AndDoesNotAlterData() throws Exception {
 		long usersBeforeRequest = countUsers();
 
-		assertBadRequestFieldValidation(
-				mockMvc.perform(get("/api/v1/users/{id}", "00000000-0000-0000-0000-000000000002' OR '1'='1")), "id",
-				"O parâmetro informado é inválido.");
+		ApiErrorResponseAssertions.assertBadRequestFieldValidation(
+				this.mockMvc.perform(get("/api/v1/users/{id}", "00000000-0000-0000-0000-000000000002' OR '1'='1")),
+				"id", "O parâmetro informado é inválido.");
 
-		assertEquals(usersBeforeRequest, countUsers());
-		assertTrue(userExists("bruno.user@example.com"));
-		assertTrue(userExists("alice.filter@example.com"));
+		assertThat(countUsers()).isEqualTo(usersBeforeRequest);
+		assertThat(userExists("bruno.user@example.com")).isTrue();
+		assertThat(userExists("alice.filter@example.com")).isTrue();
 	}
 
 	@Test
@@ -209,7 +211,7 @@ class FindUserByIdIT {
 	void findUserById_whenUserDoesNotExist_thenReturns404() throws Exception {
 		long usersBeforeRequest = countUsers();
 
-		mockMvc.perform(get("/api/v1/users/{id}", MISSING_ID))
+		this.mockMvc.perform(get("/api/v1/users/{id}", MISSING_ID))
 			.andExpect(status().isNotFound())
 			.andExpect(jsonPath("$.type").value("about:blank"))
 			.andExpect(jsonPath("$.title").value("Not Found"))
@@ -218,8 +220,8 @@ class FindUserByIdIT {
 			.andExpect(jsonPath("$.instance").doesNotExist())
 			.andExpect(jsonPath("$.fieldErrors").doesNotExist());
 
-		assertEquals(usersBeforeRequest, countUsers());
-		assertTrue(userExists("ana.admin@example.com"));
+		assertThat(countUsers()).isEqualTo(usersBeforeRequest);
+		assertThat(userExists("ana.admin@example.com")).isTrue();
 	}
 
 	@Test
@@ -229,14 +231,14 @@ class FindUserByIdIT {
 		long usersBeforeRequest = countUsers();
 
 		for (int i = 0; i <= 11; i++) {
-			var result = mockMvc.perform(get("/api/v1/users/{id}", OWNER_ID));
+			var result = this.mockMvc.perform(get("/api/v1/users/{id}", OWNER_ID));
 			if (i > 10) {
 				result.andExpect(status().isTooManyRequests());
 			}
 		}
 
-		assertEquals(usersBeforeRequest, countUsers());
-		assertTrue(userExists("bruno.user@example.com"));
+		assertThat(countUsers()).isEqualTo(usersBeforeRequest);
+		assertThat(userExists("bruno.user@example.com")).isTrue();
 	}
 
 	@Test
@@ -246,26 +248,27 @@ class FindUserByIdIT {
 		long usersBeforeRequest = countUsers();
 
 		for (int i = 0; i < 10; i++) {
-			mockMvc.perform(get("/api/v1/users/{id}", OWNER_ID)).andExpect(status().isOk());
+			this.mockMvc.perform(get("/api/v1/users/{id}", OWNER_ID)).andExpect(status().isOk());
 		}
 
-		rateLimitTimeMeter.advanceBy(Duration.ofSeconds(61));
+		this.rateLimitTimeMeter.advanceBy(Duration.ofSeconds(61));
 
-		mockMvc.perform(get("/api/v1/users/{id}", OWNER_ID))
+		this.mockMvc.perform(get("/api/v1/users/{id}", OWNER_ID))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.email").value("bruno.user@example.com"));
 
-		assertEquals(usersBeforeRequest, countUsers());
-		assertTrue(userExists("bruno.user@example.com"));
+		assertThat(countUsers()).isEqualTo(usersBeforeRequest);
+		assertThat(userExists("bruno.user@example.com")).isTrue();
 	}
 
 	private long countUsers() {
-		Long count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM users", Long.class);
-		return count == null ? 0 : count;
+		Long count = this.jdbcTemplate.queryForObject("SELECT COUNT(*) FROM users", Long.class);
+		return (count != null) ? count : 0;
 	}
 
 	private boolean userExists(String email) {
-		Integer count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM users WHERE email = ?", Integer.class, email);
+		Integer count = this.jdbcTemplate.queryForObject("SELECT COUNT(*) FROM users WHERE email = ?", Integer.class,
+				email);
 		return count != null && count == 1;
 	}
 
