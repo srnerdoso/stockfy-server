@@ -26,8 +26,7 @@ import org.springframework.boot.testcontainers.service.connection.ServiceConnect
 import org.springframework.context.annotation.Bean;
 
 @TestConfiguration(proxyBeanMethods = false)
-@SuppressWarnings("PMD.TestClassWithoutTestCases")
-public class TestcontainersConfiguration {
+public class ContainersConfiguration {
 
 	@Bean
 	@ServiceConnection

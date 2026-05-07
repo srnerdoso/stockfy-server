@@ -18,9 +18,10 @@ package br.com.threadstech.stockfy.modules.users.presentation.controller;
 
 import java.time.Duration;
 
+import br.com.threadstech.stockfy.ContainersConfiguration;
 import br.com.threadstech.stockfy.MutableTimeMeter;
+import br.com.threadstech.stockfy.RateLimitBucketCleaner;
 import br.com.threadstech.stockfy.RateLimitTestConfiguration;
-import br.com.threadstech.stockfy.TestcontainersConfiguration;
 import br.com.threadstech.stockfy.users.infrastructure.config.UserRateLimitConfig;
 import br.com.threadstech.stockfy.web.presentation.ApiErrorResponseAssertions;
 import org.junit.jupiter.api.AfterEach;
@@ -43,13 +44,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@Import({ TestcontainersConfiguration.class, RateLimitTestConfiguration.class })
+@Import({ ContainersConfiguration.class, RateLimitTestConfiguration.class })
 @Sql(scripts = "/sql/users/cleanup.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @Sql(scripts = "/sql/users/base-users.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @Sql(scripts = "/sql/users/cleanup.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
-@SuppressWarnings({ "PMD.AvoidAccessibilityAlteration", "PMD.AvoidCatchingGenericException",
-		"PMD.AvoidDuplicateLiterals", "PMD.AvoidLiteralsInIfCondition" })
 class FindUserByIdIT {
+
+	private static final int GENERAL_RATE_LIMIT = 10;
 
 	private static final String ADMIN_ID = "00000000-0000-0000-0000-000000000001";
 
@@ -58,6 +59,16 @@ class FindUserByIdIT {
 	private static final String OTHER_ID = "00000000-0000-0000-0000-000000000003";
 
 	private static final String MISSING_ID = "00000000-0000-0000-0000-000000009999";
+
+	private static final String USER_ROLE = "USER";
+
+	private static final String ADMIN_ROLE = "ADMIN";
+
+	private static final String USER_BY_ID_ENDPOINT = "/api/v1/users/{id}";
+
+	private static final String BRUNO_USER_EMAIL = "bruno.user@example.com";
+
+	private static final String ALICE_FILTER_EMAIL = "alice.filter@example.com";
 
 	@Autowired
 	private MockMvc mockMvc;
@@ -73,33 +84,21 @@ class FindUserByIdIT {
 
 	@AfterEach
 	void tearDownRateLimit() {
-		try {
-			var loginBucketsField = UserRateLimitConfig.class.getDeclaredField("loginBuckets");
-			loginBucketsField.setAccessible(true);
-			((java.util.Map<?, ?>) loginBucketsField.get(this.rateLimitConfig)).clear();
-
-			var generalBucketsField = UserRateLimitConfig.class.getDeclaredField("generalBuckets");
-			generalBucketsField.setAccessible(true);
-			((java.util.Map<?, ?>) generalBucketsField.get(this.rateLimitConfig)).clear();
-			this.rateLimitTimeMeter.reset();
-		}
-		catch (Exception ex) {
-			throw new RuntimeException(ex);
-		}
+		RateLimitBucketCleaner.clearAll(this.rateLimitConfig, this.rateLimitTimeMeter);
 	}
 
 	@Test
 	@DisplayName("Deve retornar detalhes quando usuario comum consultar o proprio ID")
-	@WithMockUserId(id = OWNER_ID, roles = "USER")
+	@WithMockUserId(id = OWNER_ID, roles = USER_ROLE)
 	void findUserById_whenOwnerRequestsOwnId_thenReturnsDetailedFields() throws Exception {
 		long usersBeforeRequest = countUsers();
 
-		this.mockMvc.perform(get("/api/v1/users/{id}", OWNER_ID))
+		this.mockMvc.perform(get(USER_BY_ID_ENDPOINT, OWNER_ID))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.name").value("Bruno User"))
-			.andExpect(jsonPath("$.email").value("bruno.user@example.com"))
+			.andExpect(jsonPath("$.email").value(BRUNO_USER_EMAIL))
 			.andExpect(jsonPath("$.roles").isArray())
-			.andExpect(jsonPath("$.roles[0]").value("USER"))
+			.andExpect(jsonPath("$.roles[0]").value(USER_ROLE))
 			.andExpect(jsonPath("$.role").doesNotExist())
 			.andExpect(jsonPath("$.status").value("ACTIVE"))
 			.andExpect(jsonPath("$.createdAt").exists())
@@ -115,21 +114,21 @@ class FindUserByIdIT {
 			.andExpect(jsonPath("$.resetPasswordExpiresAt").doesNotExist());
 
 		assertThat(countUsers()).isEqualTo(usersBeforeRequest);
-		assertThat(userExists("bruno.user@example.com")).isTrue();
+		assertThat(userExists(BRUNO_USER_EMAIL)).isTrue();
 	}
 
 	@Test
 	@DisplayName("Deve retornar detalhes quando ADMIN consultar usuario comum")
-	@WithMockUserId(id = ADMIN_ID, roles = "ADMIN")
+	@WithMockUserId(id = ADMIN_ID, roles = ADMIN_ROLE)
 	void findUserById_whenAdminRequestsUserId_thenReturnsDetailedFields() throws Exception {
 		long usersBeforeRequest = countUsers();
 
-		this.mockMvc.perform(get("/api/v1/users/{id}", OTHER_ID))
+		this.mockMvc.perform(get(USER_BY_ID_ENDPOINT, OTHER_ID))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.name").value("Alice Filter"))
-			.andExpect(jsonPath("$.email").value("alice.filter@example.com"))
+			.andExpect(jsonPath("$.email").value(ALICE_FILTER_EMAIL))
 			.andExpect(jsonPath("$.roles").isArray())
-			.andExpect(jsonPath("$.roles[0]").value("USER"))
+			.andExpect(jsonPath("$.roles[0]").value(USER_ROLE))
 			.andExpect(jsonPath("$.role").doesNotExist())
 			.andExpect(jsonPath("$.status").value("ACTIVE"))
 			.andExpect(jsonPath("$.createdAt").exists())
@@ -145,22 +144,22 @@ class FindUserByIdIT {
 			.andExpect(jsonPath("$.resetPasswordExpiresAt").doesNotExist());
 
 		assertThat(countUsers()).isEqualTo(usersBeforeRequest);
-		assertThat(userExists("alice.filter@example.com")).isTrue();
+		assertThat(userExists(ALICE_FILTER_EMAIL)).isTrue();
 	}
 
 	@Test
 	@DisplayName("Deve retornar 403 sem corpo quando USER consultar ID de terceiro")
-	@WithMockUserId(id = OWNER_ID, roles = "USER")
+	@WithMockUserId(id = OWNER_ID, roles = USER_ROLE)
 	void findUserById_whenUserRequestsAnotherUserId_thenReturns403WithoutBody() throws Exception {
 		long usersBeforeRequest = countUsers();
 
-		this.mockMvc.perform(get("/api/v1/users/{id}", OTHER_ID))
+		this.mockMvc.perform(get(USER_BY_ID_ENDPOINT, OTHER_ID))
 			.andExpect(status().isForbidden())
 			.andExpect(content().string(""));
 
 		assertThat(countUsers()).isEqualTo(usersBeforeRequest);
-		assertThat(userExists("bruno.user@example.com")).isTrue();
-		assertThat(userExists("alice.filter@example.com")).isTrue();
+		assertThat(userExists(BRUNO_USER_EMAIL)).isTrue();
+		assertThat(userExists(ALICE_FILTER_EMAIL)).isTrue();
 	}
 
 	@Test
@@ -168,22 +167,22 @@ class FindUserByIdIT {
 	void findUserById_whenNotAuthenticated_thenReturns401WithoutBody() throws Exception {
 		long usersBeforeRequest = countUsers();
 
-		this.mockMvc.perform(get("/api/v1/users/{id}", OWNER_ID))
+		this.mockMvc.perform(get(USER_BY_ID_ENDPOINT, OWNER_ID))
 			.andExpect(status().isUnauthorized())
 			.andExpect(content().string(""));
 
 		assertThat(countUsers()).isEqualTo(usersBeforeRequest);
-		assertThat(userExists("bruno.user@example.com")).isTrue();
+		assertThat(userExists(BRUNO_USER_EMAIL)).isTrue();
 	}
 
 	@Test
 	@DisplayName("Deve retornar 400 quando ID nao for UUID valido")
-	@WithMockUserId(id = ADMIN_ID, roles = "ADMIN")
+	@WithMockUserId(id = ADMIN_ID, roles = ADMIN_ROLE)
 	void findUserById_whenIdIsInvalidUuid_thenReturns400() throws Exception {
 		long usersBeforeRequest = countUsers();
 
 		ApiErrorResponseAssertions.assertBadRequestFieldValidation(
-				this.mockMvc.perform(get("/api/v1/users/{id}", "not-a-uuid")), "id",
+				this.mockMvc.perform(get(USER_BY_ID_ENDPOINT, "not-a-uuid")), "id",
 				"O parâmetro informado é inválido.");
 
 		assertThat(countUsers()).isEqualTo(usersBeforeRequest);
@@ -192,26 +191,26 @@ class FindUserByIdIT {
 
 	@Test
 	@DisplayName("Deve retornar 400 quando ID contiver SQL Injection")
-	@WithMockUserId(id = ADMIN_ID, roles = "ADMIN")
+	@WithMockUserId(id = ADMIN_ID, roles = ADMIN_ROLE)
 	void findUserById_whenIdContainsSqlInjection_thenReturns400AndDoesNotAlterData() throws Exception {
 		long usersBeforeRequest = countUsers();
 
 		ApiErrorResponseAssertions.assertBadRequestFieldValidation(
-				this.mockMvc.perform(get("/api/v1/users/{id}", "00000000-0000-0000-0000-000000000002' OR '1'='1")),
-				"id", "O parâmetro informado é inválido.");
+				this.mockMvc.perform(get(USER_BY_ID_ENDPOINT, "00000000-0000-0000-0000-000000000002' OR '1'='1")), "id",
+				"O parâmetro informado é inválido.");
 
 		assertThat(countUsers()).isEqualTo(usersBeforeRequest);
-		assertThat(userExists("bruno.user@example.com")).isTrue();
-		assertThat(userExists("alice.filter@example.com")).isTrue();
+		assertThat(userExists(BRUNO_USER_EMAIL)).isTrue();
+		assertThat(userExists(ALICE_FILTER_EMAIL)).isTrue();
 	}
 
 	@Test
 	@DisplayName("Deve retornar 404 quando usuario nao existir")
-	@WithMockUserId(id = ADMIN_ID, roles = "ADMIN")
+	@WithMockUserId(id = ADMIN_ID, roles = ADMIN_ROLE)
 	void findUserById_whenUserDoesNotExist_thenReturns404() throws Exception {
 		long usersBeforeRequest = countUsers();
 
-		this.mockMvc.perform(get("/api/v1/users/{id}", MISSING_ID))
+		this.mockMvc.perform(get(USER_BY_ID_ENDPOINT, MISSING_ID))
 			.andExpect(status().isNotFound())
 			.andExpect(jsonPath("$.type").value("about:blank"))
 			.andExpect(jsonPath("$.title").value("Not Found"))
@@ -226,39 +225,39 @@ class FindUserByIdIT {
 
 	@Test
 	@DisplayName("Deve retornar 429 quando exceder limite geral de requisicoes")
-	@WithMockUserId(id = OWNER_ID, roles = "USER")
+	@WithMockUserId(id = OWNER_ID, roles = USER_ROLE)
 	void findUserById_whenLimitExceeded_thenReturns429() throws Exception {
 		long usersBeforeRequest = countUsers();
 
-		for (int i = 0; i <= 11; i++) {
-			var result = this.mockMvc.perform(get("/api/v1/users/{id}", OWNER_ID));
-			if (i > 10) {
+		for (int i = 0; i <= GENERAL_RATE_LIMIT + 1; i++) {
+			var result = this.mockMvc.perform(get(USER_BY_ID_ENDPOINT, OWNER_ID));
+			if (i > GENERAL_RATE_LIMIT) {
 				result.andExpect(status().isTooManyRequests());
 			}
 		}
 
 		assertThat(countUsers()).isEqualTo(usersBeforeRequest);
-		assertThat(userExists("bruno.user@example.com")).isTrue();
+		assertThat(userExists(BRUNO_USER_EMAIL)).isTrue();
 	}
 
 	@Test
 	@DisplayName("Deve permitir nova consulta quando a janela de rate limit expirar")
-	@WithMockUserId(id = OWNER_ID, roles = "USER")
+	@WithMockUserId(id = OWNER_ID, roles = USER_ROLE)
 	void findUserById_whenRateLimitWindowExpires_thenReturns200() throws Exception {
 		long usersBeforeRequest = countUsers();
 
-		for (int i = 0; i < 10; i++) {
-			this.mockMvc.perform(get("/api/v1/users/{id}", OWNER_ID)).andExpect(status().isOk());
+		for (int i = 0; i < GENERAL_RATE_LIMIT; i++) {
+			this.mockMvc.perform(get(USER_BY_ID_ENDPOINT, OWNER_ID)).andExpect(status().isOk());
 		}
 
 		this.rateLimitTimeMeter.advanceBy(Duration.ofSeconds(61));
 
-		this.mockMvc.perform(get("/api/v1/users/{id}", OWNER_ID))
+		this.mockMvc.perform(get(USER_BY_ID_ENDPOINT, OWNER_ID))
 			.andExpect(status().isOk())
-			.andExpect(jsonPath("$.email").value("bruno.user@example.com"));
+			.andExpect(jsonPath("$.email").value(BRUNO_USER_EMAIL));
 
 		assertThat(countUsers()).isEqualTo(usersBeforeRequest);
-		assertThat(userExists("bruno.user@example.com")).isTrue();
+		assertThat(userExists(BRUNO_USER_EMAIL)).isTrue();
 	}
 
 	private long countUsers() {

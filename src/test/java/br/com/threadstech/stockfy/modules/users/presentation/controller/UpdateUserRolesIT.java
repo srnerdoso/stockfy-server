@@ -19,9 +19,10 @@ package br.com.threadstech.stockfy.modules.users.presentation.controller;
 import java.time.Duration;
 import java.util.List;
 
+import br.com.threadstech.stockfy.ContainersConfiguration;
 import br.com.threadstech.stockfy.MutableTimeMeter;
+import br.com.threadstech.stockfy.RateLimitBucketCleaner;
 import br.com.threadstech.stockfy.RateLimitTestConfiguration;
-import br.com.threadstech.stockfy.TestcontainersConfiguration;
 import br.com.threadstech.stockfy.users.infrastructure.config.UserRateLimitConfig;
 import br.com.threadstech.stockfy.web.presentation.ApiErrorResponseAssertions;
 import org.junit.jupiter.api.AfterEach;
@@ -45,17 +46,25 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@Import({ TestcontainersConfiguration.class, RateLimitTestConfiguration.class })
+@Import({ ContainersConfiguration.class, RateLimitTestConfiguration.class })
 @Sql(scripts = "/sql/users/cleanup.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @Sql(scripts = "/sql/users/base-users.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @Sql(scripts = "/sql/users/cleanup.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
-@SuppressWarnings({ "PMD.AvoidAccessibilityAlteration", "PMD.AvoidDuplicateLiterals",
-		"PMD.AvoidLiteralsInIfCondition" })
 class UpdateUserRolesIT {
 
 	private static final String ADMIN_ID = "00000000-0000-0000-0000-000000000001";
 
 	private static final String USER_ID = "00000000-0000-0000-0000-000000000002";
+
+	private static final int GENERAL_RATE_LIMIT = 10;
+
+	private static final String ADMIN_ROLE = "ADMIN";
+
+	private static final String USER_ROLES_ENDPOINT = "/api/v1/users/{id}/roles";
+
+	private static final String ADD_ADMIN_ROLE_BODY = "{\"add\":[\"ADMIN\"]}";
+
+	private static final String INVALID_UUID = "not-a-uuid";
 
 	@Autowired
 	private MockMvc mockMvc;
@@ -70,43 +79,42 @@ class UpdateUserRolesIT {
 	private MutableTimeMeter rateLimitTimeMeter;
 
 	@AfterEach
-	void tearDown() {
-		clearRateLimitBuckets();
-		this.rateLimitTimeMeter.reset();
+	void tearDownRateLimit() {
+		RateLimitBucketCleaner.clearAll(this.rateLimitConfig, this.rateLimitTimeMeter);
 	}
 
 	@Test
 	@DisplayName("Deve retornar 204 e persistir ADMIN sem alterar outros dados do usuario")
-	@WithMockUserId(id = ADMIN_ID, roles = "ADMIN")
+	@WithMockUserId(id = ADMIN_ID, roles = ADMIN_ROLE)
 	void updateUserRoles_whenAdminAddsAdminRole_thenReturns204AndPersistsRoles() throws Exception {
 		long usersBeforeRequest = countUsers();
 		UserSnapshot oldUser = userSnapshot(USER_ID);
 
 		this.mockMvc
-			.perform(patch("/api/v1/users/{id}/roles", USER_ID).contentType(MediaType.APPLICATION_JSON)
+			.perform(patch(USER_ROLES_ENDPOINT, USER_ID).contentType(MediaType.APPLICATION_JSON)
 				.content("{\"add\":[\"ADMIN\"],\"remove\":[]}"))
 			.andExpect(status().isNoContent())
 			.andExpect(content().string(""));
 
 		assertThat(countUsers()).isEqualTo(usersBeforeRequest);
-		assertUserHasRoles(USER_ID, "ADMIN", "USER");
+		assertUserHasRoles(USER_ID, ADMIN_ROLE, "USER");
 		assertUnchangedUserData(USER_ID, oldUser);
 	}
 
 	@Test
 	@DisplayName("Deve retornar 204 e persistir remocao de role")
-	@WithMockUserId(id = ADMIN_ID, roles = "ADMIN")
+	@WithMockUserId(id = ADMIN_ID, roles = ADMIN_ROLE)
 	void updateUserRoles_whenAdminRemovesUserRole_thenReturns204AndPersistsRoles() throws Exception {
-		this.jdbcTemplate.update("INSERT INTO users_roles (user_id, role) VALUES (?::uuid, ?)", USER_ID, "ADMIN");
+		this.jdbcTemplate.update("INSERT INTO users_roles (user_id, role) VALUES (?::uuid, ?)", USER_ID, ADMIN_ROLE);
 		UserSnapshot oldUser = userSnapshot(USER_ID);
 
 		this.mockMvc
-			.perform(patch("/api/v1/users/{id}/roles", USER_ID).contentType(MediaType.APPLICATION_JSON)
+			.perform(patch(USER_ROLES_ENDPOINT, USER_ID).contentType(MediaType.APPLICATION_JSON)
 				.content("{\"remove\":[\"USER\"]}"))
 			.andExpect(status().isNoContent())
 			.andExpect(content().string(""));
 
-		assertUserHasRoles(USER_ID, "ADMIN");
+		assertUserHasRoles(USER_ID, ADMIN_ROLE);
 		assertUnchangedUserData(USER_ID, oldUser);
 	}
 
@@ -116,8 +124,8 @@ class UpdateUserRolesIT {
 		List<String> oldRoles = userRoles(USER_ID);
 
 		this.mockMvc
-			.perform(patch("/api/v1/users/{id}/roles", USER_ID).contentType(MediaType.APPLICATION_JSON)
-				.content("{\"add\":[\"ADMIN\"]}"))
+			.perform(patch(USER_ROLES_ENDPOINT, USER_ID).contentType(MediaType.APPLICATION_JSON)
+				.content(ADD_ADMIN_ROLE_BODY))
 			.andExpect(status().isUnauthorized())
 			.andExpect(content().string(""));
 
@@ -131,8 +139,8 @@ class UpdateUserRolesIT {
 		List<String> oldRoles = userRoles(USER_ID);
 
 		this.mockMvc
-			.perform(patch("/api/v1/users/{id}/roles", USER_ID).contentType(MediaType.APPLICATION_JSON)
-				.content("{\"add\":[\"ADMIN\"]}"))
+			.perform(patch(USER_ROLES_ENDPOINT, USER_ID).contentType(MediaType.APPLICATION_JSON)
+				.content(ADD_ADMIN_ROLE_BODY))
 			.andExpect(status().isForbidden())
 			.andExpect(content().string(""));
 
@@ -141,39 +149,41 @@ class UpdateUserRolesIT {
 
 	@Test
 	@DisplayName("Deve retornar 400 quando ID nao for UUID valido")
-	@WithMockUserId(id = ADMIN_ID, roles = "ADMIN")
+	@WithMockUserId(id = ADMIN_ID, roles = ADMIN_ROLE)
 	void updateUserRoles_whenIdIsInvalidUuid_thenReturns400AndDoesNotAlterData() throws Exception {
 		List<String> oldRoles = userRoles(USER_ID);
 
-		ApiErrorResponseAssertions.assertBadRequestFieldValidation(this.mockMvc
-			.perform(patch("/api/v1/users/{id}/roles", "not-a-uuid").contentType(MediaType.APPLICATION_JSON)
-				.content("{\"add\":[\"ADMIN\"]}")), "id", "O parâmetro informado é inválido.");
+		ApiErrorResponseAssertions.assertBadRequestFieldValidation(
+				this.mockMvc.perform(patch(USER_ROLES_ENDPOINT, INVALID_UUID).contentType(MediaType.APPLICATION_JSON)
+					.content(ADD_ADMIN_ROLE_BODY)),
+				"id", "O parâmetro informado é inválido.");
 
 		assertThat(userRoles(USER_ID)).isEqualTo(oldRoles);
 	}
 
 	@Test
 	@DisplayName("Deve retornar 400 quando ID contiver SQL Injection")
-	@WithMockUserId(id = ADMIN_ID, roles = "ADMIN")
+	@WithMockUserId(id = ADMIN_ID, roles = ADMIN_ROLE)
 	void updateUserRoles_whenIdContainsSqlInjection_thenReturns400AndDoesNotAlterData() throws Exception {
 		List<String> oldRoles = userRoles(USER_ID);
 
-		ApiErrorResponseAssertions.assertBadRequestFieldValidation(this.mockMvc
-			.perform(patch("/api/v1/users/{id}/roles", "00000000-0000-0000-0000-000000000002' OR '1'='1")
-				.contentType(MediaType.APPLICATION_JSON)
-				.content("{\"add\":[\"ADMIN\"]}")), "id", "O parâmetro informado é inválido.");
+		ApiErrorResponseAssertions.assertBadRequestFieldValidation(
+				this.mockMvc.perform(patch(USER_ROLES_ENDPOINT, "00000000-0000-0000-0000-000000000002' OR '1'='1")
+					.contentType(MediaType.APPLICATION_JSON)
+					.content(ADD_ADMIN_ROLE_BODY)),
+				"id", "O parâmetro informado é inválido.");
 
 		assertThat(userRoles(USER_ID)).isEqualTo(oldRoles);
 	}
 
 	@Test
 	@DisplayName("Deve retornar 400 quando role for invalida")
-	@WithMockUserId(id = ADMIN_ID, roles = "ADMIN")
+	@WithMockUserId(id = ADMIN_ID, roles = ADMIN_ROLE)
 	void updateUserRoles_whenRoleIsInvalid_thenReturns400AndDoesNotAlterData() throws Exception {
 		List<String> oldRoles = userRoles(USER_ID);
 
 		ApiErrorResponseAssertions.assertBadRequestFieldValidation(
-				this.mockMvc.perform(patch("/api/v1/users/{id}/roles", USER_ID).contentType(MediaType.APPLICATION_JSON)
+				this.mockMvc.perform(patch(USER_ROLES_ENDPOINT, USER_ID).contentType(MediaType.APPLICATION_JSON)
 					.content("{\"add\":[\"INVALID\"]}")),
 				"add[0]", "O perfil informado é inválido.");
 
@@ -182,12 +192,12 @@ class UpdateUserRolesIT {
 
 	@Test
 	@DisplayName("Deve retornar 400 quando role for nula")
-	@WithMockUserId(id = ADMIN_ID, roles = "ADMIN")
+	@WithMockUserId(id = ADMIN_ID, roles = ADMIN_ROLE)
 	void updateUserRoles_whenRoleIsNull_thenReturns400AndDoesNotAlterData() throws Exception {
 		List<String> oldRoles = userRoles(USER_ID);
 
 		ApiErrorResponseAssertions.assertBadRequestFieldValidation(
-				this.mockMvc.perform(patch("/api/v1/users/{id}/roles", USER_ID).contentType(MediaType.APPLICATION_JSON)
+				this.mockMvc.perform(patch(USER_ROLES_ENDPOINT, USER_ID).contentType(MediaType.APPLICATION_JSON)
 					.content("{\"add\":[null]}")),
 				"add[0]", "O perfil informado é inválido.");
 
@@ -196,12 +206,12 @@ class UpdateUserRolesIT {
 
 	@Test
 	@DisplayName("Deve retornar 400 quando role contiver SQL Injection")
-	@WithMockUserId(id = ADMIN_ID, roles = "ADMIN")
+	@WithMockUserId(id = ADMIN_ID, roles = ADMIN_ROLE)
 	void updateUserRoles_whenRoleContainsSqlInjection_thenReturns400AndDoesNotAlterData() throws Exception {
 		List<String> oldRoles = userRoles(USER_ID);
 
 		ApiErrorResponseAssertions.assertBadRequestFieldValidation(
-				this.mockMvc.perform(patch("/api/v1/users/{id}/roles", USER_ID).contentType(MediaType.APPLICATION_JSON)
+				this.mockMvc.perform(patch(USER_ROLES_ENDPOINT, USER_ID).contentType(MediaType.APPLICATION_JSON)
 					.content("{\"add\":[\"ADMIN'); DROP TABLE users; --\"]}")),
 				"add[0]", "O perfil informado é inválido.");
 
@@ -211,12 +221,12 @@ class UpdateUserRolesIT {
 
 	@Test
 	@DisplayName("Deve retornar 400 quando operacao deixar usuario sem role")
-	@WithMockUserId(id = ADMIN_ID, roles = "ADMIN")
+	@WithMockUserId(id = ADMIN_ID, roles = ADMIN_ROLE)
 	void updateUserRoles_whenOperationLeavesUserWithoutRoles_thenReturns400AndDoesNotAlterData() throws Exception {
 		List<String> oldRoles = userRoles(USER_ID);
 
 		this.mockMvc
-			.perform(patch("/api/v1/users/{id}/roles", USER_ID).contentType(MediaType.APPLICATION_JSON)
+			.perform(patch(USER_ROLES_ENDPOINT, USER_ID).contentType(MediaType.APPLICATION_JSON)
 				.content("{\"remove\":[\"USER\"]}"))
 			.andExpect(status().isBadRequest())
 			.andExpect(jsonPath("$.type").value("about:blank"))
@@ -234,15 +244,15 @@ class UpdateUserRolesIT {
 
 	@Test
 	@DisplayName("Deve retornar 429 quando exceder limite geral de requisicoes")
-	@WithMockUserId(id = ADMIN_ID, roles = "ADMIN")
+	@WithMockUserId(id = ADMIN_ID, roles = ADMIN_ROLE)
 	void updateUserRoles_whenLimitExceeded_thenReturns429() throws Exception {
 		List<String> oldRoles = userRoles(USER_ID);
 
-		for (int i = 0; i <= 10; i++) {
+		for (int i = 0; i <= GENERAL_RATE_LIMIT; i++) {
 			var result = this.mockMvc
-				.perform(patch("/api/v1/users/{id}/roles", "not-a-uuid").contentType(MediaType.APPLICATION_JSON)
-					.content("{\"add\":[\"ADMIN\"]}"));
-			if (i == 10) {
+				.perform(patch(USER_ROLES_ENDPOINT, INVALID_UUID).contentType(MediaType.APPLICATION_JSON)
+					.content(ADD_ADMIN_ROLE_BODY));
+			if (i == GENERAL_RATE_LIMIT) {
 				result.andExpect(status().isTooManyRequests());
 			}
 		}
@@ -252,27 +262,27 @@ class UpdateUserRolesIT {
 
 	@Test
 	@DisplayName("Deve processar requisicao quando janela de rate limit expirar")
-	@WithMockUserId(id = ADMIN_ID, roles = "ADMIN")
+	@WithMockUserId(id = ADMIN_ID, roles = ADMIN_ROLE)
 	void updateUserRoles_whenRateLimitWindowExpires_thenProcessesRequest() throws Exception {
-		for (int i = 0; i < 10; i++) {
-			this.mockMvc.perform(patch("/api/v1/users/{id}/roles", "not-a-uuid").contentType(MediaType.APPLICATION_JSON)
-				.content("{\"add\":[\"ADMIN\"]}"));
+		for (int i = 0; i < GENERAL_RATE_LIMIT; i++) {
+			this.mockMvc.perform(patch(USER_ROLES_ENDPOINT, INVALID_UUID).contentType(MediaType.APPLICATION_JSON)
+				.content(ADD_ADMIN_ROLE_BODY));
 		}
 
 		this.mockMvc
-			.perform(patch("/api/v1/users/{id}/roles", "not-a-uuid").contentType(MediaType.APPLICATION_JSON)
-				.content("{\"add\":[\"ADMIN\"]}"))
+			.perform(patch(USER_ROLES_ENDPOINT, INVALID_UUID).contentType(MediaType.APPLICATION_JSON)
+				.content(ADD_ADMIN_ROLE_BODY))
 			.andExpect(status().isTooManyRequests());
 
 		this.rateLimitTimeMeter.advanceBy(Duration.ofSeconds(61));
 
 		this.mockMvc
-			.perform(patch("/api/v1/users/{id}/roles", USER_ID).contentType(MediaType.APPLICATION_JSON)
-				.content("{\"add\":[\"ADMIN\"]}"))
+			.perform(patch(USER_ROLES_ENDPOINT, USER_ID).contentType(MediaType.APPLICATION_JSON)
+				.content(ADD_ADMIN_ROLE_BODY))
 			.andExpect(status().isNoContent())
 			.andExpect(content().string(""));
 
-		assertUserHasRoles(USER_ID, "ADMIN", "USER");
+		assertUserHasRoles(USER_ID, ADMIN_ROLE, "USER");
 	}
 
 	private void assertUserHasRoles(String userId, String... expectedRoles) {
@@ -317,22 +327,6 @@ class UpdateUserRolesIT {
 		assertThat(currentUser.resetPasswordExpiresAt()).isEqualTo(oldUser.resetPasswordExpiresAt());
 		assertThat(currentUser.createdAt()).isEqualTo(oldUser.createdAt());
 		assertThat(currentUser.createdBy()).isEqualTo(oldUser.createdBy());
-	}
-
-	private void clearRateLimitBuckets() {
-		try {
-			clearBucketMap("loginBuckets");
-			clearBucketMap("generalBuckets");
-		}
-		catch (ReflectiveOperationException ex) {
-			throw new IllegalStateException(ex);
-		}
-	}
-
-	private void clearBucketMap(String fieldName) throws ReflectiveOperationException {
-		var field = UserRateLimitConfig.class.getDeclaredField(fieldName);
-		field.setAccessible(true);
-		((java.util.Map<?, ?>) field.get(this.rateLimitConfig)).clear();
 	}
 
 	private record UserSnapshot(String passwordHash, String status, boolean active, String resetPasswordCodeHash,

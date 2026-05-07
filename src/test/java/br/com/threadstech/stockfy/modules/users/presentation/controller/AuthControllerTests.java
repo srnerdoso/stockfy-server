@@ -16,7 +16,7 @@
 
 package br.com.threadstech.stockfy.modules.users.presentation.controller;
 
-import br.com.threadstech.stockfy.TestcontainersConfiguration;
+import br.com.threadstech.stockfy.ContainersConfiguration;
 import br.com.threadstech.stockfy.users.application.dto.AuthResponse;
 import br.com.threadstech.stockfy.users.application.dto.LoginRequest;
 import br.com.threadstech.stockfy.users.application.usecase.LoginUseCase;
@@ -40,7 +40,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@Import(TestcontainersConfiguration.class)
+@Import(ContainersConfiguration.class)
 class AuthControllerTests {
 
 	@Autowired

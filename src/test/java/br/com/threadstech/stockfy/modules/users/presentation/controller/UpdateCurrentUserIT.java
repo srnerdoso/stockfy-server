@@ -18,9 +18,10 @@ package br.com.threadstech.stockfy.modules.users.presentation.controller;
 
 import java.time.Duration;
 
+import br.com.threadstech.stockfy.ContainersConfiguration;
 import br.com.threadstech.stockfy.MutableTimeMeter;
+import br.com.threadstech.stockfy.RateLimitBucketCleaner;
 import br.com.threadstech.stockfy.RateLimitTestConfiguration;
-import br.com.threadstech.stockfy.TestcontainersConfiguration;
 import br.com.threadstech.stockfy.users.infrastructure.config.UserRateLimitConfig;
 import br.com.threadstech.stockfy.web.presentation.ApiErrorResponseAssertions;
 import org.junit.jupiter.api.AfterEach;
@@ -44,17 +45,25 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@Import({ TestcontainersConfiguration.class, RateLimitTestConfiguration.class })
+@Import({ ContainersConfiguration.class, RateLimitTestConfiguration.class })
 @Sql(scripts = "/sql/users/cleanup.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @Sql(scripts = "/sql/users/base-users.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @Sql(scripts = "/sql/users/cleanup.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
-@SuppressWarnings({ "PMD.AvoidAccessibilityAlteration", "PMD.AvoidCatchingGenericException",
-		"PMD.AvoidDuplicateLiterals", "PMD.AvoidLiteralsInIfCondition" })
 class UpdateCurrentUserIT {
+
+	private static final int GENERAL_RATE_LIMIT = 10;
 
 	private static final String OWNER_ID = "00000000-0000-0000-0000-000000000002";
 
 	private static final String OTHER_ID = "00000000-0000-0000-0000-000000000003";
+
+	private static final String USER_ROLE = "USER";
+
+	private static final String CURRENT_USER_ENDPOINT = "/api/v1/users/me";
+
+	private static final String BRUNO_USER_EMAIL = "bruno.user@example.com";
+
+	private static final String INVALID_EMAIL_BODY = "{\"email\":\"invalid-email\"}";
 
 	@Autowired
 	private MockMvc mockMvc;
@@ -70,24 +79,12 @@ class UpdateCurrentUserIT {
 
 	@AfterEach
 	void tearDownRateLimit() {
-		try {
-			var loginBucketsField = UserRateLimitConfig.class.getDeclaredField("loginBuckets");
-			loginBucketsField.setAccessible(true);
-			((java.util.Map<?, ?>) loginBucketsField.get(this.rateLimitConfig)).clear();
-
-			var generalBucketsField = UserRateLimitConfig.class.getDeclaredField("generalBuckets");
-			generalBucketsField.setAccessible(true);
-			((java.util.Map<?, ?>) generalBucketsField.get(this.rateLimitConfig)).clear();
-			this.rateLimitTimeMeter.reset();
-		}
-		catch (Exception ex) {
-			throw new RuntimeException(ex);
-		}
+		RateLimitBucketCleaner.clearAll(this.rateLimitConfig, this.rateLimitTimeMeter);
 	}
 
 	@Test
 	@DisplayName("Deve retornar 204 e persistir nome e email quando usuario autenticado atualizar perfil")
-	@WithMockUserId(id = OWNER_ID, roles = "USER")
+	@WithMockUserId(id = OWNER_ID, roles = USER_ROLE)
 	void updateCurrentUser_whenRequestIsValid_thenReturns204AndPersistsData() throws Exception {
 		long usersBeforeRequest = countUsers();
 		String json = """
@@ -97,43 +94,43 @@ class UpdateCurrentUserIT {
 				}
 				""";
 
-		this.mockMvc.perform(patch("/api/v1/users/me").contentType(MediaType.APPLICATION_JSON).content(json))
+		this.mockMvc.perform(patch(CURRENT_USER_ENDPOINT).contentType(MediaType.APPLICATION_JSON).content(json))
 			.andExpect(status().isNoContent())
 			.andExpect(content().string(""));
 
 		assertThat(countUsers()).isEqualTo(usersBeforeRequest);
 		assertThat(userName(OWNER_ID)).isEqualTo("Bruno Updated");
 		assertThat(userEmail(OWNER_ID)).isEqualTo("bruno.updated@example.com");
-		assertUserHasRoles(OWNER_ID, "USER");
+		assertUserHasRoles(OWNER_ID, USER_ROLE);
 		assertThat(userStatus(OWNER_ID)).isEqualTo("ACTIVE");
 		assertThat(userIsActive(OWNER_ID)).isTrue();
 	}
 
 	@Test
 	@DisplayName("Deve atualizar somente nome quando email for omitido")
-	@WithMockUserId(id = OWNER_ID, roles = "USER")
+	@WithMockUserId(id = OWNER_ID, roles = USER_ROLE)
 	void updateCurrentUser_whenEmailIsOmitted_thenKeepsCurrentEmail() throws Exception {
 		long usersBeforeRequest = countUsers();
 
 		this.mockMvc
-			.perform(patch("/api/v1/users/me").contentType(MediaType.APPLICATION_JSON)
+			.perform(patch(CURRENT_USER_ENDPOINT).contentType(MediaType.APPLICATION_JSON)
 				.content("{\"name\":\"Only Name\"}"))
 			.andExpect(status().isNoContent())
 			.andExpect(content().string(""));
 
 		assertThat(countUsers()).isEqualTo(usersBeforeRequest);
 		assertThat(userName(OWNER_ID)).isEqualTo("Only Name");
-		assertThat(userEmail(OWNER_ID)).isEqualTo("bruno.user@example.com");
+		assertThat(userEmail(OWNER_ID)).isEqualTo(BRUNO_USER_EMAIL);
 	}
 
 	@Test
 	@DisplayName("Deve atualizar somente email quando nome for omitido")
-	@WithMockUserId(id = OWNER_ID, roles = "USER")
+	@WithMockUserId(id = OWNER_ID, roles = USER_ROLE)
 	void updateCurrentUser_whenNameIsOmitted_thenKeepsCurrentName() throws Exception {
 		long usersBeforeRequest = countUsers();
 
 		this.mockMvc
-			.perform(patch("/api/v1/users/me").contentType(MediaType.APPLICATION_JSON)
+			.perform(patch(CURRENT_USER_ENDPOINT).contentType(MediaType.APPLICATION_JSON)
 				.content("{\"email\":\"only.email@example.com\"}"))
 			.andExpect(status().isNoContent())
 			.andExpect(content().string(""));
@@ -145,7 +142,7 @@ class UpdateCurrentUserIT {
 
 	@Test
 	@DisplayName("Nao deve aplicar campos protegidos da entidade enviados no corpo")
-	@WithMockUserId(id = OWNER_ID, roles = "USER")
+	@WithMockUserId(id = OWNER_ID, roles = USER_ROLE)
 	void updateCurrentUser_whenRoleAndStatusAreSent_thenDoesNotAlterRoleOrStatus() throws Exception {
 		long usersBeforeRequest = countUsers();
 		String originalCreatedAt = userCreatedAt(OWNER_ID);
@@ -171,7 +168,7 @@ class UpdateCurrentUserIT {
 				}
 				""";
 
-		this.mockMvc.perform(patch("/api/v1/users/me").contentType(MediaType.APPLICATION_JSON).content(json))
+		this.mockMvc.perform(patch(CURRENT_USER_ENDPOINT).contentType(MediaType.APPLICATION_JSON).content(json))
 			.andExpect(status().isNoContent())
 			.andExpect(content().string(""));
 
@@ -180,7 +177,7 @@ class UpdateCurrentUserIT {
 		assertThat(userExists("99999999-9999-9999-9999-999999999999")).isFalse();
 		assertThat(userName(OWNER_ID)).isEqualTo("Bruno Safe");
 		assertThat(userEmail(OWNER_ID)).isEqualTo("bruno.safe@example.com");
-		assertUserHasRoles(OWNER_ID, "USER");
+		assertUserHasRoles(OWNER_ID, USER_ROLE);
 		assertThat(userStatus(OWNER_ID)).isEqualTo("ACTIVE");
 		assertThat(userIsActive(OWNER_ID)).isTrue();
 		assertThat(passwordHash(OWNER_ID)).isEqualTo("password-hash-2");
@@ -198,8 +195,8 @@ class UpdateCurrentUserIT {
 		long usersBeforeRequest = countUsers();
 
 		this.mockMvc
-			.perform(
-					patch("/api/v1/users/me").contentType(MediaType.APPLICATION_JSON).content("{\"name\":\"No Auth\"}"))
+			.perform(patch(CURRENT_USER_ENDPOINT).contentType(MediaType.APPLICATION_JSON)
+				.content("{\"name\":\"No Auth\"}"))
 			.andExpect(status().isUnauthorized())
 			.andExpect(content().string(""));
 
@@ -209,27 +206,26 @@ class UpdateCurrentUserIT {
 
 	@Test
 	@DisplayName("Deve retornar 400 quando email for invalido")
-	@WithMockUserId(id = OWNER_ID, roles = "USER")
+	@WithMockUserId(id = OWNER_ID, roles = USER_ROLE)
 	void updateCurrentUser_whenEmailIsInvalid_thenReturns400AndDoesNotAlterData() throws Exception {
 		long usersBeforeRequest = countUsers();
 
-		ApiErrorResponseAssertions.assertBadRequestFieldValidation(
-				this.mockMvc.perform(patch("/api/v1/users/me").contentType(MediaType.APPLICATION_JSON)
-					.content("{\"email\":\"invalid-email\"}")),
+		ApiErrorResponseAssertions.assertBadRequestFieldValidation(this.mockMvc
+			.perform(patch(CURRENT_USER_ENDPOINT).contentType(MediaType.APPLICATION_JSON).content(INVALID_EMAIL_BODY)),
 				"email", "O e-mail informado é inválido.");
 
 		assertThat(countUsers()).isEqualTo(usersBeforeRequest);
-		assertThat(userEmail(OWNER_ID)).isEqualTo("bruno.user@example.com");
+		assertThat(userEmail(OWNER_ID)).isEqualTo(BRUNO_USER_EMAIL);
 	}
 
 	@Test
 	@DisplayName("Deve retornar 400 quando nome contiver SQL Injection")
-	@WithMockUserId(id = OWNER_ID, roles = "USER")
+	@WithMockUserId(id = OWNER_ID, roles = USER_ROLE)
 	void updateCurrentUser_whenNameContainsSqlInjection_thenReturns400AndDoesNotAlterData() throws Exception {
 		long usersBeforeRequest = countUsers();
 
 		ApiErrorResponseAssertions.assertBadRequestFieldValidation(
-				this.mockMvc.perform(patch("/api/v1/users/me").contentType(MediaType.APPLICATION_JSON)
+				this.mockMvc.perform(patch(CURRENT_USER_ENDPOINT).contentType(MediaType.APPLICATION_JSON)
 					.content("{\"name\":\"User'); DROP TABLE users; --\"}")),
 				"name", "O nome contém caracteres inválidos.");
 
@@ -240,12 +236,12 @@ class UpdateCurrentUserIT {
 
 	@Test
 	@DisplayName("Deve retornar 409 quando email pertencer a outro usuario")
-	@WithMockUserId(id = OWNER_ID, roles = "USER")
+	@WithMockUserId(id = OWNER_ID, roles = USER_ROLE)
 	void updateCurrentUser_whenEmailBelongsToAnotherUser_thenReturns409AndDoesNotAlterData() throws Exception {
 		long usersBeforeRequest = countUsers();
 
 		this.mockMvc
-			.perform(patch("/api/v1/users/me").contentType(MediaType.APPLICATION_JSON)
+			.perform(patch(CURRENT_USER_ENDPOINT).contentType(MediaType.APPLICATION_JSON)
 				.content("{\"email\":\"alice.filter@example.com\"}"))
 			.andExpect(status().isConflict())
 			.andExpect(jsonPath("$.type").value("about:blank"))
@@ -256,47 +252,46 @@ class UpdateCurrentUserIT {
 			.andExpect(jsonPath("$.fieldErrors").doesNotExist());
 
 		assertThat(countUsers()).isEqualTo(usersBeforeRequest);
-		assertThat(userEmail(OWNER_ID)).isEqualTo("bruno.user@example.com");
+		assertThat(userEmail(OWNER_ID)).isEqualTo(BRUNO_USER_EMAIL);
 	}
 
 	@Test
 	@DisplayName("Deve retornar 429 quando exceder limite geral de requisicoes")
-	@WithMockUserId(id = OWNER_ID, roles = "USER")
+	@WithMockUserId(id = OWNER_ID, roles = USER_ROLE)
 	void updateCurrentUser_whenLimitExceeded_thenReturns429() throws Exception {
 		long usersBeforeRequest = countUsers();
 
-		for (int i = 0; i <= 10; i++) {
-			var result = this.mockMvc.perform(patch("/api/v1/users/me").contentType(MediaType.APPLICATION_JSON)
-				.content("{\"email\":\"invalid-email\"}"));
-			if (i == 10) {
+		for (int i = 0; i <= GENERAL_RATE_LIMIT; i++) {
+			var result = this.mockMvc.perform(
+					patch(CURRENT_USER_ENDPOINT).contentType(MediaType.APPLICATION_JSON).content(INVALID_EMAIL_BODY));
+			if (i == GENERAL_RATE_LIMIT) {
 				result.andExpect(status().isTooManyRequests());
 			}
 		}
 
 		assertThat(countUsers()).isEqualTo(usersBeforeRequest);
-		assertThat(userEmail(OWNER_ID)).isEqualTo("bruno.user@example.com");
+		assertThat(userEmail(OWNER_ID)).isEqualTo(BRUNO_USER_EMAIL);
 	}
 
 	@Test
 	@DisplayName("Deve permitir nova atualizacao quando a janela de rate limit expirar")
-	@WithMockUserId(id = OWNER_ID, roles = "USER")
+	@WithMockUserId(id = OWNER_ID, roles = USER_ROLE)
 	void updateCurrentUser_whenRateLimitWindowExpires_thenProcessesRequest() throws Exception {
 		long usersBeforeRequest = countUsers();
 
-		for (int i = 0; i < 10; i++) {
-			this.mockMvc.perform(patch("/api/v1/users/me").contentType(MediaType.APPLICATION_JSON)
-				.content("{\"email\":\"invalid-email\"}"));
+		for (int i = 0; i < GENERAL_RATE_LIMIT; i++) {
+			this.mockMvc.perform(
+					patch(CURRENT_USER_ENDPOINT).contentType(MediaType.APPLICATION_JSON).content(INVALID_EMAIL_BODY));
 		}
 
 		this.mockMvc
-			.perform(patch("/api/v1/users/me").contentType(MediaType.APPLICATION_JSON)
-				.content("{\"email\":\"invalid-email\"}"))
+			.perform(patch(CURRENT_USER_ENDPOINT).contentType(MediaType.APPLICATION_JSON).content(INVALID_EMAIL_BODY))
 			.andExpect(status().isTooManyRequests());
 
 		this.rateLimitTimeMeter.advanceBy(Duration.ofSeconds(61));
 
 		this.mockMvc
-			.perform(patch("/api/v1/users/me").contentType(MediaType.APPLICATION_JSON)
+			.perform(patch(CURRENT_USER_ENDPOINT).contentType(MediaType.APPLICATION_JSON)
 				.content("{\"name\":\"After Window\"}"))
 			.andExpect(status().isNoContent())
 			.andExpect(content().string(""));

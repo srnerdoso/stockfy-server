@@ -52,12 +52,30 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
-@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 class AuthenticationTests {
+
+	private static final String USER_NAME = "John Doe";
+
+	private static final String USER_EMAIL = "john@example.com";
+
+	private static final String USER_PASSWORD = "password123";
+
+	private static final String WRONG_PASSWORD = "wrong";
+
+	private static final String ACCESS_TOKEN = "access_token";
+
+	private static final String REFRESH_TOKEN = "refresh_token";
+
+	private static final String OLD_REFRESH_TOKEN = "old_refresh_token";
+
+	private static final String NEW_ACCESS_TOKEN = "new_access_token";
+
+	private static final String NEW_REFRESH_TOKEN = "new_refresh_token";
+
+	private static final String LOGIN_ATTEMPTS_KEY = "login_attempts:" + USER_EMAIL;
 
 	@Mock
 	private UserRepository userRepository;
@@ -73,6 +91,9 @@ class AuthenticationTests {
 
 	@Mock
 	private StringRedisTemplate redisTemplate;
+
+	@Mock
+	private ValueOperations<String, String> valueOperations;
 
 	@Mock
 	private RabbitMqEventPublisher eventPublisher;
@@ -94,8 +115,8 @@ class AuthenticationTests {
 	void setUp() {
 		this.user = this.user.builder()
 			.id(this.userId)
-			.name("John Doe")
-			.email(new Email("john@example.com"))
+			.name(USER_NAME)
+			.email(new Email(USER_EMAIL))
 			.password(new Password("hashed_password"))
 			.roles(Set.of(UserRole.USER))
 			.status(UserStatus.ACTIVE)
@@ -108,14 +129,14 @@ class AuthenticationTests {
 	void shouldLoginSuccessfully() {
 		given(this.userRepository.findByEmail(any())).willReturn(Optional.of(this.user));
 		given(this.passwordEncoder.matches(any(), any())).willReturn(true);
-		given(this.jwtService.generateToken(any(), any())).willReturn("access_token");
-		given(this.tokenService.generateRefreshToken(any())).willReturn("refresh_token");
+		given(this.jwtService.generateToken(any(), any())).willReturn(ACCESS_TOKEN);
+		given(this.tokenService.generateRefreshToken(any())).willReturn(REFRESH_TOKEN);
 
-		var response = this.loginUseCase.execute("john@example.com", "password123");
+		var response = this.loginUseCase.execute(USER_EMAIL, USER_PASSWORD);
 
 		assertThat(response).isNotNull();
-		assertThat(response.accessToken()).isEqualTo("access_token");
-		assertThat(response.refreshToken()).isEqualTo("refresh_token");
+		assertThat(response.accessToken()).isEqualTo(ACCESS_TOKEN);
+		assertThat(response.refreshToken()).isEqualTo(REFRESH_TOKEN);
 	}
 
 	@Test
@@ -123,13 +144,10 @@ class AuthenticationTests {
 	void shouldThrowExceptionForInvalidCredentials() {
 		given(this.userRepository.findByEmail(any())).willReturn(Optional.of(this.user));
 		given(this.passwordEncoder.matches(any(), any())).willReturn(false);
-
-		@SuppressWarnings("unchecked")
-		ValueOperations<String, String> valueOperations = mock(ValueOperations.class);
-		given(this.redisTemplate.opsForValue()).willReturn(valueOperations);
+		given(this.redisTemplate.opsForValue()).willReturn(this.valueOperations);
 
 		assertThatExceptionOfType(InvalidCredentialsException.class)
-			.isThrownBy(() -> this.loginUseCase.execute("john@example.com", "wrong"));
+			.isThrownBy(() -> this.loginUseCase.execute(USER_EMAIL, WRONG_PASSWORD));
 	}
 
 	@Test
@@ -137,36 +155,33 @@ class AuthenticationTests {
 	void execute_whenPasswordIsWrong_thenExpiresFailedAttemptsAfterOneDay() {
 		given(this.userRepository.findByEmail(any())).willReturn(Optional.of(this.user));
 		given(this.passwordEncoder.matches(any(), any())).willReturn(false);
-
-		@SuppressWarnings("unchecked")
-		ValueOperations<String, String> valueOperations = mock(ValueOperations.class);
-		given(this.redisTemplate.opsForValue()).willReturn(valueOperations);
+		given(this.redisTemplate.opsForValue()).willReturn(this.valueOperations);
 
 		assertThatExceptionOfType(InvalidCredentialsException.class)
-			.isThrownBy(() -> this.loginUseCase.execute("john@example.com", "wrong"));
-		verify(this.redisTemplate).expire(eq("login_attempts:john@example.com"), eq(Duration.ofDays(1)));
+			.isThrownBy(() -> this.loginUseCase.execute(USER_EMAIL, WRONG_PASSWORD));
+		verify(this.redisTemplate).expire(eq(LOGIN_ATTEMPTS_KEY), eq(Duration.ofDays(1)));
 	}
 
 	@Test
 	@DisplayName("Should throw invalid credentials when email value object rejects address")
 	void execute_whenEmailValueObjectRejectsAddress_thenThrowsInvalidCredentialsException() {
 		assertThatExceptionOfType(InvalidCredentialsException.class)
-			.isThrownBy(() -> this.loginUseCase.execute("john@example.technology", "password123"));
+			.isThrownBy(() -> this.loginUseCase.execute("john@example.technology", USER_PASSWORD));
 	}
 
 	@Test
 	@DisplayName("Should refresh token successfully")
 	void shouldRefreshTokenSuccessfully() {
 		given(this.tokenService.validateRefreshToken(any())).willReturn(true);
-		given(this.tokenService.consumeRefreshToken("old_refresh_token")).willReturn(Optional.of(this.userId));
+		given(this.tokenService.consumeRefreshToken(OLD_REFRESH_TOKEN)).willReturn(Optional.of(this.userId));
 		given(this.userRepository.findById(any())).willReturn(Optional.of(this.user));
-		given(this.jwtService.generateToken(any(), any())).willReturn("new_access_token");
-		given(this.tokenService.generateRefreshToken(any())).willReturn("new_refresh_token");
+		given(this.jwtService.generateToken(any(), any())).willReturn(NEW_ACCESS_TOKEN);
+		given(this.tokenService.generateRefreshToken(any())).willReturn(NEW_REFRESH_TOKEN);
 
-		var response = this.refreshTokenUseCase.execute("old_refresh_token");
+		var response = this.refreshTokenUseCase.execute(OLD_REFRESH_TOKEN);
 
-		assertThat(response.accessToken()).isEqualTo("new_access_token");
-		assertThat(response.refreshToken()).isEqualTo("new_refresh_token");
+		assertThat(response.accessToken()).isEqualTo(NEW_ACCESS_TOKEN);
+		assertThat(response.refreshToken()).isEqualTo(NEW_REFRESH_TOKEN);
 	}
 
 	@Test
@@ -181,43 +196,43 @@ class AuthenticationTests {
 	@Test
 	@DisplayName("Should throw invalid refresh token when user does not exist")
 	void execute_whenRefreshTokenUserDoesNotExist_thenThrowsInvalidRefreshTokenException() {
-		given(this.tokenService.validateRefreshToken("refresh_token")).willReturn(true);
-		given(this.tokenService.consumeRefreshToken("refresh_token")).willReturn(Optional.of(this.userId));
+		given(this.tokenService.validateRefreshToken(REFRESH_TOKEN)).willReturn(true);
+		given(this.tokenService.consumeRefreshToken(REFRESH_TOKEN)).willReturn(Optional.of(this.userId));
 		given(this.userRepository.findById(this.userId)).willReturn(Optional.empty());
 
 		assertThatExceptionOfType(InvalidRefreshTokenException.class)
-			.isThrownBy(() -> this.refreshTokenUseCase.execute("refresh_token"));
+			.isThrownBy(() -> this.refreshTokenUseCase.execute(REFRESH_TOKEN));
 	}
 
 	@Test
 	@DisplayName("Should throw invalid refresh token when user is inactive")
 	void execute_whenUserIsInactive_thenThrowsInvalidRefreshTokenException() {
 		this.user.setActive(false);
-		given(this.tokenService.validateRefreshToken("refresh_token")).willReturn(true);
-		given(this.tokenService.consumeRefreshToken("refresh_token")).willReturn(Optional.of(this.userId));
+		given(this.tokenService.validateRefreshToken(REFRESH_TOKEN)).willReturn(true);
+		given(this.tokenService.consumeRefreshToken(REFRESH_TOKEN)).willReturn(Optional.of(this.userId));
 		given(this.userRepository.findById(this.userId)).willReturn(Optional.of(this.user));
 
 		assertThatExceptionOfType(InvalidRefreshTokenException.class)
-			.isThrownBy(() -> this.refreshTokenUseCase.execute("refresh_token"));
+			.isThrownBy(() -> this.refreshTokenUseCase.execute(REFRESH_TOKEN));
 	}
 
 	@Test
 	@DisplayName("Should throw invalid refresh token when user is locked")
 	void execute_whenUserIsLocked_thenThrowsInvalidRefreshTokenException() {
 		this.user.lock();
-		given(this.tokenService.validateRefreshToken("refresh_token")).willReturn(true);
-		given(this.tokenService.consumeRefreshToken("refresh_token")).willReturn(Optional.of(this.userId));
+		given(this.tokenService.validateRefreshToken(REFRESH_TOKEN)).willReturn(true);
+		given(this.tokenService.consumeRefreshToken(REFRESH_TOKEN)).willReturn(Optional.of(this.userId));
 		given(this.userRepository.findById(this.userId)).willReturn(Optional.of(this.user));
 
 		assertThatExceptionOfType(InvalidRefreshTokenException.class)
-			.isThrownBy(() -> this.refreshTokenUseCase.execute("refresh_token"));
+			.isThrownBy(() -> this.refreshTokenUseCase.execute(REFRESH_TOKEN));
 	}
 
 	@Test
 	@DisplayName("Should logout and revoke token")
 	void shouldLogoutSuccessfully() {
-		this.logoutUseCase.execute("refresh_token");
-		verify(this.tokenService).revokeRefreshToken("refresh_token");
+		this.logoutUseCase.execute(REFRESH_TOKEN);
+		verify(this.tokenService).revokeRefreshToken(REFRESH_TOKEN);
 	}
 
 }

@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
-import br.com.threadstech.stockfy.TestcontainersConfiguration;
+import br.com.threadstech.stockfy.ContainersConfiguration;
 import br.com.threadstech.stockfy.users.domain.model.Email;
 import br.com.threadstech.stockfy.users.domain.model.Password;
 import br.com.threadstech.stockfy.users.domain.model.User;
@@ -39,7 +39,7 @@ import org.springframework.transaction.annotation.Transactional;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
-@Import(TestcontainersConfiguration.class)
+@Import(ContainersConfiguration.class)
 @Transactional
 class UserRepositoryIT {
 

@@ -16,17 +16,15 @@
 
 package br.com.threadstech.stockfy;
 
-import org.junit.jupiter.api.Test;
+import org.springframework.boot.SpringApplication;
 
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
+public final class LocalStockfyApplication {
 
-@Import(TestcontainersConfiguration.class)
-@SpringBootTest
-class StockfyApplicationTests {
+	private LocalStockfyApplication() {
+	}
 
-	@Test
-	void contextLoads() {
+	public static void main(String[] args) {
+		SpringApplication.from(StockfyApplication::main).with(ContainersConfiguration.class).run(args);
 	}
 
 }

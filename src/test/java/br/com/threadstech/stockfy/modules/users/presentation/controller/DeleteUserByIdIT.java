@@ -19,9 +19,10 @@ package br.com.threadstech.stockfy.modules.users.presentation.controller;
 import java.time.Duration;
 import java.util.UUID;
 
+import br.com.threadstech.stockfy.ContainersConfiguration;
 import br.com.threadstech.stockfy.MutableTimeMeter;
+import br.com.threadstech.stockfy.RateLimitBucketCleaner;
 import br.com.threadstech.stockfy.RateLimitTestConfiguration;
-import br.com.threadstech.stockfy.TestcontainersConfiguration;
 import br.com.threadstech.stockfy.users.application.exception.InvalidCredentialsException;
 import br.com.threadstech.stockfy.users.application.usecase.LoginUseCase;
 import br.com.threadstech.stockfy.users.infrastructure.config.UserRateLimitConfig;
@@ -47,19 +48,25 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@Import({ TestcontainersConfiguration.class, RateLimitTestConfiguration.class })
+@Import({ ContainersConfiguration.class, RateLimitTestConfiguration.class })
 @Sql(scripts = "/sql/users/cleanup.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @Sql(scripts = "/sql/users/base-users.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @Sql(scripts = "/sql/users/cleanup.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
-@SuppressWarnings({ "PMD.AvoidAccessibilityAlteration", "PMD.AvoidCatchingGenericException",
-		"PMD.AvoidDuplicateLiterals", "PMD.AvoidLiteralsInIfCondition" })
 class DeleteUserByIdIT {
+
+	private static final int GENERAL_RATE_LIMIT = 10;
 
 	private static final String ADMIN_ID = "00000000-0000-0000-0000-000000000001";
 
 	private static final String OWNER_ID = "00000000-0000-0000-0000-000000000002";
 
 	private static final String OTHER_ID = "00000000-0000-0000-0000-000000000003";
+
+	private static final String ADMIN_ROLE = "ADMIN";
+
+	private static final String USER_BY_ID_ENDPOINT = "/api/v1/users/{id}";
+
+	private static final String INVALID_UUID = "not-a-uuid";
 
 	@Autowired
 	private MockMvc mockMvc;
@@ -81,28 +88,16 @@ class DeleteUserByIdIT {
 
 	@AfterEach
 	void tearDownRateLimit() {
-		try {
-			var loginBucketsField = UserRateLimitConfig.class.getDeclaredField("loginBuckets");
-			loginBucketsField.setAccessible(true);
-			((java.util.Map<?, ?>) loginBucketsField.get(this.rateLimitConfig)).clear();
-
-			var generalBucketsField = UserRateLimitConfig.class.getDeclaredField("generalBuckets");
-			generalBucketsField.setAccessible(true);
-			((java.util.Map<?, ?>) generalBucketsField.get(this.rateLimitConfig)).clear();
-			this.rateLimitTimeMeter.reset();
-		}
-		catch (Exception ex) {
-			throw new RuntimeException(ex);
-		}
+		RateLimitBucketCleaner.clearAll(this.rateLimitConfig, this.rateLimitTimeMeter);
 	}
 
 	@Test
 	@DisplayName("Deve retornar 204 e aplicar soft delete quando ADMIN deletar ID existente")
-	@WithMockUserId(id = ADMIN_ID, roles = "ADMIN")
+	@WithMockUserId(id = ADMIN_ID, roles = ADMIN_ROLE)
 	void deleteUserById_whenAdminDeletesExistingUser_thenReturns204AndSoftDeletesUser() throws Exception {
 		long usersBeforeRequest = countUsers();
 		assertThat(userIsActive(OWNER_ID)).isTrue();
-		this.mockMvc.perform(delete("/api/v1/users/{id}", OWNER_ID))
+		this.mockMvc.perform(delete(USER_BY_ID_ENDPOINT, OWNER_ID))
 			.andExpect(status().isNoContent())
 			.andExpect(content().string(""));
 
@@ -113,12 +108,12 @@ class DeleteUserByIdIT {
 
 	@Test
 	@DisplayName("Deve impedir login apos usuario ser deletado")
-	@WithMockUserId(id = ADMIN_ID, roles = "ADMIN")
+	@WithMockUserId(id = ADMIN_ID, roles = ADMIN_ROLE)
 	void deleteUserById_whenUserWasDeleted_thenUserCannotLogin() throws Exception {
 		this.jdbcTemplate.update("UPDATE users SET password_hash = ? WHERE id = ?",
 				this.passwordEncoder.encode("password123"), UUID.fromString(OWNER_ID));
 
-		this.mockMvc.perform(delete("/api/v1/users/{id}", OWNER_ID)).andExpect(status().isNoContent());
+		this.mockMvc.perform(delete(USER_BY_ID_ENDPOINT, OWNER_ID)).andExpect(status().isNoContent());
 
 		assertThatExceptionOfType(InvalidCredentialsException.class)
 			.isThrownBy(() -> this.loginUseCase.execute("bruno.user@example.com", "password123"));
@@ -133,7 +128,7 @@ class DeleteUserByIdIT {
 	void deleteUserById_whenOwnerUserDeletesOwnAccount_thenReturns403WithoutBody() throws Exception {
 		long usersBeforeRequest = countUsers();
 
-		this.mockMvc.perform(delete("/api/v1/users/{id}", OWNER_ID))
+		this.mockMvc.perform(delete(USER_BY_ID_ENDPOINT, OWNER_ID))
 			.andExpect(status().isForbidden())
 			.andExpect(content().string(""));
 
@@ -146,7 +141,7 @@ class DeleteUserByIdIT {
 	void deleteUserById_whenNotAuthenticated_thenReturns401WithoutBody() throws Exception {
 		long usersBeforeRequest = countUsers();
 
-		this.mockMvc.perform(delete("/api/v1/users/{id}", OWNER_ID))
+		this.mockMvc.perform(delete(USER_BY_ID_ENDPOINT, OWNER_ID))
 			.andExpect(status().isUnauthorized())
 			.andExpect(content().string(""));
 
@@ -156,12 +151,12 @@ class DeleteUserByIdIT {
 
 	@Test
 	@DisplayName("Deve retornar 400 quando ID nao for UUID valido")
-	@WithMockUserId(id = ADMIN_ID, roles = "ADMIN")
+	@WithMockUserId(id = ADMIN_ID, roles = ADMIN_ROLE)
 	void deleteUserById_whenIdIsInvalidUuid_thenReturns400AndDoesNotAlterData() throws Exception {
 		long usersBeforeRequest = countUsers();
 
 		ApiErrorResponseAssertions.assertBadRequestFieldValidation(
-				this.mockMvc.perform(delete("/api/v1/users/{id}", "not-a-uuid")), "id",
+				this.mockMvc.perform(delete(USER_BY_ID_ENDPOINT, INVALID_UUID)), "id",
 				"O parâmetro informado é inválido.");
 
 		assertThat(countUsers()).isEqualTo(usersBeforeRequest);
@@ -170,12 +165,12 @@ class DeleteUserByIdIT {
 
 	@Test
 	@DisplayName("Deve retornar 400 quando ID contiver SQL Injection")
-	@WithMockUserId(id = ADMIN_ID, roles = "ADMIN")
+	@WithMockUserId(id = ADMIN_ID, roles = ADMIN_ROLE)
 	void deleteUserById_whenIdContainsSqlInjection_thenReturns400AndDoesNotAlterData() throws Exception {
 		long usersBeforeRequest = countUsers();
 
 		ApiErrorResponseAssertions.assertBadRequestFieldValidation(
-				this.mockMvc.perform(delete("/api/v1/users/{id}", "00000000-0000-0000-0000-000000000002' OR '1'='1")),
+				this.mockMvc.perform(delete(USER_BY_ID_ENDPOINT, "00000000-0000-0000-0000-000000000002' OR '1'='1")),
 				"id", "O parâmetro informado é inválido.");
 
 		assertThat(countUsers()).isEqualTo(usersBeforeRequest);
@@ -185,13 +180,13 @@ class DeleteUserByIdIT {
 
 	@Test
 	@DisplayName("Deve retornar 429 quando exceder limite geral de requisicoes")
-	@WithMockUserId(id = ADMIN_ID, roles = "ADMIN")
+	@WithMockUserId(id = ADMIN_ID, roles = ADMIN_ROLE)
 	void deleteUserById_whenLimitExceeded_thenReturns429() throws Exception {
 		long usersBeforeRequest = countUsers();
 
-		for (int i = 0; i <= 10; i++) {
-			var result = this.mockMvc.perform(delete("/api/v1/users/{id}", "not-a-uuid"));
-			if (i == 10) {
+		for (int i = 0; i <= GENERAL_RATE_LIMIT; i++) {
+			var result = this.mockMvc.perform(delete(USER_BY_ID_ENDPOINT, INVALID_UUID));
+			if (i == GENERAL_RATE_LIMIT) {
 				result.andExpect(status().isTooManyRequests());
 			}
 		}
@@ -203,19 +198,19 @@ class DeleteUserByIdIT {
 
 	@Test
 	@DisplayName("Deve permitir nova tentativa quando a janela de rate limit expirar")
-	@WithMockUserId(id = ADMIN_ID, roles = "ADMIN")
+	@WithMockUserId(id = ADMIN_ID, roles = ADMIN_ROLE)
 	void deleteUserById_whenRateLimitWindowExpires_thenProcessesRequest() throws Exception {
 		long usersBeforeRequest = countUsers();
 
-		for (int i = 0; i < 10; i++) {
-			this.mockMvc.perform(delete("/api/v1/users/{id}", "not-a-uuid"));
+		for (int i = 0; i < GENERAL_RATE_LIMIT; i++) {
+			this.mockMvc.perform(delete(USER_BY_ID_ENDPOINT, INVALID_UUID));
 		}
 
-		this.mockMvc.perform(delete("/api/v1/users/{id}", "not-a-uuid")).andExpect(status().isTooManyRequests());
+		this.mockMvc.perform(delete(USER_BY_ID_ENDPOINT, INVALID_UUID)).andExpect(status().isTooManyRequests());
 
 		this.rateLimitTimeMeter.advanceBy(Duration.ofSeconds(61));
 
-		this.mockMvc.perform(delete("/api/v1/users/{id}", OTHER_ID)).andExpect(status().isNoContent());
+		this.mockMvc.perform(delete(USER_BY_ID_ENDPOINT, OTHER_ID)).andExpect(status().isNoContent());
 
 		assertThat(countUsers()).isEqualTo(usersBeforeRequest);
 		assertThat(userIsActive(OWNER_ID)).isTrue();

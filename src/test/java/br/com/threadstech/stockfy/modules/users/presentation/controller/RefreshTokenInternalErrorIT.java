@@ -21,8 +21,8 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
 
+import br.com.threadstech.stockfy.ContainersConfiguration;
 import br.com.threadstech.stockfy.RateLimitTestConfiguration;
-import br.com.threadstech.stockfy.TestcontainersConfiguration;
 import br.com.threadstech.stockfy.users.application.usecase.RefreshTokenUseCase;
 import br.com.threadstech.stockfy.users.infrastructure.security.TokenService;
 import org.hamcrest.MatcherAssert;
@@ -49,7 +49,7 @@ import static org.mockito.BDDMockito.willThrow;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
 		properties = "server.error.include-stacktrace=never")
-@Import({ TestcontainersConfiguration.class, RateLimitTestConfiguration.class })
+@Import({ ContainersConfiguration.class, RateLimitTestConfiguration.class })
 @Sql(scripts = "/sql/users/cleanup.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @Sql(scripts = "/sql/users/base-users.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @Sql(scripts = "/sql/users/cleanup.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)

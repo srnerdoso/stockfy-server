@@ -51,7 +51,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
-@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 @ExtendWith(MockitoExtension.class)
 class UpdatePasswordUseCaseTests {
 
@@ -66,6 +65,12 @@ class UpdatePasswordUseCaseTests {
 	private static final String CURRENT_PASSWORD = "currentPassword123";
 
 	private static final String CURRENT_PASSWORD_HASH = String.join("-", "current", "password", "hash");
+
+	private static final String USER_NAME = "John Doe";
+
+	private static final String USER_EMAIL = "john@example.com";
+
+	private static final String WRONG_PASSWORD = "wrongPassword";
 
 	private static final String INVALID_ATTEMPT_KEY_PREFIX = "password_update_attempts:";
 
@@ -168,12 +173,12 @@ class UpdatePasswordUseCaseTests {
 		UUID userId = UUID.randomUUID();
 		User user = user(userId);
 		given(this.userRepository.findById(userId)).willReturn(Optional.of(user));
-		given(this.passwordEncoder.matches("wrongPassword", CURRENT_PASSWORD_HASH)).willReturn(false);
+		given(this.passwordEncoder.matches(WRONG_PASSWORD, CURRENT_PASSWORD_HASH)).willReturn(false);
 		given(this.redisTemplate.opsForValue()).willReturn(this.valueOperations);
 		given(this.valueOperations.increment(INVALID_ATTEMPT_KEY_PREFIX + userId)).willReturn(1L);
 
 		assertThatExceptionOfType(CurrentPasswordInvalidException.class)
-			.isThrownBy(() -> this.useCase.executeAuthenticated(userId, "wrongPassword", NEW_PASSWORD, NEW_PASSWORD));
+			.isThrownBy(() -> this.useCase.executeAuthenticated(userId, WRONG_PASSWORD, NEW_PASSWORD, NEW_PASSWORD));
 
 		verify(this.valueOperations).increment(INVALID_ATTEMPT_KEY_PREFIX + userId);
 		verify(this.redisTemplate).expire(INVALID_ATTEMPT_KEY_PREFIX + userId, Duration.ofMinutes(5));
@@ -203,13 +208,13 @@ class UpdatePasswordUseCaseTests {
 		UUID userId = UUID.randomUUID();
 		User user = user(userId);
 		given(this.userRepository.findById(userId)).willReturn(Optional.of(user));
-		given(this.passwordEncoder.matches("wrongPassword", CURRENT_PASSWORD_HASH)).willReturn(false);
+		given(this.passwordEncoder.matches(WRONG_PASSWORD, CURRENT_PASSWORD_HASH)).willReturn(false);
 		given(this.redisTemplate.opsForValue()).willReturn(this.valueOperations);
 		given(this.valueOperations.increment(INVALID_ATTEMPT_KEY_PREFIX + userId))
 			.willReturn((long) MAX_INVALID_ATTEMPTS);
 
 		assertThatExceptionOfType(CurrentPasswordInvalidException.class)
-			.isThrownBy(() -> this.useCase.executeAuthenticated(userId, "wrongPassword", NEW_PASSWORD, NEW_PASSWORD));
+			.isThrownBy(() -> this.useCase.executeAuthenticated(userId, WRONG_PASSWORD, NEW_PASSWORD, NEW_PASSWORD));
 
 		assertThat(user.getStatus()).isEqualTo(UserStatus.LOCKED);
 		verify(this.userRepository).update(user);
@@ -229,8 +234,8 @@ class UpdatePasswordUseCaseTests {
 	private User user(UUID id) {
 		return User.builder()
 			.id(id)
-			.name("John Doe")
-			.email(new Email("john@example.com"))
+			.name(USER_NAME)
+			.email(new Email(USER_EMAIL))
 			.password(new Password(CURRENT_PASSWORD_HASH))
 			.roles(Set.of(UserRole.USER))
 			.status(UserStatus.ACTIVE)

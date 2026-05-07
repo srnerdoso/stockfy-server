@@ -8,5 +8,13 @@
       "CONTEXT.md",
       "GEMINI.md"
     ]
+  },
+  "skills": {
+    "disabled": [
+      "caveman-commit",
+      "caveman-stats",
+      "caveman-review",
+      "caveman-help"
+    ]
   }
 }

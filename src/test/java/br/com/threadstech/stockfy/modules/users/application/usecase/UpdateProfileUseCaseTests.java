@@ -38,8 +38,17 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 class UpdateProfileUseCaseTests {
+
+	private static final String OLD_NAME = "Old Name";
+
+	private static final String NEW_NAME = "New Name";
+
+	private static final String OLD_EMAIL = "old@example.com";
+
+	private static final String NEW_EMAIL = "new@example.com";
+
+	private static final String TAKEN_EMAIL = "taken@example.com";
 
 	private final UserRepository userRepository = org.mockito.Mockito.mock(UserRepository.class);
 
@@ -49,14 +58,14 @@ class UpdateProfileUseCaseTests {
 	@DisplayName("Deve atualizar nome e email quando dados forem validos")
 	void execute_whenNameAndEmailAreProvided_thenUpdatesUser() {
 		UUID userId = UUID.randomUUID();
-		User user = user(userId, "Old Name", "old@example.com");
+		User user = user(userId, OLD_NAME, OLD_EMAIL);
 		given(this.userRepository.findById(userId)).willReturn(Optional.of(user));
-		given(this.userRepository.findByEmail(new Email("new@example.com"))).willReturn(Optional.empty());
+		given(this.userRepository.findByEmail(new Email(NEW_EMAIL))).willReturn(Optional.empty());
 
-		this.useCase.execute(userId, "New Name", "new@example.com");
+		this.useCase.execute(userId, NEW_NAME, NEW_EMAIL);
 
-		assertThat(user.getName()).isEqualTo("New Name");
-		assertThat(user.getEmail().value()).isEqualTo("new@example.com");
+		assertThat(user.getName()).isEqualTo(NEW_NAME);
+		assertThat(user.getEmail().value()).isEqualTo(NEW_EMAIL);
 		assertThat(user.getRoles()).isEqualTo(Set.of(UserRole.USER));
 		assertThat(user.getStatus()).isEqualTo(UserStatus.ACTIVE);
 		verify(this.userRepository).update(user);
@@ -66,13 +75,13 @@ class UpdateProfileUseCaseTests {
 	@DisplayName("Deve preservar email atual quando email for omitido")
 	void execute_whenEmailIsNull_thenKeepsCurrentEmail() {
 		UUID userId = UUID.randomUUID();
-		User user = user(userId, "Old Name", "old@example.com");
+		User user = user(userId, OLD_NAME, OLD_EMAIL);
 		given(this.userRepository.findById(userId)).willReturn(Optional.of(user));
 
-		this.useCase.execute(userId, "New Name", null);
+		this.useCase.execute(userId, NEW_NAME, null);
 
-		assertThat(user.getName()).isEqualTo("New Name");
-		assertThat(user.getEmail().value()).isEqualTo("old@example.com");
+		assertThat(user.getName()).isEqualTo(NEW_NAME);
+		assertThat(user.getEmail().value()).isEqualTo(OLD_EMAIL);
 		verify(this.userRepository).update(user);
 	}
 
@@ -80,14 +89,14 @@ class UpdateProfileUseCaseTests {
 	@DisplayName("Deve preservar nome atual quando nome for omitido")
 	void execute_whenNameIsNull_thenKeepsCurrentName() {
 		UUID userId = UUID.randomUUID();
-		User user = user(userId, "Old Name", "old@example.com");
+		User user = user(userId, OLD_NAME, OLD_EMAIL);
 		given(this.userRepository.findById(userId)).willReturn(Optional.of(user));
-		given(this.userRepository.findByEmail(new Email("new@example.com"))).willReturn(Optional.empty());
+		given(this.userRepository.findByEmail(new Email(NEW_EMAIL))).willReturn(Optional.empty());
 
-		this.useCase.execute(userId, null, "new@example.com");
+		this.useCase.execute(userId, null, NEW_EMAIL);
 
-		assertThat(user.getName()).isEqualTo("Old Name");
-		assertThat(user.getEmail().value()).isEqualTo("new@example.com");
+		assertThat(user.getName()).isEqualTo(OLD_NAME);
+		assertThat(user.getEmail().value()).isEqualTo(NEW_EMAIL);
 		verify(this.userRepository).update(user);
 	}
 
@@ -95,14 +104,14 @@ class UpdateProfileUseCaseTests {
 	@DisplayName("Deve permitir manter o mesmo email sem conflito")
 	void execute_whenEmailIsCurrentUserEmail_thenDoesNotThrowConflict() {
 		UUID userId = UUID.randomUUID();
-		User user = user(userId, "Old Name", "old@example.com");
+		User user = user(userId, OLD_NAME, OLD_EMAIL);
 		given(this.userRepository.findById(userId)).willReturn(Optional.of(user));
 
-		this.useCase.execute(userId, "New Name", "old@example.com");
+		this.useCase.execute(userId, NEW_NAME, OLD_EMAIL);
 
-		assertThat(user.getName()).isEqualTo("New Name");
-		assertThat(user.getEmail().value()).isEqualTo("old@example.com");
-		verify(this.userRepository, never()).findByEmail(new Email("old@example.com"));
+		assertThat(user.getName()).isEqualTo(NEW_NAME);
+		assertThat(user.getEmail().value()).isEqualTo(OLD_EMAIL);
+		verify(this.userRepository, never()).findByEmail(new Email(OLD_EMAIL));
 		verify(this.userRepository).update(user);
 	}
 
@@ -111,15 +120,15 @@ class UpdateProfileUseCaseTests {
 	void execute_whenEmailBelongsToAnotherUser_thenThrowsEmailAlreadyExistsException() {
 		UUID userId = UUID.randomUUID();
 		UUID anotherUserId = UUID.randomUUID();
-		User user = user(userId, "Old Name", "old@example.com");
-		User anotherUser = user(anotherUserId, "Another", "taken@example.com");
+		User user = user(userId, OLD_NAME, OLD_EMAIL);
+		User anotherUser = user(anotherUserId, "Another", TAKEN_EMAIL);
 		given(this.userRepository.findById(userId)).willReturn(Optional.of(user));
-		given(this.userRepository.findByEmail(new Email("taken@example.com"))).willReturn(Optional.of(anotherUser));
+		given(this.userRepository.findByEmail(new Email(TAKEN_EMAIL))).willReturn(Optional.of(anotherUser));
 
 		assertThatExceptionOfType(EmailAlreadyExistsException.class)
-			.isThrownBy(() -> this.useCase.execute(userId, "New Name", "taken@example.com"));
-		assertThat(user.getName()).isEqualTo("Old Name");
-		assertThat(user.getEmail().value()).isEqualTo("old@example.com");
+			.isThrownBy(() -> this.useCase.execute(userId, NEW_NAME, TAKEN_EMAIL));
+		assertThat(user.getName()).isEqualTo(OLD_NAME);
+		assertThat(user.getEmail().value()).isEqualTo(OLD_EMAIL);
 		verify(this.userRepository, never()).update(user);
 	}
 
@@ -127,13 +136,13 @@ class UpdateProfileUseCaseTests {
 	@DisplayName("Nao deve persistir quando nome e email forem omitidos")
 	void execute_whenNameAndEmailAreNull_thenDoesNotUpdateUser() {
 		UUID userId = UUID.randomUUID();
-		User user = user(userId, "Old Name", "old@example.com");
+		User user = user(userId, OLD_NAME, OLD_EMAIL);
 		given(this.userRepository.findById(userId)).willReturn(Optional.of(user));
 
 		this.useCase.execute(userId, null, null);
 
-		assertThat(user.getName()).isEqualTo("Old Name");
-		assertThat(user.getEmail().value()).isEqualTo("old@example.com");
+		assertThat(user.getName()).isEqualTo(OLD_NAME);
+		assertThat(user.getEmail().value()).isEqualTo(OLD_EMAIL);
 		verify(this.userRepository, never()).update(user);
 	}
 
@@ -144,7 +153,7 @@ class UpdateProfileUseCaseTests {
 		given(this.userRepository.findById(userId)).willReturn(Optional.empty());
 
 		assertThatExceptionOfType(UserNotFoundException.class)
-			.isThrownBy(() -> this.useCase.execute(userId, "New Name", "new@example.com"));
+			.isThrownBy(() -> this.useCase.execute(userId, NEW_NAME, NEW_EMAIL));
 	}
 
 	private User user(UUID id, String name, String email) {

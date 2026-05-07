@@ -18,9 +18,10 @@ package br.com.threadstech.stockfy.modules.users.presentation.controller;
 
 import java.time.Duration;
 
+import br.com.threadstech.stockfy.ContainersConfiguration;
 import br.com.threadstech.stockfy.MutableTimeMeter;
+import br.com.threadstech.stockfy.RateLimitBucketCleaner;
 import br.com.threadstech.stockfy.RateLimitTestConfiguration;
-import br.com.threadstech.stockfy.TestcontainersConfiguration;
 import br.com.threadstech.stockfy.users.infrastructure.config.UserRateLimitConfig;
 import br.com.threadstech.stockfy.web.presentation.ApiErrorResponseAssertions;
 import org.junit.jupiter.api.AfterEach;
@@ -43,13 +44,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@Import({ TestcontainersConfiguration.class, RateLimitTestConfiguration.class })
+@Import({ ContainersConfiguration.class, RateLimitTestConfiguration.class })
 @Sql(scripts = "/sql/users/cleanup.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @Sql(scripts = "/sql/users/base-users.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @Sql(scripts = "/sql/users/cleanup.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
-@SuppressWarnings({ "PMD.AvoidAccessibilityAlteration", "PMD.AvoidDuplicateLiterals",
-		"PMD.AvoidLiteralsInIfCondition" })
 class UnlockUserIT {
+
+	private static final int GENERAL_RATE_LIMIT = 10;
 
 	private static final String ADMIN_ID = "00000000-0000-0000-0000-000000000001";
 
@@ -60,6 +61,12 @@ class UnlockUserIT {
 	private static final String LOCKED_EMAIL = "bob.filter@example.com";
 
 	private static final String LOGIN_ATTEMPTS_KEY = "login_attempts:";
+
+	private static final String ADMIN_ROLE = "ADMIN";
+
+	private static final String UNLOCK_USER_ENDPOINT = "/api/v1/users/{id}/unlock";
+
+	private static final String INVALID_UUID = "not-a-uuid";
 
 	@Autowired
 	private MockMvc mockMvc;
@@ -78,20 +85,19 @@ class UnlockUserIT {
 
 	@AfterEach
 	void tearDown() {
-		clearRateLimitBuckets();
+		RateLimitBucketCleaner.clearAll(this.rateLimitConfig, this.rateLimitTimeMeter);
 		this.redisTemplate.delete(LOGIN_ATTEMPTS_KEY + LOCKED_EMAIL);
-		this.rateLimitTimeMeter.reset();
 	}
 
 	@Test
 	@DisplayName("Deve retornar 204, desbloquear usuario e limpar tentativas de login")
-	@WithMockUserId(id = ADMIN_ID, roles = "ADMIN")
+	@WithMockUserId(id = ADMIN_ID, roles = ADMIN_ROLE)
 	void unlockUser_whenAdminUnlocksLockedUser_thenReturns204PersistsStatusAndClearsAttempts() throws Exception {
 		long usersBeforeRequest = countUsers();
 		lockUser(LOCKED_ID);
 		this.redisTemplate.opsForValue().set(LOGIN_ATTEMPTS_KEY + LOCKED_EMAIL, "15");
 
-		this.mockMvc.perform(patch("/api/v1/users/{id}/unlock", LOCKED_ID))
+		this.mockMvc.perform(patch(UNLOCK_USER_ENDPOINT, LOCKED_ID))
 			.andExpect(status().isNoContent())
 			.andExpect(content().string(""));
 
@@ -105,7 +111,7 @@ class UnlockUserIT {
 	void unlockUser_whenNotAuthenticated_thenReturns401WithoutBody() throws Exception {
 		String oldStatus = userStatus(LOCKED_ID);
 
-		this.mockMvc.perform(patch("/api/v1/users/{id}/unlock", LOCKED_ID))
+		this.mockMvc.perform(patch(UNLOCK_USER_ENDPOINT, LOCKED_ID))
 			.andExpect(status().isUnauthorized())
 			.andExpect(content().string(""));
 
@@ -118,7 +124,7 @@ class UnlockUserIT {
 	void unlockUser_whenAuthenticatedUserIsNotAdmin_thenReturns403WithoutBody() throws Exception {
 		String oldStatus = userStatus(LOCKED_ID);
 
-		this.mockMvc.perform(patch("/api/v1/users/{id}/unlock", LOCKED_ID))
+		this.mockMvc.perform(patch(UNLOCK_USER_ENDPOINT, LOCKED_ID))
 			.andExpect(status().isForbidden())
 			.andExpect(content().string(""));
 
@@ -127,12 +133,12 @@ class UnlockUserIT {
 
 	@Test
 	@DisplayName("Deve retornar 400 quando ID nao for UUID valido")
-	@WithMockUserId(id = ADMIN_ID, roles = "ADMIN")
+	@WithMockUserId(id = ADMIN_ID, roles = ADMIN_ROLE)
 	void unlockUser_whenIdIsInvalidUuid_thenReturns400AndDoesNotAlterData() throws Exception {
 		String oldStatus = userStatus(LOCKED_ID);
 
 		ApiErrorResponseAssertions.assertBadRequestFieldValidation(
-				this.mockMvc.perform(patch("/api/v1/users/{id}/unlock", "not-a-uuid")), "id",
+				this.mockMvc.perform(patch(UNLOCK_USER_ENDPOINT, INVALID_UUID)), "id",
 				"O parâmetro informado é inválido.");
 
 		assertThat(userStatus(LOCKED_ID)).isEqualTo(oldStatus);
@@ -140,13 +146,12 @@ class UnlockUserIT {
 
 	@Test
 	@DisplayName("Deve retornar 400 quando ID contiver SQL Injection")
-	@WithMockUserId(id = ADMIN_ID, roles = "ADMIN")
+	@WithMockUserId(id = ADMIN_ID, roles = ADMIN_ROLE)
 	void unlockUser_whenIdContainsSqlInjection_thenReturns400AndDoesNotAlterData() throws Exception {
 		String oldStatus = userStatus(LOCKED_ID);
 
 		ApiErrorResponseAssertions.assertBadRequestFieldValidation(
-				this.mockMvc
-					.perform(patch("/api/v1/users/{id}/unlock", "00000000-0000-0000-0000-000000000004' OR '1'='1")),
+				this.mockMvc.perform(patch(UNLOCK_USER_ENDPOINT, "00000000-0000-0000-0000-000000000004' OR '1'='1")),
 				"id", "O parâmetro informado é inválido.");
 
 		assertThat(userStatus(LOCKED_ID)).isEqualTo(oldStatus);
@@ -154,13 +159,13 @@ class UnlockUserIT {
 
 	@Test
 	@DisplayName("Deve retornar 429 quando exceder limite geral de requisicoes")
-	@WithMockUserId(id = ADMIN_ID, roles = "ADMIN")
+	@WithMockUserId(id = ADMIN_ID, roles = ADMIN_ROLE)
 	void unlockUser_whenLimitExceeded_thenReturns429() throws Exception {
 		String oldStatus = userStatus(LOCKED_ID);
 
-		for (int i = 0; i <= 10; i++) {
-			var result = this.mockMvc.perform(patch("/api/v1/users/{id}/unlock", "not-a-uuid"));
-			if (i == 10) {
+		for (int i = 0; i <= GENERAL_RATE_LIMIT; i++) {
+			var result = this.mockMvc.perform(patch(UNLOCK_USER_ENDPOINT, INVALID_UUID));
+			if (i == GENERAL_RATE_LIMIT) {
 				result.andExpect(status().isTooManyRequests());
 			}
 		}
@@ -170,19 +175,19 @@ class UnlockUserIT {
 
 	@Test
 	@DisplayName("Deve permitir desbloqueio quando a janela de rate limit expirar")
-	@WithMockUserId(id = ADMIN_ID, roles = "ADMIN")
+	@WithMockUserId(id = ADMIN_ID, roles = ADMIN_ROLE)
 	void unlockUser_whenRateLimitWindowExpires_thenProcessesRequest() throws Exception {
 		lockUser(LOCKED_ID);
 
-		for (int i = 0; i < 10; i++) {
-			this.mockMvc.perform(patch("/api/v1/users/{id}/unlock", "not-a-uuid"));
+		for (int i = 0; i < GENERAL_RATE_LIMIT; i++) {
+			this.mockMvc.perform(patch(UNLOCK_USER_ENDPOINT, INVALID_UUID));
 		}
 
-		this.mockMvc.perform(patch("/api/v1/users/{id}/unlock", "not-a-uuid")).andExpect(status().isTooManyRequests());
+		this.mockMvc.perform(patch(UNLOCK_USER_ENDPOINT, INVALID_UUID)).andExpect(status().isTooManyRequests());
 
 		this.rateLimitTimeMeter.advanceBy(Duration.ofSeconds(61));
 
-		this.mockMvc.perform(patch("/api/v1/users/{id}/unlock", LOCKED_ID))
+		this.mockMvc.perform(patch(UNLOCK_USER_ENDPOINT, LOCKED_ID))
 			.andExpect(status().isNoContent())
 			.andExpect(content().string(""));
 
@@ -200,22 +205,6 @@ class UnlockUserIT {
 
 	private String userStatus(String id) {
 		return this.jdbcTemplate.queryForObject("SELECT status FROM users WHERE id = ?::uuid", String.class, id);
-	}
-
-	private void clearRateLimitBuckets() {
-		try {
-			clearBucketMap("loginBuckets");
-			clearBucketMap("generalBuckets");
-		}
-		catch (ReflectiveOperationException ex) {
-			throw new IllegalStateException(ex);
-		}
-	}
-
-	private void clearBucketMap(String fieldName) throws ReflectiveOperationException {
-		var field = UserRateLimitConfig.class.getDeclaredField(fieldName);
-		field.setAccessible(true);
-		((java.util.Map<?, ?>) field.get(this.rateLimitConfig)).clear();
 	}
 
 }

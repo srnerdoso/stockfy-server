@@ -20,9 +20,10 @@ import java.time.Duration;
 import java.util.Set;
 import java.util.UUID;
 
+import br.com.threadstech.stockfy.ContainersConfiguration;
 import br.com.threadstech.stockfy.MutableTimeMeter;
+import br.com.threadstech.stockfy.RateLimitBucketCleaner;
 import br.com.threadstech.stockfy.RateLimitTestConfiguration;
-import br.com.threadstech.stockfy.TestcontainersConfiguration;
 import br.com.threadstech.stockfy.users.domain.model.Email;
 import br.com.threadstech.stockfy.users.domain.model.Password;
 import br.com.threadstech.stockfy.users.domain.model.User;
@@ -44,7 +45,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -54,10 +57,37 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@Import({ TestcontainersConfiguration.class, RateLimitTestConfiguration.class })
-@SuppressWarnings({ "PMD.AvoidAccessibilityAlteration", "PMD.AvoidCatchingGenericException",
-		"PMD.AvoidDuplicateLiterals", "PMD.AvoidLiteralsInIfCondition" })
+@Import({ ContainersConfiguration.class, RateLimitTestConfiguration.class })
+@Sql(scripts = "/sql/users/cleanup.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
+@Sql(scripts = "/sql/users/base-users.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
+@Sql(scripts = "/sql/users/cleanup.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
 class UserCreationIT {
+
+	private static final int GENERAL_RATE_LIMIT = 10;
+
+	private static final int JSON_OBJECT_START_LENGTH = 1;
+
+	private static final String USERS_ENDPOINT = "/api/v1/users";
+
+	private static final String ACCESS_TOKEN_COOKIE = "access_token";
+
+	private static final String REFRESH_TOKEN_COOKIE = "refresh_token";
+
+	private static final String DEFAULT_PASSWORD = "password123";
+
+	private static final String USER_ROLE = "USER";
+
+	private static final String ADMIN_ROLE = "ADMIN";
+
+	private static final String DEFAULT_NAME = "John";
+
+	private static final String DEFAULT_FULL_NAME = "John Doe";
+
+	private static final String JOHN_EMAIL = "john@example.com";
+
+	private static final String RATE_LIMIT_USER_EMAIL = "user@test.com";
+
+	private static final String NAME_FIELD = "name";
 
 	@Autowired
 	private MockMvc mockMvc;
@@ -78,38 +108,17 @@ class UserCreationIT {
 	private MutableTimeMeter rateLimitTimeMeter;
 
 	@AfterEach
-	void tearDown() {
-		try {
-			var loginBucketsField = UserRateLimitConfig.class.getDeclaredField("loginBuckets");
-			loginBucketsField.setAccessible(true);
-			((java.util.Map<?, ?>) loginBucketsField.get(this.rateLimitConfig)).clear();
-
-			var generalBucketsField = UserRateLimitConfig.class.getDeclaredField("generalBuckets");
-			generalBucketsField.setAccessible(true);
-			((java.util.Map<?, ?>) generalBucketsField.get(this.rateLimitConfig)).clear();
-			this.rateLimitTimeMeter.reset();
-		}
-		catch (Exception ex) {
-			throw new RuntimeException(ex);
-		}
+	void tearDownRateLimit() {
+		RateLimitBucketCleaner.clearAll(this.rateLimitConfig, this.rateLimitTimeMeter);
 	}
 
 	@Test
 	@DisplayName("Deve retornar 201 e criar usuário quando os dados forem válidos")
-	@WithMockUser(roles = "ADMIN")
+	@WithMockUser(roles = ADMIN_ROLE)
 	void registerUser_whenDataIsValid_thenReturns201AndCreatesUser() throws Exception {
-		String json = """
-				{
-				    "name": "John Doe",
-				    "email": "created@example.com",
-				    "password": "password123",
-				    "role": "ADMIN"
-				}
-				""";
+		String json = userBody(DEFAULT_FULL_NAME, "created@example.com", DEFAULT_PASSWORD, null, ADMIN_ROLE);
 
-		this.mockMvc.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(json))
-			.andExpect(status().isCreated())
-			.andExpect(content().string(""));
+		registerUserRequest(json).andExpect(status().isCreated()).andExpect(content().string(""));
 
 		assertThat(this.userRepository.findByEmail(new Email("created@example.com")).isPresent()).isTrue();
 	}
@@ -121,18 +130,11 @@ class UserCreationIT {
 		this.userRepository.save(admin);
 		String accessToken = this.jwtService.generateToken(admin.getId(), admin.getRoles());
 		String refreshToken = this.tokenService.generateRefreshToken(admin.getId());
-		String json = """
-				{
-				    "name": "Jwt Created",
-				    "email": "jwt-created@example.com",
-				    "password": "password123",
-				    "role": "USER"
-				}
-				""";
+		String json = userBody("Jwt Created", "jwt-created@example.com", DEFAULT_PASSWORD, null, USER_ROLE);
 
 		this.mockMvc
-			.perform(post("/api/v1/users")
-				.cookie(new Cookie("access_token", accessToken), new Cookie("refresh_token", refreshToken))
+			.perform(post(USERS_ENDPOINT)
+				.cookie(new Cookie(ACCESS_TOKEN_COOKIE, accessToken), new Cookie(REFRESH_TOKEN_COOKIE, refreshToken))
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(json))
 			.andExpect(status().isCreated())
@@ -147,18 +149,13 @@ class UserCreationIT {
 		User admin = createUser("Invalid Session Admin", "invalid-session-admin@example.com", UserRole.ADMIN);
 		this.userRepository.save(admin);
 		String accessToken = this.jwtService.generateToken(admin.getId(), admin.getRoles());
-		String json = """
-				{
-				    "name": "Invalid Session Created",
-				    "email": "invalid-session-created@example.com",
-				    "password": "password123",
-				    "role": "USER"
-				}
-				""";
+		String json = userBody("Invalid Session Created", "invalid-session-created@example.com", DEFAULT_PASSWORD, null,
+				USER_ROLE);
 
 		this.mockMvc
-			.perform(post("/api/v1/users")
-				.cookie(new Cookie("access_token", accessToken), new Cookie("refresh_token", "invalid-refresh-token"))
+			.perform(post(USERS_ENDPOINT)
+				.cookie(new Cookie(ACCESS_TOKEN_COOKIE, accessToken),
+						new Cookie(REFRESH_TOKEN_COOKIE, "invalid-refresh-token"))
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(json))
 			.andExpect(status().isUnauthorized())
@@ -171,17 +168,9 @@ class UserCreationIT {
 	@Test
 	@DisplayName("Não deve persistir usuário e deve retornar 401 quando não houver token de autenticação")
 	void registerUser_whenNotAuthenticated_thenReturns401() throws Exception {
-		String json = """
-				{
-				    "name": "John Doe",
-				    "email": "unauth@example.com",
-				    "password": "password123",
-				    "role": "USER"
-				}
-				""";
+		String json = userBody(DEFAULT_FULL_NAME, "unauth@example.com", DEFAULT_PASSWORD, null, USER_ROLE);
 
-		this.mockMvc.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(json))
-			.andExpect(status().isUnauthorized())
+		registerUserRequest(json).andExpect(status().isUnauthorized())
 			.andExpect(content().string(""))
 			.andExpect((result) -> assertThat(result.getResponse().isCommitted()).isFalse());
 
@@ -190,19 +179,11 @@ class UserCreationIT {
 
 	@Test
 	@DisplayName("Não deve persistir usuário e deve retornar 403 quando o usuário autenticado for um USER")
-	@WithMockUser(roles = "USER")
+	@WithMockUser(roles = USER_ROLE)
 	void registerUser_whenUserRole_thenReturns403() throws Exception {
-		String json = """
-				{
-				    "name": "John Doe",
-				    "email": "user@example.com",
-				    "password": "password123",
-				    "role": "USER"
-				}
-				""";
+		String json = userBody(DEFAULT_FULL_NAME, "user@example.com", DEFAULT_PASSWORD, null, USER_ROLE);
 
-		this.mockMvc.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(json))
-			.andExpect(status().isForbidden())
+		registerUserRequest(json).andExpect(status().isForbidden())
 			.andExpect(content().string(""))
 			.andExpect((result) -> assertThat(result.getResponse().isCommitted()).isFalse());
 
@@ -211,165 +192,153 @@ class UserCreationIT {
 
 	@Test
 	@DisplayName("Não deve persistir usuário e deve retornar 400 quando o nome for inválido")
-	@WithMockUser(roles = "ADMIN")
+	@WithMockUser(roles = ADMIN_ROLE)
 	void registerUser_whenNameIsInvalid_thenReturns400() throws Exception {
-		String jsonNull = "{ \"email\": \"john@example.com\", \"password\": \"password123\", \"role\": \"USER\" }";
+		String jsonNull = userBody(null, JOHN_EMAIL, DEFAULT_PASSWORD, null, USER_ROLE);
+		var result = registerUserRequest(jsonNull);
+		ApiErrorResponseAssertions.assertBadRequestFieldValidation(result, NAME_FIELD, "O nome é obrigatório.");
 
-		var result = this.mockMvc
-			.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(jsonNull));
-		ApiErrorResponseAssertions.assertBadRequestFieldValidation(result, "name", "O nome é obrigatório.");
-
-		String jsonInvalid = "{ \"name\": \"User'); DROP TABLE users; --\", \"email\": \"john@example.com\", \"password\": \"password123\", \"role\": \"USER\" }";
-
-		ApiErrorResponseAssertions.assertBadRequestFieldValidation(
-				this.mockMvc
-					.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(jsonInvalid)),
-				"name", "O nome contém caracteres inválidos.");
-		assertThat(this.userRepository.findByEmail(new Email("john@example.com")).isPresent()).isFalse();
+		String jsonInvalid = userBody("User'); DROP TABLE users; --", JOHN_EMAIL, DEFAULT_PASSWORD, null, USER_ROLE);
+		ApiErrorResponseAssertions.assertBadRequestFieldValidation(registerUserRequest(jsonInvalid), NAME_FIELD,
+				"O nome contém caracteres inválidos.");
+		assertThat(this.userRepository.findByEmail(new Email(JOHN_EMAIL)).isPresent()).isFalse();
 	}
 
 	@Test
 	@DisplayName("Não deve persistir usuário e deve retornar 400 quando o email for inválido")
-	@WithMockUser(roles = "ADMIN")
+	@WithMockUser(roles = ADMIN_ROLE)
 	void registerUser_whenEmailIsInvalid_thenReturns400() throws Exception {
-		String jsonNull = "{ \"name\": \"John\", \"password\": \"password123\", \"role\": \"USER\" }";
-		String jsonInvalid = "{ \"name\": \"John\", \"email\": \"invalid-email\", \"password\": \"password123\", \"role\": \"USER\" }";
+		String jsonNull = userBody(DEFAULT_NAME, null, DEFAULT_PASSWORD, null, USER_ROLE);
+		String jsonInvalid = userBody(DEFAULT_NAME, "invalid-email", DEFAULT_PASSWORD, null, USER_ROLE);
 
-		ApiErrorResponseAssertions.assertBadRequestFieldValidation(
-				this.mockMvc.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(jsonNull)),
-				"email", "O e-mail é obrigatório.");
-		ApiErrorResponseAssertions.assertBadRequestFieldValidation(
-				this.mockMvc
-					.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(jsonInvalid)),
-				"email", "O e-mail informado é inválido.");
-		assertThat(this.userRepository.findByEmail(new Email("john@example.com")).isPresent()).isFalse();
+		ApiErrorResponseAssertions.assertBadRequestFieldValidation(registerUserRequest(jsonNull), "email",
+				"O e-mail é obrigatório.");
+		ApiErrorResponseAssertions.assertBadRequestFieldValidation(registerUserRequest(jsonInvalid), "email",
+				"O e-mail informado é inválido.");
+		assertThat(this.userRepository.findByEmail(new Email(JOHN_EMAIL)).isPresent()).isFalse();
 	}
 
 	@Test
 	@DisplayName("Não deve persistir usuário e deve retornar 400 quando a senha for inválida")
-	@WithMockUser(roles = "ADMIN")
+	@WithMockUser(roles = ADMIN_ROLE)
 	void registerUser_whenPasswordIsInvalid_thenReturns400() throws Exception {
-		String jsonNull = "{ \"name\": \"John\", \"email\": \"john@example.com\", \"role\": \"USER\" }";
-		String jsonBlank = "{ \"name\": \"John\", \"email\": \"john@example.com\", \"password\": \" \", \"role\": \"USER\" }";
+		String jsonNull = userBody(DEFAULT_NAME, JOHN_EMAIL, null, null, USER_ROLE);
+		String jsonBlank = userBody(DEFAULT_NAME, JOHN_EMAIL, " ", null, USER_ROLE);
 
-		ApiErrorResponseAssertions.assertBadRequestFieldValidation(
-				this.mockMvc.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(jsonNull)),
-				"password", "A senha é obrigatória.");
-		ApiErrorResponseAssertions.assertBadRequestFieldValidation(
-				this.mockMvc.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(jsonBlank)),
-				"password", "A senha é obrigatória.");
-		assertThat(this.userRepository.findByEmail(new Email("john@example.com")).isPresent()).isFalse();
+		ApiErrorResponseAssertions.assertBadRequestFieldValidation(registerUserRequest(jsonNull), "password",
+				"A senha é obrigatória.");
+		ApiErrorResponseAssertions.assertBadRequestFieldValidation(registerUserRequest(jsonBlank), "password",
+				"A senha é obrigatória.");
+		assertThat(this.userRepository.findByEmail(new Email(JOHN_EMAIL)).isPresent()).isFalse();
 	}
 
 	@Test
 	@DisplayName("Não deve persistir usuário e deve retornar 400 quando a role for inválida")
-	@WithMockUser(roles = "ADMIN")
+	@WithMockUser(roles = ADMIN_ROLE)
 	void registerUser_whenRoleIsMissingOrInvalid_thenReturns400() throws Exception {
-		String jsonMissing = "{ \"name\": \"John\", \"email\": \"john@example.com\", \"password\": \"password123\" }";
-		String jsonInvalid = "{ \"name\": \"John\", \"email\": \"john@example.com\", \"password\": \"password123\", \"role\": \"INVALID\" }";
+		String jsonMissing = userBody(DEFAULT_NAME, JOHN_EMAIL, DEFAULT_PASSWORD, null, null);
+		String jsonInvalid = userBody(DEFAULT_NAME, JOHN_EMAIL, DEFAULT_PASSWORD, null, "INVALID");
 
-		ApiErrorResponseAssertions.assertBadRequestFieldValidation(
-				this.mockMvc
-					.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(jsonMissing)),
-				"role", "O perfil do usuário é obrigatório.");
-		ApiErrorResponseAssertions.assertBadRequestFieldValidation(
-				this.mockMvc
-					.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(jsonInvalid)),
-				"role", "não deve ser nulo");
-		assertThat(this.userRepository.findByEmail(new Email("john@example.com")).isPresent()).isFalse();
+		ApiErrorResponseAssertions.assertBadRequestFieldValidation(registerUserRequest(jsonMissing), "role",
+				"O perfil do usuário é obrigatório.");
+		ApiErrorResponseAssertions.assertBadRequestFieldValidation(registerUserRequest(jsonInvalid), "role",
+				"não deve ser nulo");
+		assertThat(this.userRepository.findByEmail(new Email(JOHN_EMAIL)).isPresent()).isFalse();
 	}
 
 	@Test
 	@DisplayName("Não deve persistir usuário e deve retornar 422 quando as senhas não coincidem")
-	@WithMockUser(roles = "ADMIN")
+	@WithMockUser(roles = ADMIN_ROLE)
 	void registerUser_whenPasswordsDoNotMatch_thenReturns422() throws Exception {
-		String json = """
-				{
-				    "name": "John Doe",
-				    "email": "test@example.com",
-				    "password": "password123",
-				    "confirmPassword": "differentPassword",
-				    "role": "USER"
-				}
-				""";
+		String json = userBody(DEFAULT_FULL_NAME, "test@example.com", DEFAULT_PASSWORD, "differentPassword", USER_ROLE);
 
-		var result = this.mockMvc.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(json));
+		var result = registerUserRequest(json);
 
 		result.andExpect(status().isUnprocessableEntity())
 			.andExpect(jsonPath("$.type").value("about:blank"))
 			.andExpect(jsonPath("$.title").value("Unprocessable Entity"))
 			.andExpect(jsonPath("$.status").value(422))
 			.andExpect(jsonPath("$.detail").value("As senhas não coincidem."))
+			.andExpect(jsonPath("$.instance").doesNotExist())
+			.andExpect(jsonPath("$.fieldErrors.length()").value(1))
 			.andExpect(jsonPath("$.fieldErrors[0].field").value("confirmPassword"))
-			.andExpect(jsonPath("$.fieldErrors[0].message").value("As senhas não coincidem."));
+			.andExpect(jsonPath("$.fieldErrors[0].message").value("As senhas não coincidem."))
+			.andExpect(jsonPath("$.fieldErrors[1]").doesNotExist());
 
 		assertThat(this.userRepository.findByEmail(new Email("test@example.com")).isPresent()).isFalse();
 	}
 
 	@Test
 	@DisplayName("Deve retornar 400 ou 422 para SQL Injection (tratado como validação inválida)")
-	@WithMockUser(roles = "ADMIN")
+	@WithMockUser(roles = ADMIN_ROLE)
 	void registerUser_whenInputContainsSqlInjection_thenReturnsBadRequest() throws Exception {
-		String json = """
-				{
-				    "name": "User'); DROP TABLE users; --",
-				    "email": "sql@example.com",
-				    "password": "password123",
-				    "role": "USER"
-				}
-				""";
+		String email = "sql@example.com";
+		String json = userBody("User'); DROP TABLE users; --", email, DEFAULT_PASSWORD, null, USER_ROLE);
+		boolean userExistsBeforeRequest = this.userRepository.findByEmail(new Email(email)).isPresent();
 
-		this.mockMvc.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(json))
-			.andExpect(status().is4xxClientError());
+		ApiErrorResponseAssertions.assertBadRequestFieldValidation(registerUserRequest(json), NAME_FIELD,
+				"O nome contém caracteres inválidos.");
+		assertThat(this.userRepository.findByEmail(new Email(email)).isPresent()).isEqualTo(userExistsBeforeRequest);
 	}
 
 	@Test
 	@DisplayName("Deve retornar 429 quando exceder limite de 10 requisições por minuto")
-	@WithMockUser(roles = "ADMIN")
+	@WithMockUser(roles = ADMIN_ROLE)
 	void registerUser_whenLimitExceeded_thenReturns429() throws Exception {
-		String json = """
-				{
-				    "name": "User",
-				    "email": "user@test.com",
-				    "password": "password123",
-				    "role": "USER"
-				}
-				""";
+		String json = userBody("User", RATE_LIMIT_USER_EMAIL, DEFAULT_PASSWORD, null, USER_ROLE);
 
-		for (int i = 0; i <= 11; i++) {
-			var result = this.mockMvc.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON)
-				.content(json.replace("user@test.com", "user" + i + "@test.com")));
-
-			if (i > 10) {
-				result.andExpect(status().isTooManyRequests());
-			}
+		for (int i = 0; i < GENERAL_RATE_LIMIT; i++) {
+			registerUserRequest(json.replace(RATE_LIMIT_USER_EMAIL, "user" + i + "@test.com"))
+				.andExpect(status().isCreated())
+				.andExpect(content().string(""));
 		}
+		registerUserRequest(json.replace(RATE_LIMIT_USER_EMAIL, "blocked-after-threshold@test.com"))
+			.andExpect(status().isTooManyRequests());
 	}
 
 	@Test
 	@DisplayName("Deve permitir requisições após o período de janela de 1 minuto")
-	@WithMockUser(roles = "ADMIN")
+	@WithMockUser(roles = ADMIN_ROLE)
 	void registerUser_whenWindowPasses_thenReturns201() throws Exception {
-		String json = """
-				{
-				    "name": "User",
-				    "email": "user@test.com",
-				    "password": "password123",
-				    "role": "USER"
-				}
-				""";
+		String json = userBody("User", RATE_LIMIT_USER_EMAIL, DEFAULT_PASSWORD, null, USER_ROLE);
 
-		for (int i = 0; i < 11; i++) {
-			this.mockMvc.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON)
-				.content(json.replace("user@test.com", "user" + i + "@test.com")));
+		for (int i = 0; i < GENERAL_RATE_LIMIT; i++) {
+			registerUserRequest(json.replace(RATE_LIMIT_USER_EMAIL, "user" + i + "@test.com"))
+				.andExpect(status().isCreated())
+				.andExpect(content().string(""));
 		}
+		registerUserRequest(json.replace(RATE_LIMIT_USER_EMAIL, "blocked-before-reset@test.com"))
+			.andExpect(status().isTooManyRequests());
 
 		this.rateLimitTimeMeter.advanceBy(Duration.ofSeconds(61));
 
-		this.mockMvc
-			.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON)
-				.content(json.replace("user@test.com", "after-window@test.com")))
+		registerUserRequest(json.replace(RATE_LIMIT_USER_EMAIL, "after-window@test.com"))
 			.andExpect(status().isCreated());
+	}
+
+	private ResultActions registerUserRequest(String body) throws Exception {
+		return this.mockMvc.perform(post(USERS_ENDPOINT).contentType(MediaType.APPLICATION_JSON).content(body));
+	}
+
+	private String userBody(String name, String email, String password, String confirmPassword, String role) {
+		StringBuilder body = new StringBuilder("{");
+		appendJsonField(body, NAME_FIELD, name);
+		appendJsonField(body, "email", email);
+		appendJsonField(body, "password", password);
+		appendJsonField(body, "confirmPassword", confirmPassword);
+		appendJsonField(body, "role", role);
+		body.append("}");
+		return body.toString();
+	}
+
+	private void appendJsonField(StringBuilder body, String fieldName, String value) {
+		if (value == null) {
+			return;
+		}
+		if (body.length() > JSON_OBJECT_START_LENGTH) {
+			body.append(",");
+		}
+		body.append("\"").append(fieldName).append("\":\"").append(value).append("\"");
 	}
 
 	private User createUser(String name, String email, UserRole role) {
@@ -377,7 +346,7 @@ class UserCreationIT {
 			.id(UUID.randomUUID())
 			.name(name)
 			.email(new Email(email))
-			.password(new Password("password123"))
+			.password(new Password(DEFAULT_PASSWORD))
 			.roles(Set.of(role))
 			.status(UserStatus.ACTIVE)
 			.active(true)

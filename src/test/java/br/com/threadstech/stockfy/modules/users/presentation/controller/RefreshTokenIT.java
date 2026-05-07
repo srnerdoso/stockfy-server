@@ -22,9 +22,10 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
 
+import br.com.threadstech.stockfy.ContainersConfiguration;
 import br.com.threadstech.stockfy.MutableTimeMeter;
+import br.com.threadstech.stockfy.RateLimitBucketCleaner;
 import br.com.threadstech.stockfy.RateLimitTestConfiguration;
-import br.com.threadstech.stockfy.TestcontainersConfiguration;
 import br.com.threadstech.stockfy.users.infrastructure.config.UserRateLimitConfig;
 import br.com.threadstech.stockfy.users.infrastructure.security.TokenService;
 import jakarta.servlet.http.Cookie;
@@ -42,6 +43,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -54,12 +56,25 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@Import({ TestcontainersConfiguration.class, RateLimitTestConfiguration.class })
+@Import({ ContainersConfiguration.class, RateLimitTestConfiguration.class })
 @Sql(scripts = "/sql/users/cleanup.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @Sql(scripts = "/sql/users/base-users.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @Sql(scripts = "/sql/users/cleanup.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
-@SuppressWarnings({ "PMD.AvoidAccessibilityAlteration", "PMD.AvoidDuplicateLiterals" })
 class RefreshTokenIT {
+
+	private static final int GENERAL_RATE_LIMIT = 10;
+
+	private static final String REFRESH_ENDPOINT = "/api/v1/auth/sessions/refresh";
+
+	private static final String ACCESS_TOKEN_COOKIE = "access_token";
+
+	private static final String REFRESH_TOKEN_COOKIE = "refresh_token";
+
+	private static final String INVALID_REFRESH_TOKEN = "invalid-refresh-token";
+
+	private static final String MALFORMED_REFRESH_TOKEN = "malformed-refresh-token";
+
+	private static final String MALFORMED_REDIS_VALUE = "not-a-uuid";
 
 	private static final UUID USER_ID = UUID.fromString("00000000-0000-0000-0000-000000000002");
 
@@ -83,8 +98,7 @@ class RefreshTokenIT {
 
 	@AfterEach
 	void tearDown() {
-		clearRateLimitBuckets();
-		this.rateLimitTimeMeter.reset();
+		RateLimitBucketCleaner.clearAll(this.rateLimitConfig, this.rateLimitTimeMeter);
 	}
 
 	@Test
@@ -94,21 +108,20 @@ class RefreshTokenIT {
 		UserSnapshot userBeforeRequest = userSnapshot();
 		String oldRefreshToken = this.tokenService.generateRefreshToken(USER_ID);
 
-		MvcResult result = this.mockMvc
-			.perform(post("/api/v1/auth/sessions/refresh").cookie(new Cookie("refresh_token", oldRefreshToken)))
+		MvcResult result = this.mockMvc.perform(refreshRequest(oldRefreshToken))
 			.andExpect(status().isOk())
 			.andExpect(content().string(""))
-			.andExpect(cookie().exists("access_token"))
-			.andExpect(cookie().exists("refresh_token"))
-			.andExpect(cookie().httpOnly("access_token", true))
-			.andExpect(cookie().httpOnly("refresh_token", true))
+			.andExpect(cookie().exists(ACCESS_TOKEN_COOKIE))
+			.andExpect(cookie().exists(REFRESH_TOKEN_COOKIE))
+			.andExpect(cookie().httpOnly(ACCESS_TOKEN_COOKIE, true))
+			.andExpect(cookie().httpOnly(REFRESH_TOKEN_COOKIE, true))
 			.andReturn();
 
-		Cookie newRefreshCookie = result.getResponse().getCookie("refresh_token");
+		Cookie newRefreshCookie = result.getResponse().getCookie(REFRESH_TOKEN_COOKIE);
 		assertThat(newRefreshCookie).isNotNull();
 		assertThat(newRefreshCookie.getValue()).isNotEqualTo(oldRefreshToken);
-		assertThat(this.redisTemplate.hasKey("refresh_token:" + oldRefreshToken)).isFalse();
-		assertThat(this.redisTemplate.hasKey("refresh_token:" + newRefreshCookie.getValue())).isTrue();
+		assertThat(this.redisTemplate.hasKey(refreshTokenKey(oldRefreshToken))).isFalse();
+		assertThat(this.redisTemplate.hasKey(refreshTokenKey(newRefreshCookie.getValue()))).isTrue();
 		MatcherAssert.assertThat(result.getResponse().getHeaders("Set-Cookie"), everyItem(containsString("Secure")));
 		assertNoSensitiveData(result);
 		assertUserDataUnchanged(usersBeforeRequest, userBeforeRequest);
@@ -120,11 +133,11 @@ class RefreshTokenIT {
 		long usersBeforeRequest = countUsers();
 		UserSnapshot userBeforeRequest = userSnapshot();
 
-		MvcResult result = this.mockMvc.perform(post("/api/v1/auth/sessions/refresh"))
+		MvcResult result = this.mockMvc.perform(post(REFRESH_ENDPOINT))
 			.andExpect(status().isUnauthorized())
 			.andExpect(content().string(""))
-			.andExpect(cookie().doesNotExist("access_token"))
-			.andExpect(cookie().doesNotExist("refresh_token"))
+			.andExpect(cookie().doesNotExist(ACCESS_TOKEN_COOKIE))
+			.andExpect(cookie().doesNotExist(REFRESH_TOKEN_COOKIE))
 			.andReturn();
 
 		assertNoSensitiveData(result);
@@ -137,12 +150,11 @@ class RefreshTokenIT {
 		long usersBeforeRequest = countUsers();
 		UserSnapshot userBeforeRequest = userSnapshot();
 
-		MvcResult result = this.mockMvc
-			.perform(post("/api/v1/auth/sessions/refresh").cookie(new Cookie("refresh_token", "invalid-refresh-token")))
+		MvcResult result = this.mockMvc.perform(refreshRequest(INVALID_REFRESH_TOKEN))
 			.andExpect(status().isUnauthorized())
 			.andExpect(content().string(""))
-			.andExpect(cookie().doesNotExist("access_token"))
-			.andExpect(cookie().doesNotExist("refresh_token"))
+			.andExpect(cookie().doesNotExist(ACCESS_TOKEN_COOKIE))
+			.andExpect(cookie().doesNotExist(REFRESH_TOKEN_COOKIE))
 			.andReturn();
 
 		assertNoSensitiveData(result);
@@ -155,12 +167,11 @@ class RefreshTokenIT {
 		long usersBeforeRequest = countUsers();
 		UserSnapshot userBeforeRequest = userSnapshot();
 
-		MvcResult result = this.mockMvc
-			.perform(post("/api/v1/auth/sessions/refresh").cookie(new Cookie("refresh_token", "")))
+		MvcResult result = this.mockMvc.perform(refreshRequest(""))
 			.andExpect(status().isUnauthorized())
 			.andExpect(content().string(""))
-			.andExpect(cookie().doesNotExist("access_token"))
-			.andExpect(cookie().doesNotExist("refresh_token"))
+			.andExpect(cookie().doesNotExist(ACCESS_TOKEN_COOKIE))
+			.andExpect(cookie().doesNotExist(REFRESH_TOKEN_COOKIE))
 			.andReturn();
 
 		assertNoSensitiveData(result);
@@ -175,12 +186,11 @@ class RefreshTokenIT {
 		String revokedRefreshToken = this.tokenService.generateRefreshToken(USER_ID);
 		this.tokenService.revokeRefreshToken(revokedRefreshToken);
 
-		MvcResult result = this.mockMvc
-			.perform(post("/api/v1/auth/sessions/refresh").cookie(new Cookie("refresh_token", revokedRefreshToken)))
+		MvcResult result = this.mockMvc.perform(refreshRequest(revokedRefreshToken))
 			.andExpect(status().isUnauthorized())
 			.andExpect(content().string(""))
-			.andExpect(cookie().doesNotExist("access_token"))
-			.andExpect(cookie().doesNotExist("refresh_token"))
+			.andExpect(cookie().doesNotExist(ACCESS_TOKEN_COOKIE))
+			.andExpect(cookie().doesNotExist(REFRESH_TOKEN_COOKIE))
 			.andReturn();
 
 		assertNoSensitiveData(result);
@@ -194,15 +204,14 @@ class RefreshTokenIT {
 		UserSnapshot userBeforeRequest = userSnapshot();
 		String refreshToken = this.tokenService.generateRefreshToken(UUID.randomUUID());
 
-		MvcResult result = this.mockMvc
-			.perform(post("/api/v1/auth/sessions/refresh").cookie(new Cookie("refresh_token", refreshToken)))
+		MvcResult result = this.mockMvc.perform(refreshRequest(refreshToken))
 			.andExpect(status().isUnauthorized())
 			.andExpect(content().string(""))
-			.andExpect(cookie().doesNotExist("access_token"))
-			.andExpect(cookie().doesNotExist("refresh_token"))
+			.andExpect(cookie().doesNotExist(ACCESS_TOKEN_COOKIE))
+			.andExpect(cookie().doesNotExist(REFRESH_TOKEN_COOKIE))
 			.andReturn();
 
-		assertThat(this.redisTemplate.hasKey("refresh_token:" + refreshToken)).isFalse();
+		assertThat(this.redisTemplate.hasKey(refreshTokenKey(refreshToken))).isFalse();
 		assertNoSensitiveData(result);
 		assertUserDataUnchanged(usersBeforeRequest, userBeforeRequest);
 	}
@@ -212,18 +221,17 @@ class RefreshTokenIT {
 	void refreshToken_whenRedisValueIsMalformed_thenReturns401WithoutBody() throws Exception {
 		long usersBeforeRequest = countUsers();
 		UserSnapshot userBeforeRequest = userSnapshot();
-		String refreshToken = "malformed-refresh-token";
-		this.redisTemplate.opsForValue().set("refresh_token:" + refreshToken, "not-a-uuid");
+		String refreshToken = MALFORMED_REFRESH_TOKEN;
+		this.redisTemplate.opsForValue().set(refreshTokenKey(refreshToken), MALFORMED_REDIS_VALUE);
 
-		MvcResult result = this.mockMvc
-			.perform(post("/api/v1/auth/sessions/refresh").cookie(new Cookie("refresh_token", refreshToken)))
+		MvcResult result = this.mockMvc.perform(refreshRequest(refreshToken))
 			.andExpect(status().isUnauthorized())
 			.andExpect(content().string(""))
-			.andExpect(cookie().doesNotExist("access_token"))
-			.andExpect(cookie().doesNotExist("refresh_token"))
+			.andExpect(cookie().doesNotExist(ACCESS_TOKEN_COOKIE))
+			.andExpect(cookie().doesNotExist(REFRESH_TOKEN_COOKIE))
 			.andReturn();
 
-		assertThat(this.redisTemplate.hasKey("refresh_token:" + refreshToken)).isFalse();
+		assertThat(this.redisTemplate.hasKey(refreshTokenKey(refreshToken))).isFalse();
 		assertNoSensitiveData(result);
 		assertUserDataUnchanged(usersBeforeRequest, userBeforeRequest);
 	}
@@ -236,15 +244,14 @@ class RefreshTokenIT {
 		UserSnapshot userBeforeRequest = userSnapshot();
 		String refreshToken = this.tokenService.generateRefreshToken(USER_ID);
 
-		MvcResult result = this.mockMvc
-			.perform(post("/api/v1/auth/sessions/refresh").cookie(new Cookie("refresh_token", refreshToken)))
+		MvcResult result = this.mockMvc.perform(refreshRequest(refreshToken))
 			.andExpect(status().isUnauthorized())
 			.andExpect(content().string(""))
-			.andExpect(cookie().doesNotExist("access_token"))
-			.andExpect(cookie().doesNotExist("refresh_token"))
+			.andExpect(cookie().doesNotExist(ACCESS_TOKEN_COOKIE))
+			.andExpect(cookie().doesNotExist(REFRESH_TOKEN_COOKIE))
 			.andReturn();
 
-		assertThat(this.redisTemplate.hasKey("refresh_token:" + refreshToken)).isFalse();
+		assertThat(this.redisTemplate.hasKey(refreshTokenKey(refreshToken))).isFalse();
 		assertNoSensitiveData(result);
 		assertUserDataUnchanged(usersBeforeRequest, userBeforeRequest);
 	}
@@ -257,15 +264,14 @@ class RefreshTokenIT {
 		UserSnapshot userBeforeRequest = userSnapshot();
 		String refreshToken = this.tokenService.generateRefreshToken(USER_ID);
 
-		MvcResult result = this.mockMvc
-			.perform(post("/api/v1/auth/sessions/refresh").cookie(new Cookie("refresh_token", refreshToken)))
+		MvcResult result = this.mockMvc.perform(refreshRequest(refreshToken))
 			.andExpect(status().isUnauthorized())
 			.andExpect(content().string(""))
-			.andExpect(cookie().doesNotExist("access_token"))
-			.andExpect(cookie().doesNotExist("refresh_token"))
+			.andExpect(cookie().doesNotExist(ACCESS_TOKEN_COOKIE))
+			.andExpect(cookie().doesNotExist(REFRESH_TOKEN_COOKIE))
 			.andReturn();
 
-		assertThat(this.redisTemplate.hasKey("refresh_token:" + refreshToken)).isFalse();
+		assertThat(this.redisTemplate.hasKey(refreshTokenKey(refreshToken))).isFalse();
 		assertNoSensitiveData(result);
 		assertUserDataUnchanged(usersBeforeRequest, userBeforeRequest);
 	}
@@ -276,7 +282,7 @@ class RefreshTokenIT {
 		long usersBeforeRequest = countUsers();
 		UserSnapshot userBeforeRequest = userSnapshot();
 
-		for (int i = 0; i < 10; i++) {
+		for (int i = 0; i < GENERAL_RATE_LIMIT; i++) {
 			this.mockMvc.perform(authenticatedRefreshRequest(this.tokenService.generateRefreshToken(USER_ID)))
 				.andExpect(status().isOk());
 		}
@@ -284,7 +290,7 @@ class RefreshTokenIT {
 		String blockedRefreshToken = this.tokenService.generateRefreshToken(USER_ID);
 		this.mockMvc.perform(authenticatedRefreshRequest(blockedRefreshToken)).andExpect(status().isTooManyRequests());
 
-		assertThat(this.redisTemplate.hasKey("refresh_token:" + blockedRefreshToken)).isTrue();
+		assertThat(this.redisTemplate.hasKey(refreshTokenKey(blockedRefreshToken))).isTrue();
 		assertUserDataUnchanged(usersBeforeRequest, userBeforeRequest);
 	}
 
@@ -294,7 +300,7 @@ class RefreshTokenIT {
 		long usersBeforeRequest = countUsers();
 		UserSnapshot userBeforeRequest = userSnapshot();
 
-		for (int i = 0; i < 10; i++) {
+		for (int i = 0; i < GENERAL_RATE_LIMIT; i++) {
 			this.mockMvc.perform(authenticatedRefreshRequest(this.tokenService.generateRefreshToken(USER_ID)))
 				.andExpect(status().isOk());
 		}
@@ -314,9 +320,12 @@ class RefreshTokenIT {
 		assertUserDataUnchanged(usersBeforeRequest, userBeforeRequest);
 	}
 
-	private org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder authenticatedRefreshRequest(
-			String refreshToken) {
-		return post("/api/v1/auth/sessions/refresh").cookie(new Cookie("refresh_token", refreshToken));
+	private MockHttpServletRequestBuilder authenticatedRefreshRequest(String refreshToken) {
+		return refreshRequest(refreshToken);
+	}
+
+	private MockHttpServletRequestBuilder refreshRequest(String refreshToken) {
+		return post(REFRESH_ENDPOINT).cookie(new Cookie(REFRESH_TOKEN_COOKIE, refreshToken));
 	}
 
 	private void assertNoSensitiveData(MvcResult result) throws Exception {
@@ -325,8 +334,8 @@ class RefreshTokenIT {
 		MatcherAssert.assertThat(body, not(containsString("password_hash")));
 		MatcherAssert.assertThat(body, not(containsString("resetCode")));
 		MatcherAssert.assertThat(body, not(containsString("resetPasswordCodeHash")));
-		MatcherAssert.assertThat(body, not(containsString("access_token")));
-		MatcherAssert.assertThat(body, not(containsString("refresh_token")));
+		MatcherAssert.assertThat(body, not(containsString(ACCESS_TOKEN_COOKIE)));
+		MatcherAssert.assertThat(body, not(containsString(REFRESH_TOKEN_COOKIE)));
 	}
 
 	private long countUsers() {
@@ -362,21 +371,8 @@ class RefreshTokenIT {
 		assertThat(userSnapshot()).isEqualTo(userBeforeRequest);
 	}
 
-	private void clearRateLimitBuckets() {
-		try {
-			clearBucketMap("loginBuckets");
-			clearBucketMap("generalBuckets");
-			clearBucketMap("passwordBuckets");
-		}
-		catch (ReflectiveOperationException ex) {
-			throw new IllegalStateException(ex);
-		}
-	}
-
-	private void clearBucketMap(String fieldName) throws ReflectiveOperationException {
-		var field = UserRateLimitConfig.class.getDeclaredField(fieldName);
-		field.setAccessible(true);
-		((java.util.Map<?, ?>) field.get(this.rateLimitConfig)).clear();
+	private String refreshTokenKey(String refreshToken) {
+		return REFRESH_TOKEN_COOKIE + ":" + refreshToken;
 	}
 
 	private record UserSnapshot(Map<String, Object> fields, List<String> roles) {

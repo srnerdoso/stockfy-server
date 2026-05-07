@@ -130,6 +130,7 @@ dependencies {
 tasks.named('test') {
     useJUnitPlatform()
     jvmArgs += "-javaagent:${configurations.mockitoAgent.asPath}"
+    jvmArgs += '-Xshare:off'
     finalizedBy tasks.jacocoTestReport
 }
 

@@ -18,9 +18,10 @@ package br.com.threadstech.stockfy.modules.users.presentation.controller;
 
 import java.time.Duration;
 
+import br.com.threadstech.stockfy.ContainersConfiguration;
 import br.com.threadstech.stockfy.MutableTimeMeter;
+import br.com.threadstech.stockfy.RateLimitBucketCleaner;
 import br.com.threadstech.stockfy.RateLimitTestConfiguration;
-import br.com.threadstech.stockfy.TestcontainersConfiguration;
 import br.com.threadstech.stockfy.users.application.port.ResetCodeHasher;
 import br.com.threadstech.stockfy.users.infrastructure.config.UserRateLimitConfig;
 import br.com.threadstech.stockfy.web.presentation.ApiErrorResponseAssertions;
@@ -44,17 +45,27 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@Import({ TestcontainersConfiguration.class, RateLimitTestConfiguration.class })
+@Import({ ContainersConfiguration.class, RateLimitTestConfiguration.class })
 @Sql(scripts = "/sql/users/cleanup.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @Sql(scripts = "/sql/users/base-users.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @Sql(scripts = "/sql/users/cleanup.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
-@SuppressWarnings({ "PMD.AvoidAccessibilityAlteration", "PMD.AvoidDuplicateLiterals",
-		"PMD.AvoidLiteralsInIfCondition" })
 class GenerateResetCodeIT {
+
+	private static final int GENERAL_RATE_LIMIT = 10;
+
+	private static final String RESET_CODE_ENDPOINT = "/api/v1/users/{id}/password-reset-codes";
+
+	private static final String ADMIN_ROLE = "ADMIN";
+
+	private static final String JSON_PATH_CODE = "$.code";
 
 	private static final String ADMIN_ID = "00000000-0000-0000-0000-000000000001";
 
 	private static final String OWNER_ID = "00000000-0000-0000-0000-000000000002";
+
+	private static final String INVALID_UUID = "not-a-uuid";
+
+	private static final String SQL_INJECTION_ID = "00000000-0000-0000-0000-000000000002' OR '1'='1";
 
 	@Autowired
 	private MockMvc mockMvc;
@@ -73,20 +84,19 @@ class GenerateResetCodeIT {
 
 	@AfterEach
 	void tearDownRateLimit() {
-		clearRateLimitBuckets();
-		this.rateLimitTimeMeter.reset();
+		RateLimitBucketCleaner.clearAll(this.rateLimitConfig, this.rateLimitTimeMeter);
 	}
 
 	@Test
 	@DisplayName("Deve retornar 200, codigo e persistir hash e expiracao quando ADMIN solicitar")
-	@WithMockUserId(id = ADMIN_ID, roles = "ADMIN")
+	@WithMockUserId(id = ADMIN_ID, roles = ADMIN_ROLE)
 	void generateResetCode_whenAdminRequestsExistingUser_thenReturns200AndPersistsHash() throws Exception {
 		long usersBeforeRequest = countUsers();
 
-		String response = this.mockMvc.perform(post("/api/v1/users/{id}/password-reset-codes", OWNER_ID))
+		String response = this.mockMvc.perform(post(RESET_CODE_ENDPOINT, OWNER_ID))
 			.andExpect(status().isOk())
-			.andExpect(jsonPath("$.code").isString())
-			.andExpect(jsonPath("$.code").value(org.hamcrest.Matchers.matchesPattern("\\d{6}")))
+			.andExpect(jsonPath(JSON_PATH_CODE).isString())
+			.andExpect(jsonPath(JSON_PATH_CODE).value(org.hamcrest.Matchers.matchesPattern("\\d{6}")))
 			.andExpect(jsonPath("$.password").doesNotExist())
 			.andExpect(jsonPath("$.passwordHash").doesNotExist())
 			.andExpect(jsonPath("$.resetPasswordCodeHash").doesNotExist())
@@ -103,13 +113,13 @@ class GenerateResetCodeIT {
 
 	@Test
 	@DisplayName("Deve sobrescrever codigo anterior quando novo codigo for gerado")
-	@WithMockUserId(id = ADMIN_ID, roles = "ADMIN")
+	@WithMockUserId(id = ADMIN_ID, roles = ADMIN_ROLE)
 	void generateResetCode_whenExistingCodeExists_thenReplacesStoredHashAndExpiration() throws Exception {
 		setResetPasswordData(OWNER_ID, "old-hash");
 
-		this.mockMvc.perform(post("/api/v1/users/{id}/password-reset-codes", OWNER_ID))
+		this.mockMvc.perform(post(RESET_CODE_ENDPOINT, OWNER_ID))
 			.andExpect(status().isOk())
-			.andExpect(jsonPath("$.code").isString());
+			.andExpect(jsonPath(JSON_PATH_CODE).isString());
 
 		assertThat("old-hash".equals(resetPasswordCodeHash(OWNER_ID))).isFalse();
 		assertThat(resetPasswordExpiresAt(OWNER_ID)).isNotNull();
@@ -120,7 +130,7 @@ class GenerateResetCodeIT {
 	void generateResetCode_whenNotAuthenticated_thenReturns401WithoutBody() throws Exception {
 		String oldHash = resetPasswordCodeHash(OWNER_ID);
 
-		this.mockMvc.perform(post("/api/v1/users/{id}/password-reset-codes", OWNER_ID))
+		this.mockMvc.perform(post(RESET_CODE_ENDPOINT, OWNER_ID))
 			.andExpect(status().isUnauthorized())
 			.andExpect(content().string(""));
 
@@ -133,7 +143,7 @@ class GenerateResetCodeIT {
 	void generateResetCode_whenAuthenticatedUserIsNotAdmin_thenReturns403WithoutBody() throws Exception {
 		String oldHash = resetPasswordCodeHash(OWNER_ID);
 
-		this.mockMvc.perform(post("/api/v1/users/{id}/password-reset-codes", OWNER_ID))
+		this.mockMvc.perform(post(RESET_CODE_ENDPOINT, OWNER_ID))
 			.andExpect(status().isForbidden())
 			.andExpect(content().string(""));
 
@@ -142,12 +152,12 @@ class GenerateResetCodeIT {
 
 	@Test
 	@DisplayName("Deve retornar 400 quando ID nao for UUID valido")
-	@WithMockUserId(id = ADMIN_ID, roles = "ADMIN")
+	@WithMockUserId(id = ADMIN_ID, roles = ADMIN_ROLE)
 	void generateResetCode_whenIdIsInvalidUuid_thenReturns400AndDoesNotAlterData() throws Exception {
 		String oldHash = resetPasswordCodeHash(OWNER_ID);
 
 		ApiErrorResponseAssertions.assertBadRequestFieldValidation(
-				this.mockMvc.perform(post("/api/v1/users/{id}/password-reset-codes", "not-a-uuid")), "id",
+				this.mockMvc.perform(post(RESET_CODE_ENDPOINT, INVALID_UUID)), "id",
 				"O parâmetro informado é inválido.");
 
 		assertThat(resetPasswordCodeHash(OWNER_ID)).isEqualTo(oldHash);
@@ -155,49 +165,49 @@ class GenerateResetCodeIT {
 
 	@Test
 	@DisplayName("Deve retornar 400 quando ID contiver SQL Injection")
-	@WithMockUserId(id = ADMIN_ID, roles = "ADMIN")
+	@WithMockUserId(id = ADMIN_ID, roles = ADMIN_ROLE)
 	void generateResetCode_whenIdContainsSqlInjection_thenReturns400AndDoesNotAlterData() throws Exception {
 		String oldHash = resetPasswordCodeHash(OWNER_ID);
 
-		ApiErrorResponseAssertions.assertBadRequestFieldValidation(this.mockMvc.perform(
-				post("/api/v1/users/{id}/password-reset-codes", "00000000-0000-0000-0000-000000000002' OR '1'='1")),
-				"id", "O parâmetro informado é inválido.");
+		ApiErrorResponseAssertions.assertBadRequestFieldValidation(
+				this.mockMvc.perform(post(RESET_CODE_ENDPOINT, SQL_INJECTION_ID)), "id",
+				"O parâmetro informado é inválido.");
 
 		assertThat(resetPasswordCodeHash(OWNER_ID)).isEqualTo(oldHash);
 	}
 
 	@Test
 	@DisplayName("Deve retornar 429 quando exceder limite geral de requisicoes")
-	@WithMockUserId(id = ADMIN_ID, roles = "ADMIN")
+	@WithMockUserId(id = ADMIN_ID, roles = ADMIN_ROLE)
 	void generateResetCode_whenLimitExceeded_thenReturns429() throws Exception {
 		String oldHash = resetPasswordCodeHash(OWNER_ID);
 
-		for (int i = 0; i <= 10; i++) {
-			var result = this.mockMvc.perform(post("/api/v1/users/{id}/password-reset-codes", "not-a-uuid"));
-			if (i == 10) {
-				result.andExpect(status().isTooManyRequests());
-			}
+		for (int i = 0; i < GENERAL_RATE_LIMIT; i++) {
+			this.mockMvc.perform(post(RESET_CODE_ENDPOINT, INVALID_UUID)).andExpect(status().isBadRequest());
 		}
+		this.mockMvc.perform(post(RESET_CODE_ENDPOINT, INVALID_UUID)).andExpect(status().isTooManyRequests());
 
 		assertThat(resetPasswordCodeHash(OWNER_ID)).isEqualTo(oldHash);
 	}
 
 	@Test
 	@DisplayName("Deve permitir nova geracao quando a janela de rate limit expirar")
-	@WithMockUserId(id = ADMIN_ID, roles = "ADMIN")
+	@WithMockUserId(id = ADMIN_ID, roles = ADMIN_ROLE)
 	void generateResetCode_whenRateLimitWindowExpires_thenProcessesRequest() throws Exception {
-		for (int i = 0; i < 10; i++) {
-			this.mockMvc.perform(post("/api/v1/users/{id}/password-reset-codes", "not-a-uuid"));
+		String oldHash = resetPasswordCodeHash(OWNER_ID);
+
+		for (int i = 0; i < GENERAL_RATE_LIMIT; i++) {
+			this.mockMvc.perform(post(RESET_CODE_ENDPOINT, INVALID_UUID)).andExpect(status().isBadRequest());
 		}
 
-		this.mockMvc.perform(post("/api/v1/users/{id}/password-reset-codes", "not-a-uuid"))
-			.andExpect(status().isTooManyRequests());
+		this.mockMvc.perform(post(RESET_CODE_ENDPOINT, INVALID_UUID)).andExpect(status().isTooManyRequests());
+		assertThat(resetPasswordCodeHash(OWNER_ID)).isEqualTo(oldHash);
 
 		this.rateLimitTimeMeter.advanceBy(Duration.ofSeconds(61));
 
-		this.mockMvc.perform(post("/api/v1/users/{id}/password-reset-codes", OWNER_ID))
+		this.mockMvc.perform(post(RESET_CODE_ENDPOINT, OWNER_ID))
 			.andExpect(status().isOk())
-			.andExpect(jsonPath("$.code").isString());
+			.andExpect(jsonPath(JSON_PATH_CODE).isString());
 
 		assertThat(resetPasswordCodeHash(OWNER_ID)).isNotNull();
 	}
@@ -220,23 +230,6 @@ class GenerateResetCodeIT {
 	private String resetPasswordExpiresAt(String id) {
 		return this.jdbcTemplate.queryForObject("SELECT reset_password_expires_at::text FROM users WHERE id = ?::uuid",
 				String.class, id);
-	}
-
-	private void clearRateLimitBuckets() {
-		try {
-			clearBucketMap("loginBuckets");
-			clearBucketMap("generalBuckets");
-			clearBucketMap("passwordBuckets");
-		}
-		catch (ReflectiveOperationException ex) {
-			throw new IllegalStateException(ex);
-		}
-	}
-
-	private void clearBucketMap(String fieldName) throws ReflectiveOperationException {
-		var field = UserRateLimitConfig.class.getDeclaredField(fieldName);
-		field.setAccessible(true);
-		((java.util.Map<?, ?>) field.get(this.rateLimitConfig)).clear();
 	}
 
 }
