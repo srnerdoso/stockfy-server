@@ -16,10 +16,9 @@
 
 package br.com.threadstech.stockfy.users.presentation;
 
-import java.util.List;
+import java.net.URI;
 
 import br.com.threadstech.stockfy.shared.exception.ApiErrorResponse;
-import br.com.threadstech.stockfy.shared.exception.ApiErrorResponse.FieldError;
 import br.com.threadstech.stockfy.users.application.exception.CurrentPasswordInvalidException;
 import br.com.threadstech.stockfy.users.application.exception.EmailAlreadyExistsException;
 import br.com.threadstech.stockfy.users.application.exception.InvalidCredentialsException;
@@ -29,6 +28,7 @@ import br.com.threadstech.stockfy.users.application.exception.InvalidRefreshToke
 import br.com.threadstech.stockfy.users.application.exception.PasswordMismatchException;
 import br.com.threadstech.stockfy.users.application.exception.UserNotFoundException;
 import br.com.threadstech.stockfy.users.domain.exception.InvalidUserRolesException;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.context.MessageSource;
@@ -42,66 +42,60 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @RequiredArgsConstructor
 public class UserExceptionHandler {
 
-	private static final String ABOUT_BLANK = "about:blank";
-
 	private final MessageSource messageSource;
 
 	@ExceptionHandler(PasswordMismatchException.class)
-	public ResponseEntity<ApiErrorResponse> handlePasswordMismatchException(PasswordMismatchException ex) {
+	public ResponseEntity<ApiErrorResponse> handlePasswordMismatchException(PasswordMismatchException ex,
+			HttpServletRequest request) {
 		String detail = this.messageSource.getMessage(ex.getMessage(), null, LocaleContextHolder.getLocale());
 
-		ApiErrorResponse response = new ApiErrorResponse(ABOUT_BLANK, "Unprocessable Entity",
-				HttpStatus.UNPROCESSABLE_ENTITY.value(), detail, null,
-				List.of(new FieldError("confirmPassword", this.messageSource.getMessage("user.password.mismatch", null,
-						LocaleContextHolder.getLocale()))));
+		ApiErrorResponse response = ApiErrorResponse.unprocessableEntity(detail, requestUri(request), "confirmPassword",
+				this.messageSource.getMessage("user.password.mismatch", null, LocaleContextHolder.getLocale()));
 		return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(response);
 	}
 
 	@ExceptionHandler(EmailAlreadyExistsException.class)
-	public ResponseEntity<ApiErrorResponse> handleEmailAlreadyExistsException(EmailAlreadyExistsException ex) {
+	public ResponseEntity<ApiErrorResponse> handleEmailAlreadyExistsException(EmailAlreadyExistsException ex,
+			HttpServletRequest request) {
 		String detail = this.messageSource.getMessage(ex.getMessage(), null, LocaleContextHolder.getLocale());
 
-		ApiErrorResponse response = new ApiErrorResponse(ABOUT_BLANK, "Conflict", HttpStatus.CONFLICT.value(), detail,
-				null, null);
+		ApiErrorResponse response = ApiErrorResponse.conflict(detail, requestUri(request));
 		return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
 	}
 
 	@ExceptionHandler(InvalidPasswordException.class)
-	public ResponseEntity<ApiErrorResponse> handleInvalidPasswordException(InvalidPasswordException ex) {
+	public ResponseEntity<ApiErrorResponse> handleInvalidPasswordException(InvalidPasswordException ex,
+			HttpServletRequest request) {
 		String detail = this.messageSource.getMessage(ex.getMessage(), null, LocaleContextHolder.getLocale());
 
-		ApiErrorResponse response = new ApiErrorResponse(ABOUT_BLANK, "Unprocessable Entity",
-				HttpStatus.UNPROCESSABLE_ENTITY.value(), detail, null, null);
+		ApiErrorResponse response = ApiErrorResponse.unprocessableEntity(detail, requestUri(request));
 		return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(response);
 	}
 
 	@ExceptionHandler(InvalidPasswordResetCodeException.class)
 	public ResponseEntity<ApiErrorResponse> handleInvalidPasswordResetCodeException(
-			InvalidPasswordResetCodeException ex) {
-		return unprocessableEntity(ex.getMessage());
+			InvalidPasswordResetCodeException ex, HttpServletRequest request) {
+		return unprocessableEntity(ex.getMessage(), requestUri(request));
 	}
 
 	@ExceptionHandler(CurrentPasswordInvalidException.class)
-	public ResponseEntity<ApiErrorResponse> handleCurrentPasswordInvalidException(CurrentPasswordInvalidException ex) {
-		return unprocessableEntity(ex.getMessage());
+	public ResponseEntity<ApiErrorResponse> handleCurrentPasswordInvalidException(CurrentPasswordInvalidException ex,
+			HttpServletRequest request) {
+		return unprocessableEntity(ex.getMessage(), requestUri(request));
 	}
 
 	@ExceptionHandler(UserNotFoundException.class)
-	public ResponseEntity<ApiErrorResponse> handleUserNotFoundException(UserNotFoundException ex) {
+	public ResponseEntity<ApiErrorResponse> handleUserNotFoundException(UserNotFoundException ex,
+			HttpServletRequest request) {
 		String detail = this.messageSource.getMessage(ex.getMessage(), null, LocaleContextHolder.getLocale());
 
-		ApiErrorResponse response = new ApiErrorResponse(ABOUT_BLANK, "Not Found", HttpStatus.NOT_FOUND.value(), detail,
-				null);
+		ApiErrorResponse response = ApiErrorResponse.notFound(detail, requestUri(request));
 		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
 	}
 
 	@ExceptionHandler(InvalidCredentialsException.class)
-	public ResponseEntity<ApiErrorResponse> handleInvalidCredentialsException(InvalidCredentialsException ex) {
-		String detail = this.messageSource.getMessage(ex.getMessage(), null, LocaleContextHolder.getLocale());
-
-		ApiErrorResponse response = new ApiErrorResponse(ABOUT_BLANK, "Unauthorized", HttpStatus.UNAUTHORIZED.value(),
-				detail, null);
-		return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+	public ResponseEntity<Void> handleInvalidCredentialsException() {
+		return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 	}
 
 	@ExceptionHandler(InvalidRefreshTokenException.class)
@@ -110,20 +104,23 @@ public class UserExceptionHandler {
 	}
 
 	@ExceptionHandler(InvalidUserRolesException.class)
-	public ResponseEntity<ApiErrorResponse> handleInvalidUserRolesException(InvalidUserRolesException ex) {
+	public ResponseEntity<ApiErrorResponse> handleInvalidUserRolesException(InvalidUserRolesException ex,
+			HttpServletRequest request) {
 		String detail = this.messageSource.getMessage(ex.getMessage(), null, LocaleContextHolder.getLocale());
 
-		ApiErrorResponse response = new ApiErrorResponse(ABOUT_BLANK, "Validation Error",
-				HttpStatus.BAD_REQUEST.value(), detail, null, List.of(new FieldError("roles", detail)));
+		ApiErrorResponse response = ApiErrorResponse.badRequest(detail, requestUri(request), "roles", detail);
 		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
 	}
 
-	private ResponseEntity<ApiErrorResponse> unprocessableEntity(String messageKey) {
+	private ResponseEntity<ApiErrorResponse> unprocessableEntity(String messageKey, URI instance) {
 		String detail = this.messageSource.getMessage(messageKey, null, LocaleContextHolder.getLocale());
 
-		ApiErrorResponse response = new ApiErrorResponse(ABOUT_BLANK, "Unprocessable Entity",
-				HttpStatus.UNPROCESSABLE_ENTITY.value(), detail, null, null);
+		ApiErrorResponse response = ApiErrorResponse.unprocessableEntity(detail, instance);
 		return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(response);
+	}
+
+	private URI requestUri(HttpServletRequest request) {
+		return URI.create(request.getRequestURI());
 	}
 
 }

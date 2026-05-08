@@ -17,10 +17,11 @@
 package br.com.threadstech.stockfy.web.presentation;
 
 import java.lang.reflect.Method;
-import java.util.List;
+import java.net.URI;
 import java.util.Locale;
 
 import br.com.threadstech.stockfy.shared.exception.ApiErrorResponse;
+import br.com.threadstech.stockfy.shared.exception.ApiErrorResponse.FieldError;
 import br.com.threadstech.stockfy.shared.exception.GlobalExceptionHandler;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import org.junit.jupiter.api.DisplayName;
@@ -30,6 +31,7 @@ import org.springframework.context.support.StaticMessageSource;
 import org.springframework.core.MethodParameter;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.mock.http.MockHttpInputMessage;
+import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
@@ -47,6 +49,8 @@ class GlobalExceptionHandlerTests {
 
 	private static final String ROLE_FIELD = "role";
 
+	private static final URI REQUEST_URI = URI.create("/api/v1/users");
+
 	@Test
 	@DisplayName("Deve traduzir mensagem de campo inválido usando MessageSource")
 	void handleMessageNotReadable_whenFieldIsInvalid_thenUsesMessageSource() {
@@ -58,12 +62,11 @@ class GlobalExceptionHandlerTests {
 		cause.prependPath(new Object(), ROLE_FIELD);
 		HttpMessageNotReadableException exception = new HttpMessageNotReadableException("Invalid JSON", cause,
 				new MockHttpInputMessage(new byte[0]));
+		MockHttpServletRequest request = request();
 
-		ApiErrorResponse body = handler.handleMessageNotReadable(exception).getBody();
+		ApiErrorResponse body = handler.handleMessageNotReadable(exception, request).getBody();
 
-		assertThat(body.getDetail()).isEqualTo(TRANSLATED_ERROR);
-		assertThat(body.getFieldErrors().getFirst().field()).isEqualTo(ROLE_FIELD);
-		assertThat(body.getFieldErrors().getFirst().message()).isEqualTo(TRANSLATED_FIELD_MESSAGE);
+		assertResponse(body, ROLE_FIELD, TRANSLATED_FIELD_MESSAGE);
 	}
 
 	@Test
@@ -76,12 +79,11 @@ class GlobalExceptionHandlerTests {
 		GlobalExceptionHandler handler = new GlobalExceptionHandler(messageSource);
 		MissingServletRequestParameterException exception = new MissingServletRequestParameterException(TYPE_FIELD,
 				"UserListType");
+		MockHttpServletRequest request = request();
 
-		ApiErrorResponse body = handler.handleMissingRequestParameter(exception).getBody();
+		ApiErrorResponse body = handler.handleMissingRequestParameter(exception, request).getBody();
 
-		assertThat(body.getDetail()).isEqualTo(TRANSLATED_ERROR);
-		assertThat(body.getFieldErrors().getFirst().field()).isEqualTo(TYPE_FIELD);
-		assertThat(body.getFieldErrors().getFirst().message()).isEqualTo("Parametro obrigatorio generico.");
+		assertResponse(body, TYPE_FIELD, "Parametro obrigatorio generico.");
 	}
 
 	@Test
@@ -95,22 +97,26 @@ class GlobalExceptionHandlerTests {
 		Method method = GlobalExceptionHandlerTests.class.getDeclaredMethod("methodWithTypeParameter", String.class);
 		MethodArgumentTypeMismatchException exception = new MethodArgumentTypeMismatchException("FULL", String.class,
 				TYPE_FIELD, new MethodParameter(method, 0), null);
+		MockHttpServletRequest request = request();
 
-		ApiErrorResponse body = handler.handleArgumentTypeMismatch(exception).getBody();
+		ApiErrorResponse body = handler.handleArgumentTypeMismatch(exception, request).getBody();
 
-		assertThat(body.getDetail()).isEqualTo(TRANSLATED_ERROR);
-		assertThat(body.getFieldErrors().getFirst().field()).isEqualTo(TYPE_FIELD);
-		assertThat(body.getFieldErrors().getFirst().message()).isEqualTo("Parametro invalido generico.");
+		assertResponse(body, TYPE_FIELD, "Parametro invalido generico.");
 	}
 
-	@Test
-	@DisplayName("Deve expor erros de campo sem depender de FieldError do Spring")
-	void constructor_whenFieldErrorsAreProvided_thenUsesApiFieldError() {
-		ApiErrorResponse response = new ApiErrorResponse("about:blank", "Validation Error", 400, TRANSLATED_ERROR, null,
-				List.of(new ApiErrorResponse.FieldError(ROLE_FIELD, TRANSLATED_FIELD_MESSAGE)));
+	private void assertResponse(ApiErrorResponse body, String field, String message) {
+		assertThat(body.getType()).isEqualTo("about:blank");
+		assertThat(body.getTitle()).isEqualTo("Validation Error");
+		assertThat(body.getStatus()).isEqualTo(400);
+		assertThat(body.getDetail()).isEqualTo(TRANSLATED_ERROR);
+		assertThat(body.getInstance()).isEqualTo(REQUEST_URI);
+		assertThat(body.getFieldErrors()).containsExactly(new FieldError(field, message));
+	}
 
-		assertThat(response.getFieldErrors().getFirst().field()).isEqualTo(ROLE_FIELD);
-		assertThat(response.getFieldErrors().getFirst().message()).isEqualTo(TRANSLATED_FIELD_MESSAGE);
+	private MockHttpServletRequest request() {
+		MockHttpServletRequest request = new MockHttpServletRequest();
+		request.setRequestURI(REQUEST_URI.toString());
+		return request;
 	}
 
 	private void methodWithTypeParameter(String type) {

@@ -233,7 +233,7 @@ class UpdateUserRolesIT {
 			.andExpect(jsonPath("$.title").value("Validation Error"))
 			.andExpect(jsonPath("$.status").value(400))
 			.andExpect(jsonPath("$.detail").value("A operação de perfis deixaria o usuário sem perfil válido."))
-			.andExpect(jsonPath("$.instance").doesNotExist())
+			.andExpect(jsonPath("$.instance").value("/api/v1/users/" + USER_ID + "/roles"))
 			.andExpect(jsonPath("$.fieldErrors.length()").value(1))
 			.andExpect(jsonPath("$.fieldErrors[0].field").value("roles"))
 			.andExpect(jsonPath("$.fieldErrors[0].message")

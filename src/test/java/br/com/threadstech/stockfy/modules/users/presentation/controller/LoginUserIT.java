@@ -172,7 +172,7 @@ class LoginUserIT {
 			.andExpect(jsonPath("$.title").value("Validation Error"))
 			.andExpect(jsonPath("$.status").value(400))
 			.andExpect(jsonPath("$.detail").value("Erro de validação nos campos informados."))
-			.andExpect(jsonPath("$.instance").doesNotExist())
+			.andExpect(jsonPath("$.instance").value(AUTH_SESSIONS_ENDPOINT))
 			.andExpect(jsonPath("$.fieldErrors.length()").value(2))
 			.andExpect(jsonPath("$.fieldErrors[*].field").value(hasItem(EMAIL_FIELD)))
 			.andExpect(jsonPath("$.fieldErrors[*].field").value(hasItem("password")))

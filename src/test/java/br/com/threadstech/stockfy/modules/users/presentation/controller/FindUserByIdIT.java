@@ -216,7 +216,7 @@ class FindUserByIdIT {
 			.andExpect(jsonPath("$.title").value("Not Found"))
 			.andExpect(jsonPath("$.status").value(404))
 			.andExpect(jsonPath("$.detail").value("Usuário não encontrado."))
-			.andExpect(jsonPath("$.instance").doesNotExist())
+			.andExpect(jsonPath("$.instance").value("/api/v1/users/" + MISSING_ID))
 			.andExpect(jsonPath("$.fieldErrors").doesNotExist());
 
 		assertThat(countUsers()).isEqualTo(usersBeforeRequest);

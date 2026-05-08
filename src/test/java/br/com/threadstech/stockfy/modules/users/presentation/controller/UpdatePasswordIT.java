@@ -94,8 +94,6 @@ class UpdatePasswordIT {
 
 	private static final String ERROR_FIELD_ERRORS_PATH = "$.fieldErrors";
 
-	private static final String ABOUT_BLANK = "about:blank";
-
 	private static final String UNPROCESSABLE_ENTITY = "Unprocessable Entity";
 
 	@Autowired
@@ -149,11 +147,11 @@ class UpdatePasswordIT {
 
 		passwordRequest(passwordResetBody(DEFAULT_RESET_CODE, ANOTHER_PASSWORD, ANOTHER_PASSWORD))
 			.andExpect(status().isUnprocessableEntity())
-			.andExpect(jsonPath(ERROR_TYPE_PATH).value(ABOUT_BLANK))
+			.andExpect(jsonPath(ERROR_TYPE_PATH).value(aboutBlank()))
 			.andExpect(jsonPath(ERROR_TITLE_PATH).value(UNPROCESSABLE_ENTITY))
 			.andExpect(jsonPath(ERROR_STATUS_PATH).value(422))
 			.andExpect(jsonPath(ERROR_DETAIL_PATH).value("Código de recuperação inválido ou expirado."))
-			.andExpect(jsonPath(ERROR_INSTANCE_PATH).doesNotExist())
+			.andExpect(jsonPath(ERROR_INSTANCE_PATH).value(PASSWORD_ENDPOINT))
 			.andExpect(jsonPath(ERROR_FIELD_ERRORS_PATH).doesNotExist());
 
 		assertThat(passwordHash(OWNER_ID)).isEqualTo(hashAfterFirstUse);
@@ -167,11 +165,11 @@ class UpdatePasswordIT {
 
 		passwordRequest(passwordResetBody(DEFAULT_RESET_CODE, NEW_PASSWORD, NEW_PASSWORD))
 			.andExpect(status().isUnprocessableEntity())
-			.andExpect(jsonPath(ERROR_TYPE_PATH).value(ABOUT_BLANK))
+			.andExpect(jsonPath(ERROR_TYPE_PATH).value(aboutBlank()))
 			.andExpect(jsonPath(ERROR_TITLE_PATH).value(UNPROCESSABLE_ENTITY))
 			.andExpect(jsonPath(ERROR_STATUS_PATH).value(422))
 			.andExpect(jsonPath(ERROR_DETAIL_PATH).value("Código de recuperação inválido ou expirado."))
-			.andExpect(jsonPath(ERROR_INSTANCE_PATH).doesNotExist())
+			.andExpect(jsonPath(ERROR_INSTANCE_PATH).value(PASSWORD_ENDPOINT))
 			.andExpect(jsonPath(ERROR_FIELD_ERRORS_PATH).doesNotExist());
 
 		assertThat(passwordHash(OWNER_ID)).isEqualTo(oldHash);
@@ -232,11 +230,11 @@ class UpdatePasswordIT {
 
 		passwordRequest(passwordResetBody(DEFAULT_RESET_CODE, NEW_PASSWORD, DIFFERENT_PASSWORD))
 			.andExpect(status().isUnprocessableEntity())
-			.andExpect(jsonPath(ERROR_TYPE_PATH).value(ABOUT_BLANK))
+			.andExpect(jsonPath(ERROR_TYPE_PATH).value(aboutBlank()))
 			.andExpect(jsonPath(ERROR_TITLE_PATH).value(UNPROCESSABLE_ENTITY))
 			.andExpect(jsonPath(ERROR_STATUS_PATH).value(422))
 			.andExpect(jsonPath(ERROR_DETAIL_PATH).value("As senhas não coincidem."))
-			.andExpect(jsonPath(ERROR_INSTANCE_PATH).doesNotExist())
+			.andExpect(jsonPath(ERROR_INSTANCE_PATH).value(PASSWORD_ENDPOINT))
 			.andExpect(jsonPath(ERROR_FIELD_ERRORS_PATH + ".length()").value(1))
 			.andExpect(jsonPath(ERROR_FIELD_ERRORS_PATH + "[0].field").value("confirmPassword"))
 			.andExpect(jsonPath(ERROR_FIELD_ERRORS_PATH + "[0].message").value("As senhas não coincidem."));
@@ -253,11 +251,11 @@ class UpdatePasswordIT {
 
 		passwordRequest(authenticatedPasswordBody(WRONG_PASSWORD, NEW_PASSWORD, NEW_PASSWORD))
 			.andExpect(status().isUnprocessableEntity())
-			.andExpect(jsonPath(ERROR_TYPE_PATH).value(ABOUT_BLANK))
+			.andExpect(jsonPath(ERROR_TYPE_PATH).value(aboutBlank()))
 			.andExpect(jsonPath(ERROR_TITLE_PATH).value(UNPROCESSABLE_ENTITY))
 			.andExpect(jsonPath(ERROR_STATUS_PATH).value(422))
 			.andExpect(jsonPath(ERROR_DETAIL_PATH).value("Senha atual incorreta."))
-			.andExpect(jsonPath(ERROR_INSTANCE_PATH).doesNotExist())
+			.andExpect(jsonPath(ERROR_INSTANCE_PATH).value(PASSWORD_ENDPOINT))
 			.andExpect(jsonPath(ERROR_FIELD_ERRORS_PATH).doesNotExist());
 
 		assertThat(passwordHash(OWNER_ID)).isEqualTo(oldHash);
@@ -272,11 +270,11 @@ class UpdatePasswordIT {
 
 		passwordRequest(authenticatedPasswordBody(null, NEW_PASSWORD, NEW_PASSWORD))
 			.andExpect(status().isUnprocessableEntity())
-			.andExpect(jsonPath(ERROR_TYPE_PATH).value(ABOUT_BLANK))
+			.andExpect(jsonPath(ERROR_TYPE_PATH).value(aboutBlank()))
 			.andExpect(jsonPath(ERROR_TITLE_PATH).value(UNPROCESSABLE_ENTITY))
 			.andExpect(jsonPath(ERROR_STATUS_PATH).value(422))
 			.andExpect(jsonPath(ERROR_DETAIL_PATH).value("Senha atual incorreta."))
-			.andExpect(jsonPath(ERROR_INSTANCE_PATH).doesNotExist())
+			.andExpect(jsonPath(ERROR_INSTANCE_PATH).value(PASSWORD_ENDPOINT))
 			.andExpect(jsonPath(ERROR_FIELD_ERRORS_PATH).doesNotExist());
 
 		assertThat(passwordHash(OWNER_ID)).isEqualTo(oldHash);
@@ -292,11 +290,11 @@ class UpdatePasswordIT {
 		for (int i = 0; i < 15; i++) {
 			passwordRequest(authenticatedPasswordBody(WRONG_PASSWORD, NEW_PASSWORD, NEW_PASSWORD))
 				.andExpect(status().isUnprocessableEntity())
-				.andExpect(jsonPath(ERROR_TYPE_PATH).value(ABOUT_BLANK))
+				.andExpect(jsonPath(ERROR_TYPE_PATH).value(aboutBlank()))
 				.andExpect(jsonPath(ERROR_TITLE_PATH).value(UNPROCESSABLE_ENTITY))
 				.andExpect(jsonPath(ERROR_STATUS_PATH).value(422))
 				.andExpect(jsonPath(ERROR_DETAIL_PATH).value("Senha atual incorreta."))
-				.andExpect(jsonPath(ERROR_INSTANCE_PATH).doesNotExist())
+				.andExpect(jsonPath(ERROR_INSTANCE_PATH).value(PASSWORD_ENDPOINT))
 				.andExpect(jsonPath(ERROR_FIELD_ERRORS_PATH).doesNotExist());
 
 			assertThat(passwordHash(OWNER_ID)).isEqualTo(originalPasswordHash);
@@ -347,6 +345,10 @@ class UpdatePasswordIT {
 
 	private ResultActions passwordRequest(String body) throws Exception {
 		return this.mockMvc.perform(patch(PASSWORD_ENDPOINT).contentType(MediaType.APPLICATION_JSON).content(body));
+	}
+
+	private String aboutBlank() {
+		return "about:blank";
 	}
 
 	private String passwordResetBody(String code, String newPassword, String confirmPassword) {

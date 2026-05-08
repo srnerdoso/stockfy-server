@@ -33,7 +33,8 @@ public final class ApiErrorResponseAssertions {
 			.andExpect(jsonPath("$.title").value("Validation Error"))
 			.andExpect(jsonPath("$.status").value(400))
 			.andExpect(jsonPath("$.detail").value("Erro de validação nos campos informados."))
-			.andExpect(jsonPath("$.instance").doesNotExist())
+			.andExpect((mvcResult) -> jsonPath("$.instance").value(mvcResult.getRequest().getRequestURI())
+				.match(mvcResult))
 			.andExpect(jsonPath("$.fieldErrors.length()").value(1))
 			.andExpect(jsonPath("$.fieldErrors[0].field").value(field))
 			.andExpect(jsonPath("$.fieldErrors[0].message").value(message));

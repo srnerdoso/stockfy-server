@@ -259,7 +259,7 @@ class UserCreationIT {
 			.andExpect(jsonPath("$.title").value("Unprocessable Entity"))
 			.andExpect(jsonPath("$.status").value(422))
 			.andExpect(jsonPath("$.detail").value("As senhas não coincidem."))
-			.andExpect(jsonPath("$.instance").doesNotExist())
+			.andExpect(jsonPath("$.instance").value(USERS_ENDPOINT))
 			.andExpect(jsonPath("$.fieldErrors.length()").value(1))
 			.andExpect(jsonPath("$.fieldErrors[0].field").value("confirmPassword"))
 			.andExpect(jsonPath("$.fieldErrors[0].message").value("As senhas não coincidem."))

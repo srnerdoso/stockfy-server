@@ -248,7 +248,7 @@ class UpdateCurrentUserIT {
 			.andExpect(jsonPath("$.title").value("Conflict"))
 			.andExpect(jsonPath("$.status").value(409))
 			.andExpect(jsonPath("$.detail").value("O e-mail informado já está em uso."))
-			.andExpect(jsonPath("$.instance").doesNotExist())
+			.andExpect(jsonPath("$.instance").value(CURRENT_USER_ENDPOINT))
 			.andExpect(jsonPath("$.fieldErrors").doesNotExist());
 
 		assertThat(countUsers()).isEqualTo(usersBeforeRequest);

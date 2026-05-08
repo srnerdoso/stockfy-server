@@ -16,10 +16,10 @@
 
 package br.com.threadstech.stockfy.shared.exception;
 
-import java.util.List;
+import java.net.URI;
 
-import br.com.threadstech.stockfy.shared.exception.ApiErrorResponse.FieldError;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import lombok.RequiredArgsConstructor;
 
@@ -38,66 +38,54 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 @RequiredArgsConstructor
 public class GlobalExceptionHandler {
 
-	private static final String ABOUT_BLANK = "about:blank";
-
-	private static final String VALIDATION_ERROR = "Validation Error";
-
 	private final MessageSource messageSource;
 
 	@ExceptionHandler(MethodArgumentNotValidException.class)
-	public ResponseEntity<ApiErrorResponse> handleValidationExceptions(MethodArgumentNotValidException ex) {
+	public ResponseEntity<ApiErrorResponse> handleValidationExceptions(MethodArgumentNotValidException ex,
+			HttpServletRequest request) {
 		String detail = this.messageSource.getMessage("feedback.error.validation", null,
 				LocaleContextHolder.getLocale());
 
-		ApiErrorResponse response = new ApiErrorResponse(ABOUT_BLANK, VALIDATION_ERROR, HttpStatus.BAD_REQUEST.value(),
-				detail, null,
-				ex.getBindingResult()
-					.getFieldErrors()
-					.stream()
-					.map((fieldError) -> new FieldError(fieldError.getField(),
-							this.messageSource.getMessage(fieldError, LocaleContextHolder.getLocale())))
-					.toList());
+		ApiErrorResponse response = ApiErrorResponse.badRequest(detail, requestUri(request),
+				ex.getBindingResult().getFieldErrors(), this.messageSource, LocaleContextHolder.getLocale());
 		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
 	}
 
 	@ExceptionHandler(HttpMessageNotReadableException.class)
-	public ResponseEntity<ApiErrorResponse> handleMessageNotReadable(HttpMessageNotReadableException ex) {
+	public ResponseEntity<ApiErrorResponse> handleMessageNotReadable(HttpMessageNotReadableException ex,
+			HttpServletRequest request) {
 		String detail = this.messageSource.getMessage("feedback.error.validation", null,
 				LocaleContextHolder.getLocale());
 
-		ApiErrorResponse response = new ApiErrorResponse(ABOUT_BLANK, VALIDATION_ERROR, HttpStatus.BAD_REQUEST.value(),
-				detail, null, List.of(new FieldError(extractFieldName(ex), resolveRequiredFieldMessage())));
+		ApiErrorResponse response = ApiErrorResponse.badRequest(detail, requestUri(request), extractFieldName(ex),
+				resolveRequiredFieldMessage());
 		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
 	}
 
 	@ExceptionHandler(MissingServletRequestParameterException.class)
-	public ResponseEntity<ApiErrorResponse> handleMissingRequestParameter(MissingServletRequestParameterException ex) {
+	public ResponseEntity<ApiErrorResponse> handleMissingRequestParameter(MissingServletRequestParameterException ex,
+			HttpServletRequest request) {
 		String field = ex.getParameterName();
-		return validationError(field, resolveRequestParameterMessage(field, true));
+		return validationError(field, resolveRequestParameterMessage(field, true), requestUri(request));
 	}
 
 	@ExceptionHandler(MethodArgumentTypeMismatchException.class)
-	public ResponseEntity<ApiErrorResponse> handleArgumentTypeMismatch(MethodArgumentTypeMismatchException ex) {
+	public ResponseEntity<ApiErrorResponse> handleArgumentTypeMismatch(MethodArgumentTypeMismatchException ex,
+			HttpServletRequest request) {
 		String field = ex.getName();
-		return validationError(field, resolveRequestParameterMessage(field, false));
+		return validationError(field, resolveRequestParameterMessage(field, false), requestUri(request));
 	}
 
 	@ExceptionHandler(ConstraintViolationException.class)
-	public ResponseEntity<ApiErrorResponse> handleConstraintViolation(ConstraintViolationException ex) {
-		List<FieldError> fieldErrors = ex.getConstraintViolations()
-			.stream()
-			.map((violation) -> new FieldError(extractLeafProperty(violation.getPropertyPath().toString()),
-					violation.getMessage()))
-			.toList();
-
-		ApiErrorResponse response = new ApiErrorResponse(ABOUT_BLANK, VALIDATION_ERROR, HttpStatus.BAD_REQUEST.value(),
-				validationDetail(), null, fieldErrors);
+	public ResponseEntity<ApiErrorResponse> handleConstraintViolation(ConstraintViolationException ex,
+			HttpServletRequest request) {
+		ApiErrorResponse response = ApiErrorResponse.badRequest(validationDetail(), requestUri(request),
+				ex.getConstraintViolations());
 		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
 	}
 
-	private ResponseEntity<ApiErrorResponse> validationError(String field, String message) {
-		ApiErrorResponse response = new ApiErrorResponse(ABOUT_BLANK, VALIDATION_ERROR, HttpStatus.BAD_REQUEST.value(),
-				validationDetail(), null, List.of(new FieldError(field, message)));
+	private ResponseEntity<ApiErrorResponse> validationError(String field, String message, URI instance) {
+		ApiErrorResponse response = ApiErrorResponse.badRequest(validationDetail(), instance, field, message);
 		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
 	}
 
@@ -108,14 +96,6 @@ public class GlobalExceptionHandler {
 	private String resolveRequestParameterMessage(String field, boolean required) {
 		String key = required ? "validation.request-parameter.required" : "validation.request-parameter.invalid";
 		return this.messageSource.getMessage(key, null, LocaleContextHolder.getLocale());
-	}
-
-	private String extractLeafProperty(String propertyPath) {
-		int separator = propertyPath.lastIndexOf('.');
-		if (separator < 0) {
-			return propertyPath;
-		}
-		return propertyPath.substring(separator + 1);
 	}
 
 	private String resolveRequiredFieldMessage() {
@@ -129,6 +109,10 @@ public class GlobalExceptionHandler {
 		}
 
 		return "request";
+	}
+
+	private URI requestUri(HttpServletRequest request) {
+		return URI.create(request.getRequestURI());
 	}
 
 }
