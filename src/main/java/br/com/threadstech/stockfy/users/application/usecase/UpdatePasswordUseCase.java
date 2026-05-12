@@ -24,10 +24,10 @@ import br.com.threadstech.stockfy.users.application.exception.CurrentPasswordInv
 import br.com.threadstech.stockfy.users.application.exception.InvalidPasswordResetCodeException;
 import br.com.threadstech.stockfy.users.application.exception.PasswordMismatchException;
 import br.com.threadstech.stockfy.users.application.exception.UserNotFoundException;
-import br.com.threadstech.stockfy.users.application.port.ResetCodeHasher;
 import br.com.threadstech.stockfy.users.domain.model.Password;
 import br.com.threadstech.stockfy.users.domain.model.User;
 import br.com.threadstech.stockfy.users.domain.repository.UserRepository;
+import br.com.threadstech.stockfy.users.infrastructure.security.HmacSha256Hasher;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -47,7 +47,7 @@ public class UpdatePasswordUseCase {
 
 	private final PasswordEncoder passwordEncoder;
 
-	private final ResetCodeHasher resetCodeHasher;
+	private final HmacSha256Hasher resetCodeHasher;
 
 	private final StringRedisTemplate redisTemplate;
 

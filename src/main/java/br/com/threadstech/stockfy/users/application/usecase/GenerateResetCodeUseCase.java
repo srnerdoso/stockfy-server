@@ -20,10 +20,11 @@ import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+import br.com.threadstech.stockfy.users.application.config.PasswordResetProperties;
 import br.com.threadstech.stockfy.users.application.exception.UserNotFoundException;
-import br.com.threadstech.stockfy.users.application.port.ResetCodeHasher;
 import br.com.threadstech.stockfy.users.domain.model.User;
 import br.com.threadstech.stockfy.users.domain.repository.UserRepository;
+import br.com.threadstech.stockfy.users.infrastructure.security.HmacSha256Hasher;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.stereotype.Service;
@@ -37,7 +38,9 @@ public class GenerateResetCodeUseCase {
 
 	private final UserRepository userRepository;
 
-	private final ResetCodeHasher resetCodeHasher;
+	private final HmacSha256Hasher resetCodeHasher;
+
+	private final PasswordResetProperties passwordResetProperties;
 
 	@Transactional
 	public String execute(UUID userId) {
@@ -45,7 +48,7 @@ public class GenerateResetCodeUseCase {
 
 		String code = String.format("%06d", this.secureRandom.nextInt(1000000));
 		user.setResetPasswordCodeHash(this.resetCodeHasher.hash(code));
-		user.setResetPasswordExpiresAt(LocalDateTime.now().plusHours(24));
+		user.setResetPasswordExpiresAt(LocalDateTime.now().plus(this.passwordResetProperties.codeExpiration()));
 
 		this.userRepository.update(user);
 		return code;

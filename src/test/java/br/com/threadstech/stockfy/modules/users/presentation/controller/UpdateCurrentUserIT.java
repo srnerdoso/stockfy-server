@@ -48,12 +48,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Import({ ContainersConfiguration.class, RateLimitTestConfiguration.class })
 @Sql(scripts = "/sql/users/cleanup.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @Sql(scripts = "/sql/users/base-users.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
+@Sql(scripts = "/sql/users/endpoint-scenarios.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @Sql(scripts = "/sql/users/cleanup.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
 class UpdateCurrentUserIT {
 
 	private static final int GENERAL_RATE_LIMIT = 10;
 
-	private static final String OWNER_ID = "00000000-0000-0000-0000-000000000002";
+	private static final String OWNER_ID = "00000000-0000-0000-0000-000000000009";
 
 	private static final String OTHER_ID = "00000000-0000-0000-0000-000000000003";
 
@@ -61,7 +62,7 @@ class UpdateCurrentUserIT {
 
 	private static final String CURRENT_USER_ENDPOINT = "/api/v1/users/me";
 
-	private static final String BRUNO_USER_EMAIL = "bruno.user@example.com";
+	private static final String BRUNO_USER_EMAIL = "current.scenario@example.com";
 
 	private static final String INVALID_EMAIL_BODY = "{\"email\":\"invalid-email\"}";
 
@@ -136,7 +137,7 @@ class UpdateCurrentUserIT {
 			.andExpect(content().string(""));
 
 		assertThat(countUsers()).isEqualTo(usersBeforeRequest);
-		assertThat(userName(OWNER_ID)).isEqualTo("Bruno User");
+		assertThat(userName(OWNER_ID)).isEqualTo("Current Scenario User");
 		assertThat(userEmail(OWNER_ID)).isEqualTo("only.email@example.com");
 	}
 
@@ -180,7 +181,7 @@ class UpdateCurrentUserIT {
 		assertUserHasRoles(OWNER_ID, USER_ROLE);
 		assertThat(userStatus(OWNER_ID)).isEqualTo("ACTIVE");
 		assertThat(userIsActive(OWNER_ID)).isTrue();
-		assertThat(passwordHash(OWNER_ID)).isEqualTo("password-hash-2");
+		assertThat(passwordHash(OWNER_ID)).isEqualTo("password-hash-9");
 		assertThat(resetPasswordCodeHash(OWNER_ID)).isEqualTo("existing-reset-hash");
 		assertThat(resetPasswordExpiresAt(OWNER_ID).startsWith("2026-05-01")).isTrue();
 		assertThat(userCreatedAt(OWNER_ID)).isEqualTo(originalCreatedAt);
@@ -201,7 +202,7 @@ class UpdateCurrentUserIT {
 			.andExpect(content().string(""));
 
 		assertThat(countUsers()).isEqualTo(usersBeforeRequest);
-		assertThat(userName(OWNER_ID)).isEqualTo("Bruno User");
+		assertThat(userName(OWNER_ID)).isEqualTo("Current Scenario User");
 	}
 
 	@Test
@@ -335,7 +336,7 @@ class UpdateCurrentUserIT {
 	private boolean userIsActive(String id) {
 		Boolean active = this.jdbcTemplate.queryForObject("SELECT active FROM users WHERE id = ?::uuid", Boolean.class,
 				id);
-		return Boolean.TRUE.equals(active);
+		return active != null && active;
 	}
 
 	private String passwordHash(String id) {

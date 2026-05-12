@@ -51,6 +51,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Import({ ContainersConfiguration.class, RateLimitTestConfiguration.class })
 @Sql(scripts = "/sql/users/cleanup.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @Sql(scripts = "/sql/users/base-users.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
+@Sql(scripts = "/sql/users/endpoint-scenarios.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @Sql(scripts = "/sql/users/cleanup.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
 class DeleteUserByIdIT {
 
@@ -58,9 +59,9 @@ class DeleteUserByIdIT {
 
 	private static final String ADMIN_ID = "00000000-0000-0000-0000-000000000001";
 
-	private static final String OWNER_ID = "00000000-0000-0000-0000-000000000002";
+	private static final String OWNER_ID = "00000000-0000-0000-0000-000000000010";
 
-	private static final String OTHER_ID = "00000000-0000-0000-0000-000000000003";
+	private static final String OTHER_ID = "00000000-0000-0000-0000-000000000011";
 
 	private static final String ADMIN_ROLE = "ADMIN";
 
@@ -104,6 +105,7 @@ class DeleteUserByIdIT {
 		assertThat(countUsers()).isEqualTo(usersBeforeRequest);
 		assertThat(userExists(OWNER_ID)).isTrue();
 		assertThat(userIsActive(OWNER_ID)).isFalse();
+		assertThat(userEmail(OWNER_ID)).contains(OWNER_ID).isNotEqualTo("delete.scenario@example.com");
 	}
 
 	@Test
@@ -116,10 +118,11 @@ class DeleteUserByIdIT {
 		this.mockMvc.perform(delete(USER_BY_ID_ENDPOINT, OWNER_ID)).andExpect(status().isNoContent());
 
 		assertThatExceptionOfType(InvalidCredentialsException.class)
-			.isThrownBy(() -> this.loginUseCase.execute("bruno.user@example.com", "password123"));
+			.isThrownBy(() -> this.loginUseCase.execute("delete.scenario@example.com", "password123"));
 
 		assertThat(userExists(OWNER_ID)).isTrue();
 		assertThat(userIsActive(OWNER_ID)).isFalse();
+		assertThat(userEmail(OWNER_ID)).contains(OWNER_ID).isNotEqualTo("delete.scenario@example.com");
 	}
 
 	@Test
@@ -231,7 +234,11 @@ class DeleteUserByIdIT {
 	private boolean userIsActive(String id) {
 		Boolean active = this.jdbcTemplate.queryForObject("SELECT active FROM users WHERE id = ?::uuid", Boolean.class,
 				id);
-		return Boolean.TRUE.equals(active);
+		return active != null && active;
+	}
+
+	private String userEmail(String id) {
+		return this.jdbcTemplate.queryForObject("SELECT email FROM users WHERE id = ?::uuid", String.class, id);
 	}
 
 }

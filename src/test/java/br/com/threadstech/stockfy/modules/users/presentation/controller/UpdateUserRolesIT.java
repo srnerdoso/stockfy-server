@@ -64,6 +64,12 @@ class UpdateUserRolesIT {
 
 	private static final String ADD_ADMIN_ROLE_BODY = "{\"add\":[\"ADMIN\"]}";
 
+	private static final String USER_ROLE = "USER";
+
+	private static final String ADD_FIRST_FIELD = "add[0]";
+
+	private static final String INVALID_ROLE_MESSAGE = "O perfil informado é inválido.";
+
 	private static final String INVALID_UUID = "not-a-uuid";
 
 	@Autowired
@@ -97,7 +103,7 @@ class UpdateUserRolesIT {
 			.andExpect(content().string(""));
 
 		assertThat(countUsers()).isEqualTo(usersBeforeRequest);
-		assertUserHasRoles(USER_ID, ADMIN_ROLE, "USER");
+		assertUserHasRoles(USER_ID, ADMIN_ROLE, USER_ROLE);
 		assertUnchangedUserData(USER_ID, oldUser);
 	}
 
@@ -115,6 +121,20 @@ class UpdateUserRolesIT {
 			.andExpect(content().string(""));
 
 		assertUserHasRoles(USER_ID, ADMIN_ROLE);
+		assertUnchangedUserData(USER_ID, oldUser);
+	}
+
+	@Test
+	@DisplayName("Nao deve aplicar campos de usuario enviados junto com roles")
+	@WithMockUserId(id = ADMIN_ID, roles = ADMIN_ROLE)
+	void updateUserRoles_whenProtectedFieldsAreSent_thenChangesOnlyRoles() throws Exception {
+		UserSnapshot oldUser = userSnapshot(USER_ID);
+
+		this.mockMvc.perform(patch(USER_ROLES_ENDPOINT, USER_ID).contentType(MediaType.APPLICATION_JSON)
+			.content("{\"add\":[\"ADMIN\"],\"name\":\"Injected\",\"email\":\"injected@example.com\",\"active\":false}"))
+			.andExpect(status().isNoContent());
+
+		assertUserHasRoles(USER_ID, ADMIN_ROLE, USER_ROLE);
 		assertUnchangedUserData(USER_ID, oldUser);
 	}
 
@@ -185,7 +205,7 @@ class UpdateUserRolesIT {
 		ApiErrorResponseAssertions.assertBadRequestFieldValidation(
 				this.mockMvc.perform(patch(USER_ROLES_ENDPOINT, USER_ID).contentType(MediaType.APPLICATION_JSON)
 					.content("{\"add\":[\"INVALID\"]}")),
-				"add[0]", "O perfil informado é inválido.");
+				ADD_FIRST_FIELD, INVALID_ROLE_MESSAGE);
 
 		assertThat(userRoles(USER_ID)).isEqualTo(oldRoles);
 	}
@@ -199,7 +219,21 @@ class UpdateUserRolesIT {
 		ApiErrorResponseAssertions.assertBadRequestFieldValidation(
 				this.mockMvc.perform(patch(USER_ROLES_ENDPOINT, USER_ID).contentType(MediaType.APPLICATION_JSON)
 					.content("{\"add\":[null]}")),
-				"add[0]", "O perfil informado é inválido.");
+				ADD_FIRST_FIELD, INVALID_ROLE_MESSAGE);
+
+		assertThat(userRoles(USER_ID)).isEqualTo(oldRoles);
+	}
+
+	@Test
+	@DisplayName("Deve retornar 400 quando role estiver ausente no payload")
+	@WithMockUserId(id = ADMIN_ID, roles = ADMIN_ROLE)
+	void updateUserRoles_whenRoleIsBlank_thenReturns400AndDoesNotAlterData() throws Exception {
+		List<String> oldRoles = userRoles(USER_ID);
+
+		ApiErrorResponseAssertions.assertBadRequestFieldValidation(
+				this.mockMvc.perform(patch(USER_ROLES_ENDPOINT, USER_ID).contentType(MediaType.APPLICATION_JSON)
+					.content("{\"add\":[\"\"]}")),
+				ADD_FIRST_FIELD, INVALID_ROLE_MESSAGE);
 
 		assertThat(userRoles(USER_ID)).isEqualTo(oldRoles);
 	}
@@ -210,10 +244,11 @@ class UpdateUserRolesIT {
 	void updateUserRoles_whenRoleContainsSqlInjection_thenReturns400AndDoesNotAlterData() throws Exception {
 		List<String> oldRoles = userRoles(USER_ID);
 
-		ApiErrorResponseAssertions.assertBadRequestFieldValidation(
-				this.mockMvc.perform(patch(USER_ROLES_ENDPOINT, USER_ID).contentType(MediaType.APPLICATION_JSON)
-					.content("{\"add\":[\"ADMIN'); DROP TABLE users; --\"]}")),
-				"add[0]", "O perfil informado é inválido.");
+		ApiErrorResponseAssertions
+			.assertBadRequestFieldValidation(
+					this.mockMvc.perform(patch(USER_ROLES_ENDPOINT, USER_ID).contentType(MediaType.APPLICATION_JSON)
+						.content("{\"add\":[\"ADMIN'); DROP TABLE users; --\"]}")),
+					ADD_FIRST_FIELD, INVALID_ROLE_MESSAGE);
 
 		assertThat(userRoles(USER_ID)).isEqualTo(oldRoles);
 		assertThat(countUsers()).isEqualTo(4);
@@ -282,7 +317,7 @@ class UpdateUserRolesIT {
 			.andExpect(status().isNoContent())
 			.andExpect(content().string(""));
 
-		assertUserHasRoles(USER_ID, ADMIN_ROLE, "USER");
+		assertUserHasRoles(USER_ID, ADMIN_ROLE, USER_ROLE);
 	}
 
 	private void assertUserHasRoles(String userId, String... expectedRoles) {

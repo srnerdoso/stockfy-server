@@ -19,6 +19,7 @@ package br.com.threadstech.stockfy.modules.users.infrastructure.security;
 import java.util.Set;
 import java.util.UUID;
 
+import br.com.threadstech.stockfy.config.SecurityProperties;
 import br.com.threadstech.stockfy.users.domain.model.UserRole;
 import br.com.threadstech.stockfy.users.infrastructure.security.JwtAuthenticationFilter;
 import br.com.threadstech.stockfy.users.infrastructure.security.JwtService;
@@ -32,7 +33,6 @@ import org.springframework.mock.web.MockFilterChain;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
@@ -41,7 +41,11 @@ class JwtAuthenticationFilterTests {
 
 	private final TokenService tokenService = org.mockito.Mockito.mock(TokenService.class);
 
-	private final JwtService jwtService = new JwtService();
+	private final JwtService jwtService = new JwtService(new SecurityProperties(
+			new SecurityProperties.Jwt("9a4f2c8d3b7a1e5f8g9h0i1j2k3l4m5n6o7p8q9r0s1t2u3v4w5x6y7z8a9b0c1d",
+					java.time.Duration.ofMinutes(15), java.time.Duration.ofDays(7)),
+			new SecurityProperties.Cookies(java.time.Duration.ofMinutes(15), java.time.Duration.ofDays(7)),
+			new SecurityProperties.Hmac("test-hmac-secret")));
 
 	private final JwtAuthenticationFilter filter = new JwtAuthenticationFilter(this.jwtService, this.tokenService);
 
@@ -54,9 +58,6 @@ class JwtAuthenticationFilterTests {
 	@DisplayName("Deve criar uma authority para cada role presente no token")
 	void doFilterInternal_whenTokenHasMultipleRoles_thenCreatesAuthorityForEachRole() throws Exception {
 		UUID userId = UUID.randomUUID();
-		ReflectionTestUtils.setField(this.jwtService, "secret",
-				"9a4f2c8d3b7a1e5f8g9h0i1j2k3l4m5n6o7p8q9r0s1t2u3v4w5x6y7z8a9b0c1d");
-		ReflectionTestUtils.setField(this.jwtService, "expiration", 900000L);
 		String accessToken = this.jwtService.generateToken(userId, Set.of(UserRole.ADMIN, UserRole.USER));
 		String refreshToken = "refresh-token";
 		MockHttpServletRequest request = new MockHttpServletRequest();

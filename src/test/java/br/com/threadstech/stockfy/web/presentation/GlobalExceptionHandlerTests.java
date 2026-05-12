@@ -23,6 +23,7 @@ import java.util.Locale;
 import br.com.threadstech.stockfy.shared.exception.ApiErrorResponse;
 import br.com.threadstech.stockfy.shared.exception.ApiErrorResponse.FieldError;
 import br.com.threadstech.stockfy.shared.exception.GlobalExceptionHandler;
+import br.com.threadstech.stockfy.shared.exception.HttpMessageNotReadableErrorFactory;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -52,12 +53,13 @@ class GlobalExceptionHandlerTests {
 	private static final URI REQUEST_URI = URI.create("/api/v1/users");
 
 	@Test
-	@DisplayName("Deve traduzir mensagem de campo inválido usando MessageSource")
+	@DisplayName("Deve traduzir mensagem de campo invÃ¡lido usando MessageSource")
 	void handleMessageNotReadable_whenFieldIsInvalid_thenUsesMessageSource() {
 		StaticMessageSource messageSource = new StaticMessageSource();
 		messageSource.addMessage(VALIDATION_FEEDBACK_KEY, Locale.getDefault(), TRANSLATED_ERROR);
-		messageSource.addMessage("validation.field.not-null", Locale.getDefault(), TRANSLATED_FIELD_MESSAGE);
-		GlobalExceptionHandler handler = new GlobalExceptionHandler(messageSource);
+		messageSource.addMessage("validation.field.invalid", Locale.getDefault(), TRANSLATED_FIELD_MESSAGE);
+		GlobalExceptionHandler handler = new GlobalExceptionHandler(messageSource,
+				new HttpMessageNotReadableErrorFactory());
 		InvalidFormatException cause = InvalidFormatException.from(null, "Invalid value", "INVALID", String.class);
 		cause.prependPath(new Object(), ROLE_FIELD);
 		HttpMessageNotReadableException exception = new HttpMessageNotReadableException("Invalid JSON", cause,
@@ -70,13 +72,32 @@ class GlobalExceptionHandlerTests {
 	}
 
 	@Test
+	@DisplayName("Deve usar mensagem de body invalido quando JSON for ilegivel sem campo")
+	void handleMessageNotReadable_whenBodyIsUnreadable_thenUsesRequestBodyMessage() {
+		StaticMessageSource messageSource = new StaticMessageSource();
+		messageSource.addMessage(VALIDATION_FEEDBACK_KEY, Locale.getDefault(), TRANSLATED_ERROR);
+		messageSource.addMessage("validation.request-body.invalid", Locale.getDefault(),
+				"Body da requisicao invalido.");
+		GlobalExceptionHandler handler = new GlobalExceptionHandler(messageSource,
+				new HttpMessageNotReadableErrorFactory());
+		HttpMessageNotReadableException exception = new HttpMessageNotReadableException("Invalid JSON",
+				new MockHttpInputMessage(new byte[0]));
+		MockHttpServletRequest request = request();
+
+		ApiErrorResponse body = handler.handleMessageNotReadable(exception, request).getBody();
+
+		assertResponse(body, "request", "Body da requisicao invalido.");
+	}
+
+	@Test
 	@DisplayName("Deve usar mensagem generica quando parametro obrigatorio estiver ausente")
 	void handleMissingRequestParameter_whenTypeIsMissing_thenUsesGenericMessage() {
 		StaticMessageSource messageSource = new StaticMessageSource();
 		messageSource.addMessage(VALIDATION_FEEDBACK_KEY, Locale.getDefault(), TRANSLATED_ERROR);
 		messageSource.addMessage("validation.request-parameter.required", Locale.getDefault(),
 				"Parametro obrigatorio generico.");
-		GlobalExceptionHandler handler = new GlobalExceptionHandler(messageSource);
+		GlobalExceptionHandler handler = new GlobalExceptionHandler(messageSource,
+				new HttpMessageNotReadableErrorFactory());
 		MissingServletRequestParameterException exception = new MissingServletRequestParameterException(TYPE_FIELD,
 				"UserListType");
 		MockHttpServletRequest request = request();
@@ -93,7 +114,8 @@ class GlobalExceptionHandlerTests {
 		messageSource.addMessage(VALIDATION_FEEDBACK_KEY, Locale.getDefault(), TRANSLATED_ERROR);
 		messageSource.addMessage("validation.request-parameter.invalid", Locale.getDefault(),
 				"Parametro invalido generico.");
-		GlobalExceptionHandler handler = new GlobalExceptionHandler(messageSource);
+		GlobalExceptionHandler handler = new GlobalExceptionHandler(messageSource,
+				new HttpMessageNotReadableErrorFactory());
 		Method method = GlobalExceptionHandlerTests.class.getDeclaredMethod("methodWithTypeParameter", String.class);
 		MethodArgumentTypeMismatchException exception = new MethodArgumentTypeMismatchException("FULL", String.class,
 				TYPE_FIELD, new MethodParameter(method, 0), null);

@@ -52,6 +52,7 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -191,6 +192,10 @@ class AuthenticationTests {
 
 		assertThatExceptionOfType(InvalidRefreshTokenException.class)
 			.isThrownBy(() -> this.refreshTokenUseCase.execute("invalid_refresh_token"));
+		verify(this.tokenService, never()).consumeRefreshToken(any());
+		verify(this.userRepository, never()).findById(any());
+		verify(this.jwtService, never()).generateToken(any(), any());
+		verify(this.tokenService, never()).generateRefreshToken(any());
 	}
 
 	@Test
@@ -202,6 +207,8 @@ class AuthenticationTests {
 
 		assertThatExceptionOfType(InvalidRefreshTokenException.class)
 			.isThrownBy(() -> this.refreshTokenUseCase.execute(REFRESH_TOKEN));
+		verify(this.jwtService, never()).generateToken(any(), any());
+		verify(this.tokenService, never()).generateRefreshToken(any());
 	}
 
 	@Test

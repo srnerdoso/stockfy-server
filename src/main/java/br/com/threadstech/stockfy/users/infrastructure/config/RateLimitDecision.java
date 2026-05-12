@@ -14,10 +14,16 @@
  * limitations under the License.
  */
 
-package br.com.threadstech.stockfy.users.application.port;
+package br.com.threadstech.stockfy.users.infrastructure.config;
 
-public interface ResetCodeHasher {
+public record RateLimitDecision(boolean allowed, boolean writeBody) {
 
-	String hash(String rawCode);
+	public static RateLimitDecision allow() {
+		return new RateLimitDecision(true, true);
+	}
+
+	public static RateLimitDecision reject(boolean writeBody) {
+		return new RateLimitDecision(false, writeBody);
+	}
 
 }

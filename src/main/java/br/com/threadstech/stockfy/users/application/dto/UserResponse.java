@@ -29,7 +29,7 @@ public record UserResponse(UUID id, String name, String email, Set<UserRole> rol
 		LocalDateTime createdAt, UUID createdBy, LocalDateTime updatedAt, UUID updatedBy) {
 
 	public UserResponse {
-		roles = Set.copyOf(roles);
+		roles = (roles != null) ? Set.copyOf(roles) : Set.of();
 	}
 
 	@Override

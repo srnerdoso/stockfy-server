@@ -18,7 +18,6 @@ package br.com.threadstech.stockfy.users.application.usecase;
 
 import java.util.UUID;
 
-import br.com.threadstech.stockfy.users.application.exception.EmailAlreadyExistsException;
 import br.com.threadstech.stockfy.users.application.exception.UserNotFoundException;
 import br.com.threadstech.stockfy.users.domain.model.Email;
 import br.com.threadstech.stockfy.users.domain.model.User;
@@ -60,17 +59,7 @@ public class UpdateProfileUseCase {
 		}
 
 		Email newEmail = new Email(email);
-		if (newEmail.equals(user.getEmail())) {
-			return null;
-		}
-
-		this.userRepository.findByEmail(newEmail)
-			.filter((existingUser) -> !existingUser.getId().equals(user.getId()))
-			.ifPresent((existingUser) -> {
-				throw new EmailAlreadyExistsException();
-			});
-
-		return newEmail;
+		return newEmail.equals(user.getEmail()) ? null : newEmail;
 	}
 
 }

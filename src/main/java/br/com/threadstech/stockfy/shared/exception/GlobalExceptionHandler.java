@@ -18,7 +18,6 @@ package br.com.threadstech.stockfy.shared.exception;
 
 import java.net.URI;
 
-import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import lombok.RequiredArgsConstructor;
@@ -40,6 +39,8 @@ public class GlobalExceptionHandler {
 
 	private final MessageSource messageSource;
 
+	private final HttpMessageNotReadableErrorFactory httpMessageNotReadableErrorFactory;
+
 	@ExceptionHandler(MethodArgumentNotValidException.class)
 	public ResponseEntity<ApiErrorResponse> handleValidationExceptions(MethodArgumentNotValidException ex,
 			HttpServletRequest request) {
@@ -54,11 +55,10 @@ public class GlobalExceptionHandler {
 	@ExceptionHandler(HttpMessageNotReadableException.class)
 	public ResponseEntity<ApiErrorResponse> handleMessageNotReadable(HttpMessageNotReadableException ex,
 			HttpServletRequest request) {
-		String detail = this.messageSource.getMessage("feedback.error.validation", null,
-				LocaleContextHolder.getLocale());
-
-		ApiErrorResponse response = ApiErrorResponse.badRequest(detail, requestUri(request), extractFieldName(ex),
-				resolveRequiredFieldMessage());
+		HttpMessageNotReadableError error = this.httpMessageNotReadableErrorFactory.create(ex);
+		String message = this.messageSource.getMessage(error.messageKey(), null, LocaleContextHolder.getLocale());
+		ApiErrorResponse response = ApiErrorResponse.badRequest(validationDetail(), requestUri(request), error.field(),
+				message);
 		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
 	}
 
@@ -96,19 +96,6 @@ public class GlobalExceptionHandler {
 	private String resolveRequestParameterMessage(String field, boolean required) {
 		String key = required ? "validation.request-parameter.required" : "validation.request-parameter.invalid";
 		return this.messageSource.getMessage(key, null, LocaleContextHolder.getLocale());
-	}
-
-	private String resolveRequiredFieldMessage() {
-		return this.messageSource.getMessage("validation.field.not-null", null, LocaleContextHolder.getLocale());
-	}
-
-	private String extractFieldName(HttpMessageNotReadableException ex) {
-		if (ex.getCause() instanceof InvalidFormatException invalidFormatException
-				&& !invalidFormatException.getPath().isEmpty()) {
-			return invalidFormatException.getPath().getLast().getFieldName();
-		}
-
-		return "request";
 	}
 
 	private URI requestUri(HttpServletRequest request) {

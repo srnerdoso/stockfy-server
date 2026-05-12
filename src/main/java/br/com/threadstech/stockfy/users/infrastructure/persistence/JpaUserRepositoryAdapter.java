@@ -20,11 +20,13 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import br.com.threadstech.stockfy.users.application.exception.EmailAlreadyExistsException;
 import br.com.threadstech.stockfy.users.domain.model.Email;
 import br.com.threadstech.stockfy.users.domain.model.User;
 import br.com.threadstech.stockfy.users.domain.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
@@ -39,7 +41,12 @@ public class JpaUserRepositoryAdapter implements UserRepository {
 
 	@Override
 	public void save(User user) {
-		this.repository.save(this.mapper.toEntity(user));
+		try {
+			this.repository.saveAndFlush(this.mapper.toEntity(user));
+		}
+		catch (DataIntegrityViolationException ex) {
+			throw translateConstraintViolation(ex);
+		}
 	}
 
 	@Override
@@ -72,12 +79,27 @@ public class JpaUserRepositoryAdapter implements UserRepository {
 
 	@Override
 	public void update(User user) {
-		this.repository.save(this.mapper.toEntity(user));
+		try {
+			this.repository.saveAndFlush(this.mapper.toEntity(user));
+		}
+		catch (DataIntegrityViolationException ex) {
+			throw translateConstraintViolation(ex);
+		}
 	}
 
 	@Override
 	public void deleteById(UUID id) {
 		this.repository.deleteById(id);
+		this.repository.flush();
+	}
+
+	private RuntimeException translateConstraintViolation(DataIntegrityViolationException ex) {
+		String message = String.valueOf(ex.getMostSpecificCause().getMessage());
+		if (message.contains("users_email_key") || message.contains("uk_users_email")
+				|| message.contains("users_email_unique")) {
+			return new EmailAlreadyExistsException();
+		}
+		return ex;
 	}
 
 }

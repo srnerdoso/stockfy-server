@@ -18,8 +18,8 @@ package br.com.threadstech.stockfy.users.infrastructure.security;
 
 import java.io.IOException;
 
+import br.com.threadstech.stockfy.users.infrastructure.config.RateLimitDecision;
 import br.com.threadstech.stockfy.users.infrastructure.config.UserRateLimitConfig;
-import io.github.bucket4j.Bucket;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -40,33 +40,17 @@ public class RateLimitFilter extends OncePerRequestFilter {
 	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
 			throws ServletException, IOException {
 
-		String path = request.getRequestURI();
-		String clientIp = request.getRemoteAddr();
-
-		Bucket bucket;
-		if ("POST".equals(request.getMethod()) && path.equals("/api/v1/auth/sessions")) {
-			bucket = this.rateLimitConfig.resolveLoginBucket(clientIp);
-		}
-		else if (path.equals("/api/v1/users/password")) {
-			bucket = this.rateLimitConfig.resolvePasswordBucket(clientIp);
-		}
-		else {
-			bucket = this.rateLimitConfig.resolveGeneralBucket(clientIp);
-		}
-
-		if (bucket.tryConsume(1)) {
+		RateLimitDecision decision = this.rateLimitConfig.consume(request.getMethod(), request.getRequestURI(),
+				request.getRemoteAddr());
+		if (decision.allowed()) {
 			filterChain.doFilter(request, response);
+			return;
 		}
-		else {
-			response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
-			if (!isLogoutRequest(request)) {
-				response.getWriter().write("Too many requests");
-			}
+		response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
+		response.setContentType("text/plain;charset=UTF-8");
+		if (decision.writeBody()) {
+			response.getWriter().write("Too many requests");
 		}
-	}
-
-	private boolean isLogoutRequest(HttpServletRequest request) {
-		return "DELETE".equals(request.getMethod()) && "/api/v1/auth/sessions/current".equals(request.getRequestURI());
 	}
 
 }

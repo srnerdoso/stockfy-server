@@ -57,7 +57,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @AllArgsConstructor
 @NoArgsConstructor
 @Audited
-@SQLDelete(sql = "UPDATE users SET active = false WHERE id = ?")
+@SQLDelete(sql = "UPDATE users SET active = false, email = id::text || '@deleted.local' WHERE id = ?")
 @SQLRestriction("active = true")
 @EntityListeners(AuditingEntityListener.class)
 public class UserJpaEntity {
@@ -88,7 +88,7 @@ public class UserJpaEntity {
 	@Column(nullable = false)
 	private boolean active;
 
-	@Column(name = "reset_password_code_hash")
+	@Column(name = "reset_password_code_hash", unique = true)
 	private String resetPasswordCodeHash;
 
 	@Column(name = "reset_password_expires_at")

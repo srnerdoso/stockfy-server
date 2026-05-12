@@ -33,10 +33,12 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 @SpringBootTest
 @Import(ContainersConfiguration.class)
@@ -87,6 +89,38 @@ class UserRepositoryIT {
 		assertThat(persisted.isPresent()).isTrue();
 		assertThat(persisted.get().getRoles()).isEqualTo(Set.of(UserRole.ADMIN, UserRole.USER));
 		assertThat(persistedRoles).isEqualTo(List.of("ADMIN", "USER"));
+	}
+
+	@Test
+	@DisplayName("Deve anonimizar email quando usuario for deletado")
+	void deleteById_whenCalled_thenAnonymizesEmailAndSoftDeletesUser() {
+		User user = createUser("Delete User", "delete-user@example.com");
+		this.userRepository.save(user);
+
+		this.userRepository.deleteById(user.getId());
+
+		String email = this.jdbcTemplate.queryForObject("SELECT email FROM users WHERE id = ?::uuid", String.class,
+				user.getId());
+		Boolean active = this.jdbcTemplate.queryForObject("SELECT active FROM users WHERE id = ?::uuid", Boolean.class,
+				user.getId());
+		assertThat(email).isNotEqualTo("delete-user@example.com");
+		assertThat(email).contains(user.getId().toString());
+		assertThat(active).isFalse();
+	}
+
+	@Test
+	@DisplayName("Deve manter reset_password_code_hash unico")
+	void updateResetPasswordCodeHash_whenDuplicated_thenThrowsDataIntegrityViolationException() {
+		User firstUser = createUser("First User", "first-user@example.com");
+		User secondUser = createUser("Second User", "second-user@example.com");
+		this.userRepository.save(firstUser);
+		this.userRepository.save(secondUser);
+
+		this.jdbcTemplate.update("UPDATE users SET reset_password_code_hash = ? WHERE id = ?::uuid", "same-hash-value",
+				firstUser.getId());
+		assertThatExceptionOfType(DataIntegrityViolationException.class).isThrownBy(
+				() -> this.jdbcTemplate.update("UPDATE users SET reset_password_code_hash = ? WHERE id = ?::uuid",
+						"same-hash-value", secondUser.getId()));
 	}
 
 	private User createUser(String name, String email) {

@@ -35,6 +35,7 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
@@ -60,7 +61,6 @@ class UpdateProfileUseCaseTests {
 		UUID userId = UUID.randomUUID();
 		User user = user(userId, OLD_NAME, OLD_EMAIL);
 		given(this.userRepository.findById(userId)).willReturn(Optional.of(user));
-		given(this.userRepository.findByEmail(new Email(NEW_EMAIL))).willReturn(Optional.empty());
 
 		this.useCase.execute(userId, NEW_NAME, NEW_EMAIL);
 
@@ -91,7 +91,6 @@ class UpdateProfileUseCaseTests {
 		UUID userId = UUID.randomUUID();
 		User user = user(userId, OLD_NAME, OLD_EMAIL);
 		given(this.userRepository.findById(userId)).willReturn(Optional.of(user));
-		given(this.userRepository.findByEmail(new Email(NEW_EMAIL))).willReturn(Optional.empty());
 
 		this.useCase.execute(userId, null, NEW_EMAIL);
 
@@ -119,17 +118,27 @@ class UpdateProfileUseCaseTests {
 	@DisplayName("Deve lancar conflito quando email pertencer a outro usuario")
 	void execute_whenEmailBelongsToAnotherUser_thenThrowsEmailAlreadyExistsException() {
 		UUID userId = UUID.randomUUID();
-		UUID anotherUserId = UUID.randomUUID();
 		User user = user(userId, OLD_NAME, OLD_EMAIL);
-		User anotherUser = user(anotherUserId, "Another", TAKEN_EMAIL);
 		given(this.userRepository.findById(userId)).willReturn(Optional.of(user));
-		given(this.userRepository.findByEmail(new Email(TAKEN_EMAIL))).willReturn(Optional.of(anotherUser));
+		willThrow(new EmailAlreadyExistsException()).given(this.userRepository).update(user);
 
 		assertThatExceptionOfType(EmailAlreadyExistsException.class)
 			.isThrownBy(() -> this.useCase.execute(userId, NEW_NAME, TAKEN_EMAIL));
-		assertThat(user.getName()).isEqualTo(OLD_NAME);
-		assertThat(user.getEmail().value()).isEqualTo(OLD_EMAIL);
-		verify(this.userRepository, never()).update(user);
+		verify(this.userRepository, never()).findByEmail(new Email(TAKEN_EMAIL));
+		verify(this.userRepository).update(user);
+	}
+
+	@Test
+	@DisplayName("Nao deve consultar email antes de atualizar perfil")
+	void execute_whenEmailChanges_thenDoesNotPreQueryEmail() {
+		UUID userId = UUID.randomUUID();
+		User user = user(userId, OLD_NAME, OLD_EMAIL);
+		given(this.userRepository.findById(userId)).willReturn(Optional.of(user));
+
+		this.useCase.execute(userId, NEW_NAME, NEW_EMAIL);
+
+		verify(this.userRepository, never()).findByEmail(new Email(NEW_EMAIL));
+		verify(this.userRepository).update(user);
 	}
 
 	@Test

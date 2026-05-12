@@ -23,6 +23,7 @@ import br.com.threadstech.stockfy.MutableTimeMeter;
 import br.com.threadstech.stockfy.RateLimitBucketCleaner;
 import br.com.threadstech.stockfy.RateLimitTestConfiguration;
 import br.com.threadstech.stockfy.users.infrastructure.config.UserRateLimitConfig;
+import br.com.threadstech.stockfy.users.infrastructure.security.HmacSha256Hasher;
 import br.com.threadstech.stockfy.web.presentation.ApiErrorResponseAssertions;
 import jakarta.servlet.http.Cookie;
 import org.hamcrest.MatcherAssert;
@@ -39,6 +40,8 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
@@ -58,6 +61,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Import({ ContainersConfiguration.class, RateLimitTestConfiguration.class })
 @Sql(scripts = "/sql/users/cleanup.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @Sql(scripts = "/sql/users/base-users.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
+@Sql(scripts = "/sql/users/login-scenarios.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @Sql(scripts = "/sql/users/cleanup.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
 class LoginUserIT {
 
@@ -73,9 +77,9 @@ class LoginUserIT {
 
 	private static final String LOGIN_ATTEMPTS_KEY_PREFIX = "login_attempts:";
 
-	private static final String USER_ID = "00000000-0000-0000-0000-000000000002";
+	private static final String USER_ID = "00000000-0000-0000-0000-000000000007";
 
-	private static final String USER_EMAIL = "bruno.user@example.com";
+	private static final String USER_EMAIL = "login.scenario@example.com";
 
 	private static final String RAW_PASSWORD = "password123";
 
@@ -86,6 +90,11 @@ class LoginUserIT {
 	private static final String ACTIVE_STATUS = "ACTIVE";
 
 	private static final String EMAIL_FIELD = "email";
+
+	@DynamicPropertySource
+	static void registerLegacyResetHashSecret(DynamicPropertyRegistry registry) {
+		registry.add("stockfy.users.reset-code-hash-secret", () -> "test-reset-code-hash-secret");
+	}
 
 	@Autowired
 	private MockMvc mockMvc;
@@ -104,6 +113,9 @@ class LoginUserIT {
 
 	@Autowired
 	private MutableTimeMeter rateLimitTimeMeter;
+
+	@Autowired
+	private HmacSha256Hasher hmacSha256Hasher;
 
 	@BeforeEach
 	void setPassword() {
@@ -136,7 +148,7 @@ class LoginUserIT {
 		MatcherAssert.assertThat(result.getResponse().getHeaders("Set-Cookie").get(1), containsString("Secure"));
 		Cookie refreshToken = result.getResponse().getCookie(REFRESH_TOKEN_COOKIE);
 		assertThat(refreshToken).isNotNull();
-		assertThat(Boolean.TRUE.equals(this.redisTemplate.hasKey(refreshTokenKey(refreshToken.getValue())))).isTrue();
+		assertThat(this.redisTemplate.hasKey(refreshTokenKey(refreshToken.getValue()))).isTrue();
 		assertThat(this.redisTemplate.opsForValue().get(loginAttemptsKey(USER_EMAIL))).isNull();
 	}
 
@@ -396,7 +408,7 @@ class LoginUserIT {
 	}
 
 	private String refreshTokenKey(String token) {
-		return REFRESH_TOKEN_COOKIE + ":" + token;
+		return REFRESH_TOKEN_COOKIE + ":" + this.hmacSha256Hasher.hash(token);
 	}
 
 	private long countUsers() {

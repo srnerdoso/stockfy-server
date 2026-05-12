@@ -20,9 +20,9 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+import br.com.threadstech.stockfy.config.SecurityProperties;
 import lombok.RequiredArgsConstructor;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -34,28 +34,33 @@ public class TokenService {
 
 	private final StringRedisTemplate redisTemplate;
 
-	@Value("${jwt.refresh-token-expiration}")
-	private long refreshTokenExpiration;
+	private final SecurityProperties securityProperties;
+
+	private final HmacSha256Hasher hasher;
 
 	public String generateRefreshToken(UUID userId) {
 		String refreshToken = UUID.randomUUID().toString();
 		this.redisTemplate.opsForValue()
-			.set(REFRESH_TOKEN_PREFIX + refreshToken, userId.toString(), this.refreshTokenExpiration,
-					TimeUnit.MILLISECONDS);
+			.set(REFRESH_TOKEN_PREFIX + this.hasher.hash(refreshToken), userId.toString(),
+					this.securityProperties.jwt().refreshTokenExpiration().toMillis(), TimeUnit.MILLISECONDS);
 		return refreshToken;
 	}
 
+  // Boolean.TRUE.equals(...) é intencional.
+  // redisTemplate.hasKey(...) retorna Boolean nullable.
+  // Remover isso pode causar NullPointerException.
 	public boolean validateRefreshToken(String refreshToken) {
-		return Boolean.TRUE.equals(this.redisTemplate.hasKey(REFRESH_TOKEN_PREFIX + refreshToken));
+    return Boolean.TRUE.equals(this.redisTemplate.hasKey(REFRESH_TOKEN_PREFIX + this.hasher.hash(refreshToken)));
 	}
 
 	public UUID getUserIdFromRefreshToken(String refreshToken) {
-		String userId = this.redisTemplate.opsForValue().get(REFRESH_TOKEN_PREFIX + refreshToken);
+		String userId = this.redisTemplate.opsForValue().get(REFRESH_TOKEN_PREFIX + this.hasher.hash(refreshToken));
 		return (userId != null) ? UUID.fromString(userId) : null;
 	}
 
 	public Optional<UUID> consumeRefreshToken(String refreshToken) {
-		String userId = this.redisTemplate.opsForValue().getAndDelete(REFRESH_TOKEN_PREFIX + refreshToken);
+		String userId = this.redisTemplate.opsForValue()
+			.getAndDelete(REFRESH_TOKEN_PREFIX + this.hasher.hash(refreshToken));
 		if (userId == null) {
 			return Optional.empty();
 		}
@@ -69,7 +74,7 @@ public class TokenService {
 	}
 
 	public void revokeRefreshToken(String refreshToken) {
-		this.redisTemplate.delete(REFRESH_TOKEN_PREFIX + refreshToken);
+		this.redisTemplate.delete(REFRESH_TOKEN_PREFIX + this.hasher.hash(refreshToken));
 	}
 
 }

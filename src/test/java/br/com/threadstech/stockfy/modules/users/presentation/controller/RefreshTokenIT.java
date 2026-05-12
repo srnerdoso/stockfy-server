@@ -27,6 +27,7 @@ import br.com.threadstech.stockfy.MutableTimeMeter;
 import br.com.threadstech.stockfy.RateLimitBucketCleaner;
 import br.com.threadstech.stockfy.RateLimitTestConfiguration;
 import br.com.threadstech.stockfy.users.infrastructure.config.UserRateLimitConfig;
+import br.com.threadstech.stockfy.users.infrastructure.security.HmacSha256Hasher;
 import br.com.threadstech.stockfy.users.infrastructure.security.TokenService;
 import jakarta.servlet.http.Cookie;
 import org.hamcrest.MatcherAssert;
@@ -40,6 +41,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -59,10 +62,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Import({ ContainersConfiguration.class, RateLimitTestConfiguration.class })
 @Sql(scripts = "/sql/users/cleanup.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @Sql(scripts = "/sql/users/base-users.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
+@Sql(scripts = "/sql/users/refresh-token-scenarios.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @Sql(scripts = "/sql/users/cleanup.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
 class RefreshTokenIT {
 
-	private static final int GENERAL_RATE_LIMIT = 10;
+	private static final int REFRESH_RATE_LIMIT = 5;
+
+	private static final int REFRESH_BLOCK_LIMIT = 15;
 
 	private static final String REFRESH_ENDPOINT = "/api/v1/auth/sessions/refresh";
 
@@ -77,6 +83,15 @@ class RefreshTokenIT {
 	private static final String MALFORMED_REDIS_VALUE = "not-a-uuid";
 
 	private static final UUID USER_ID = UUID.fromString("00000000-0000-0000-0000-000000000002");
+
+	private static final UUID LOCKED_USER_ID = UUID.fromString("00000000-0000-0000-0000-000000000005");
+
+	private static final UUID INACTIVE_USER_ID = UUID.fromString("00000000-0000-0000-0000-000000000006");
+
+	@DynamicPropertySource
+	static void registerLegacyResetHashSecret(DynamicPropertyRegistry registry) {
+		registry.add("stockfy.users.reset-code-hash-secret", () -> "test-reset-code-hash-secret");
+	}
 
 	@Autowired
 	private MockMvc mockMvc;
@@ -95,6 +110,9 @@ class RefreshTokenIT {
 
 	@Autowired
 	private MutableTimeMeter rateLimitTimeMeter;
+
+	@Autowired
+	private HmacSha256Hasher hmacSha256Hasher;
 
 	@AfterEach
 	void tearDown() {
@@ -239,10 +257,9 @@ class RefreshTokenIT {
 	@Test
 	@DisplayName("Deve retornar 401 sem corpo quando usuario estiver bloqueado")
 	void refreshToken_whenUserIsLocked_thenReturns401WithoutBody() throws Exception {
-		this.jdbcTemplate.update("UPDATE users SET status = 'LOCKED' WHERE id = ?::uuid", USER_ID);
 		long usersBeforeRequest = countUsers();
 		UserSnapshot userBeforeRequest = userSnapshot();
-		String refreshToken = this.tokenService.generateRefreshToken(USER_ID);
+		String refreshToken = this.tokenService.generateRefreshToken(LOCKED_USER_ID);
 
 		MvcResult result = this.mockMvc.perform(refreshRequest(refreshToken))
 			.andExpect(status().isUnauthorized())
@@ -259,10 +276,9 @@ class RefreshTokenIT {
 	@Test
 	@DisplayName("Deve retornar 401 sem corpo quando usuario estiver inativo")
 	void refreshToken_whenUserIsInactive_thenReturns401WithoutBody() throws Exception {
-		this.jdbcTemplate.update("UPDATE users SET active = FALSE WHERE id = ?::uuid", USER_ID);
 		long usersBeforeRequest = countUsers();
 		UserSnapshot userBeforeRequest = userSnapshot();
-		String refreshToken = this.tokenService.generateRefreshToken(USER_ID);
+		String refreshToken = this.tokenService.generateRefreshToken(INACTIVE_USER_ID);
 
 		MvcResult result = this.mockMvc.perform(refreshRequest(refreshToken))
 			.andExpect(status().isUnauthorized())
@@ -277,12 +293,12 @@ class RefreshTokenIT {
 	}
 
 	@Test
-	@DisplayName("Deve retornar 429 quando exceder limite geral de requisicoes")
-	void refreshToken_whenGeneralLimitExceeded_thenReturns429() throws Exception {
+	@DisplayName("Deve retornar 429 na sexta requisicao de refresh token no mesmo minuto")
+	void refreshToken_whenRefreshLimitExceeded_thenReturns429() throws Exception {
 		long usersBeforeRequest = countUsers();
 		UserSnapshot userBeforeRequest = userSnapshot();
 
-		for (int i = 0; i < GENERAL_RATE_LIMIT; i++) {
+		for (int i = 0; i < REFRESH_RATE_LIMIT; i++) {
 			this.mockMvc.perform(authenticatedRefreshRequest(this.tokenService.generateRefreshToken(USER_ID)))
 				.andExpect(status().isOk());
 		}
@@ -295,12 +311,29 @@ class RefreshTokenIT {
 	}
 
 	@Test
+	@DisplayName("Deve bloquear refresh token apos quinze tentativas")
+	void refreshToken_whenRefreshBlockLimitExceeded_thenReturns429() throws Exception {
+		long usersBeforeRequest = countUsers();
+		UserSnapshot userBeforeRequest = userSnapshot();
+
+		for (int i = 0; i < REFRESH_BLOCK_LIMIT; i++) {
+			this.mockMvc.perform(authenticatedRefreshRequest(this.tokenService.generateRefreshToken(USER_ID)))
+				.andExpect((i < REFRESH_RATE_LIMIT) ? status().isOk() : status().isTooManyRequests());
+		}
+
+		this.mockMvc.perform(authenticatedRefreshRequest(this.tokenService.generateRefreshToken(USER_ID)))
+			.andExpect(status().isTooManyRequests());
+
+		assertUserDataUnchanged(usersBeforeRequest, userBeforeRequest);
+	}
+
+	@Test
 	@DisplayName("Deve permitir refresh quando a janela de rate limit expirar")
 	void refreshToken_whenRateLimitWindowExpires_thenProcessesRequest() throws Exception {
 		long usersBeforeRequest = countUsers();
 		UserSnapshot userBeforeRequest = userSnapshot();
 
-		for (int i = 0; i < GENERAL_RATE_LIMIT; i++) {
+		for (int i = 0; i < REFRESH_RATE_LIMIT; i++) {
 			this.mockMvc.perform(authenticatedRefreshRequest(this.tokenService.generateRefreshToken(USER_ID)))
 				.andExpect(status().isOk());
 		}
@@ -372,7 +405,7 @@ class RefreshTokenIT {
 	}
 
 	private String refreshTokenKey(String refreshToken) {
-		return REFRESH_TOKEN_COOKIE + ":" + refreshToken;
+		return REFRESH_TOKEN_COOKIE + ":" + this.hmacSha256Hasher.hash(refreshToken);
 	}
 
 	private record UserSnapshot(Map<String, Object> fields, List<String> roles) {

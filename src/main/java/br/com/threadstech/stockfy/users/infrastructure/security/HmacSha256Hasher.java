@@ -24,32 +24,31 @@ import java.util.HexFormat;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
-import br.com.threadstech.stockfy.users.application.port.ResetCodeHasher;
+import br.com.threadstech.stockfy.config.SecurityProperties;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Component
-public class HmacSha256ResetCodeHasher implements ResetCodeHasher {
+public class HmacSha256Hasher {
 
 	private static final String ALGORITHM = "HmacSHA256";
 
-	private final String secret;
+	private final SecurityProperties securityProperties;
 
-	public HmacSha256ResetCodeHasher(@Value("${stockfy.users.reset-code-hash-secret}") String secret) {
-		this.secret = secret;
+	public HmacSha256Hasher(SecurityProperties securityProperties) {
+		this.securityProperties = securityProperties;
 	}
 
-	@Override
-	public String hash(String rawCode) {
+	public String hash(String rawValue) {
 		try {
 			Mac mac = Mac.getInstance(ALGORITHM);
-			SecretKeySpec keySpec = new SecretKeySpec(this.secret.getBytes(StandardCharsets.UTF_8), ALGORITHM);
+			SecretKeySpec keySpec = new SecretKeySpec(
+					this.securityProperties.hmac().secret().getBytes(StandardCharsets.UTF_8), ALGORITHM);
 			mac.init(keySpec);
-			return HexFormat.of().formatHex(mac.doFinal(rawCode.getBytes(StandardCharsets.UTF_8)));
+			return HexFormat.of().formatHex(mac.doFinal(rawValue.getBytes(StandardCharsets.UTF_8)));
 		}
 		catch (NoSuchAlgorithmException | InvalidKeyException ex) {
-			throw new IllegalStateException("Reset code hash cannot be generated", ex);
+			throw new IllegalStateException("HMAC SHA-256 hash cannot be generated", ex);
 		}
 	}
 

@@ -25,7 +25,6 @@ import java.util.UUID;
 import br.com.threadstech.stockfy.users.application.exception.CurrentPasswordInvalidException;
 import br.com.threadstech.stockfy.users.application.exception.InvalidPasswordResetCodeException;
 import br.com.threadstech.stockfy.users.application.exception.PasswordMismatchException;
-import br.com.threadstech.stockfy.users.application.port.ResetCodeHasher;
 import br.com.threadstech.stockfy.users.application.usecase.UpdatePasswordUseCase;
 import br.com.threadstech.stockfy.users.domain.model.Email;
 import br.com.threadstech.stockfy.users.domain.model.Password;
@@ -33,6 +32,7 @@ import br.com.threadstech.stockfy.users.domain.model.User;
 import br.com.threadstech.stockfy.users.domain.model.UserRole;
 import br.com.threadstech.stockfy.users.domain.model.UserStatus;
 import br.com.threadstech.stockfy.users.domain.repository.UserRepository;
+import br.com.threadstech.stockfy.users.infrastructure.security.HmacSha256Hasher;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -80,7 +80,7 @@ class UpdatePasswordUseCaseTests {
 
 	private final PasswordEncoder passwordEncoder = org.mockito.Mockito.mock(PasswordEncoder.class);
 
-	private final ResetCodeHasher resetCodeHasher = org.mockito.Mockito.mock(ResetCodeHasher.class);
+	private final HmacSha256Hasher resetCodeHasher = org.mockito.Mockito.mock(HmacSha256Hasher.class);
 
 	private final StringRedisTemplate redisTemplate = org.mockito.Mockito.mock(StringRedisTemplate.class);
 
