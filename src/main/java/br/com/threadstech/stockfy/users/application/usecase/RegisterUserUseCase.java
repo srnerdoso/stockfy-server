@@ -20,7 +20,6 @@ import java.util.Set;
 import java.util.UUID;
 
 import br.com.threadstech.stockfy.users.application.dto.RegisterUserRequest;
-import br.com.threadstech.stockfy.users.application.exception.EmailAlreadyExistsException;
 import br.com.threadstech.stockfy.users.application.exception.PasswordMismatchException;
 import br.com.threadstech.stockfy.users.domain.model.Email;
 import br.com.threadstech.stockfy.users.domain.model.Password;
@@ -30,6 +29,7 @@ import lombok.RequiredArgsConstructor;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -39,19 +39,16 @@ public class RegisterUserUseCase {
 
 	private final PasswordEncoder passwordEncoder;
 
+	@Transactional
 	public void execute(RegisterUserRequest request) {
 		if (request.confirmPassword() != null && !request.password().equals(request.confirmPassword())) {
 			throw new PasswordMismatchException();
-		}
-		Email userEmail = new Email(request.email());
-		if (this.userRepository.findByEmail(userEmail).isPresent()) {
-			throw new EmailAlreadyExistsException();
 		}
 
 		User user = User.builder()
 			.id(UUID.randomUUID())
 			.name(request.name())
-			.email(userEmail)
+			.email(new Email(request.email()))
 			.password(new Password(this.passwordEncoder.encode(request.password())))
 			.roles(Set.of(request.role()))
 			.build();

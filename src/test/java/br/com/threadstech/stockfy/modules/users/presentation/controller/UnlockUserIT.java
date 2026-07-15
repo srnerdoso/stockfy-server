@@ -47,6 +47,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Import({ ContainersConfiguration.class, RateLimitTestConfiguration.class })
 @Sql(scripts = "/sql/users/cleanup.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @Sql(scripts = "/sql/users/base-users.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
+@Sql(scripts = "/sql/users/login-scenarios.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @Sql(scripts = "/sql/users/cleanup.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
 class UnlockUserIT {
 
@@ -56,9 +57,9 @@ class UnlockUserIT {
 
 	private static final String OWNER_ID = "00000000-0000-0000-0000-000000000002";
 
-	private static final String LOCKED_ID = "00000000-0000-0000-0000-000000000004";
+	private static final String LOCKED_ID = "00000000-0000-0000-0000-000000000008";
 
-	private static final String LOCKED_EMAIL = "bob.filter@example.com";
+	private static final String LOCKED_EMAIL = "locked.unlock@example.com";
 
 	private static final String LOGIN_ATTEMPTS_KEY = "login_attempts:";
 
@@ -94,7 +95,6 @@ class UnlockUserIT {
 	@WithMockUserId(id = ADMIN_ID, roles = ADMIN_ROLE)
 	void unlockUser_whenAdminUnlocksLockedUser_thenReturns204PersistsStatusAndClearsAttempts() throws Exception {
 		long usersBeforeRequest = countUsers();
-		lockUser(LOCKED_ID);
 		this.redisTemplate.opsForValue().set(LOGIN_ATTEMPTS_KEY + LOCKED_EMAIL, "15");
 
 		this.mockMvc.perform(patch(UNLOCK_USER_ENDPOINT, LOCKED_ID))
@@ -177,8 +177,6 @@ class UnlockUserIT {
 	@DisplayName("Deve permitir desbloqueio quando a janela de rate limit expirar")
 	@WithMockUserId(id = ADMIN_ID, roles = ADMIN_ROLE)
 	void unlockUser_whenRateLimitWindowExpires_thenProcessesRequest() throws Exception {
-		lockUser(LOCKED_ID);
-
 		for (int i = 0; i < GENERAL_RATE_LIMIT; i++) {
 			this.mockMvc.perform(patch(UNLOCK_USER_ENDPOINT, INVALID_UUID));
 		}
@@ -197,10 +195,6 @@ class UnlockUserIT {
 	private long countUsers() {
 		Long count = this.jdbcTemplate.queryForObject("SELECT COUNT(*) FROM users", Long.class);
 		return (count != null) ? count : 0;
-	}
-
-	private void lockUser(String id) {
-		this.jdbcTemplate.update("UPDATE users SET status = 'LOCKED' WHERE id = ?::uuid", id);
 	}
 
 	private String userStatus(String id) {

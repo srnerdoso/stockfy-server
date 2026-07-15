@@ -30,6 +30,7 @@ import lombok.RequiredArgsConstructor;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -51,6 +52,7 @@ public class LoginUseCase {
 
 	private static final String FAILED_ATTEMPTS_KEY = "login_attempts:";
 
+	@Transactional(noRollbackFor = InvalidCredentialsException.class)
 	public AuthResponse execute(String email, String password) {
 		Email userEmail = parseEmail(email);
 		User user = this.userRepository.findByEmail(userEmail).orElseThrow(InvalidCredentialsException::new);
@@ -64,7 +66,7 @@ public class LoginUseCase {
 			throw new InvalidCredentialsException();
 		}
 
-		resetFailedAttempts(email);
+		resetFailedAttempts(userEmail);
 
 		String accessToken = this.jwtService.generateToken(user.getId(), user.getRoles());
 		String refreshToken = this.tokenService.generateRefreshToken(user.getId());
@@ -85,8 +87,8 @@ public class LoginUseCase {
 		}
 	}
 
-	private void resetFailedAttempts(String email) {
-		this.redisTemplate.delete(FAILED_ATTEMPTS_KEY + email);
+	private void resetFailedAttempts(Email email) {
+		this.redisTemplate.delete(FAILED_ATTEMPTS_KEY + email.value());
 	}
 
 	private Email parseEmail(String email) {

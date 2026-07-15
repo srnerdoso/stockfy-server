@@ -28,6 +28,7 @@ import br.com.threadstech.stockfy.users.infrastructure.security.TokenService;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -39,6 +40,7 @@ public class RefreshTokenUseCase {
 
 	private final UserRepository userRepository;
 
+	@Transactional(readOnly = true)
 	public AuthResponse execute(String refreshToken) {
 		if (refreshToken == null || refreshToken.isBlank() || !this.tokenService.validateRefreshToken(refreshToken)) {
 			throw new InvalidRefreshTokenException();

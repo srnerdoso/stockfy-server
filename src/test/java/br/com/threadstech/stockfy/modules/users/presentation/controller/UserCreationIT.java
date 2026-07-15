@@ -44,6 +44,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
@@ -89,11 +90,32 @@ class UserCreationIT {
 
 	private static final String NAME_FIELD = "name";
 
+	private static final String SELECT_RESET_PASSWORD_HASH_BY_EMAIL = """
+			SELECT reset_password_code_hash
+			  FROM users
+			 WHERE email = ?
+			""";
+
+	private static final String SELECT_CREATED_BY_BY_EMAIL = """
+			SELECT created_by::text
+			  FROM users
+			 WHERE email = ?
+			""";
+
+	private static final String SELECT_UPDATED_BY_BY_EMAIL = """
+			SELECT updated_by::text
+			  FROM users
+			 WHERE email = ?
+			""";
+
 	@Autowired
 	private MockMvc mockMvc;
 
 	@Autowired
 	private UserRepository userRepository;
+
+	@Autowired
+	private JdbcTemplate jdbcTemplate;
 
 	@Autowired
 	private UserRateLimitConfig rateLimitConfig;
@@ -242,7 +264,7 @@ class UserCreationIT {
 		ApiErrorResponseAssertions.assertBadRequestFieldValidation(registerUserRequest(jsonMissing), "role",
 				"O perfil do usuário é obrigatório.");
 		ApiErrorResponseAssertions.assertBadRequestFieldValidation(registerUserRequest(jsonInvalid), "role",
-				"não deve ser nulo");
+				"O campo informado e invalido.");
 		assertThat(this.userRepository.findByEmail(new Email(JOHN_EMAIL)).isPresent()).isFalse();
 	}
 
@@ -279,6 +301,41 @@ class UserCreationIT {
 		ApiErrorResponseAssertions.assertBadRequestFieldValidation(registerUserRequest(json), NAME_FIELD,
 				"O nome contém caracteres inválidos.");
 		assertThat(this.userRepository.findByEmail(new Email(email)).isPresent()).isEqualTo(userExistsBeforeRequest);
+	}
+
+	@Test
+	@DisplayName("Nao deve aplicar campos protegidos enviados no cadastro de usuario")
+	@WithMockUser(roles = ADMIN_ROLE)
+	void registerUser_whenProtectedFieldsAreSent_thenPersistsOnlyAllowedFields() throws Exception {
+		String email = "protected-fields@example.com";
+		String json = """
+				{
+				  "id": "99999999-9999-9999-9999-999999999999",
+				  "name": "Protected Fields",
+				  "email": "protected-fields@example.com",
+				  "password": "password123",
+				  "confirmPassword": "password123",
+				  "role": "USER",
+				  "active": false,
+				  "status": "LOCKED",
+				  "resetPasswordCodeHash": "leaked-reset-hash",
+				  "createdBy": "99999999-9999-9999-9999-999999999999",
+				  "updatedBy": "99999999-9999-9999-9999-999999999999"
+				}
+				""";
+
+		registerUserRequest(json).andExpect(status().isCreated()).andExpect(content().string(""));
+
+		User createdUser = this.userRepository.findByEmail(new Email(email)).orElseThrow();
+		assertThat(createdUser.getId().toString()).isNotEqualTo("99999999-9999-9999-9999-999999999999");
+		assertThat(createdUser.isActive()).isTrue();
+		assertThat(createdUser.getStatus()).isEqualTo(UserStatus.ACTIVE);
+		assertThat(createdUser.getRoles()).containsExactly(UserRole.USER);
+		assertThat(columnValueByEmail(email, SELECT_RESET_PASSWORD_HASH_BY_EMAIL)).isNull();
+		assertThat(columnValueByEmail(email, SELECT_CREATED_BY_BY_EMAIL))
+			.isNotEqualTo("99999999-9999-9999-9999-999999999999");
+		assertThat(columnValueByEmail(email, SELECT_UPDATED_BY_BY_EMAIL))
+			.isNotEqualTo("99999999-9999-9999-9999-999999999999");
 	}
 
 	@Test
@@ -351,6 +408,10 @@ class UserCreationIT {
 			.status(UserStatus.ACTIVE)
 			.active(true)
 			.build();
+	}
+
+	private String columnValueByEmail(String email, String query) {
+		return this.jdbcTemplate.queryForObject(query, String.class, email);
 	}
 
 }

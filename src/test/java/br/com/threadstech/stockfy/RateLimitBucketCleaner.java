@@ -23,19 +23,16 @@ import br.com.threadstech.stockfy.users.infrastructure.config.UserRateLimitConfi
 
 public final class RateLimitBucketCleaner {
 
-	private static final String LOGIN_BUCKETS_FIELD = "loginBuckets";
+	private static final String REQUEST_BUCKETS_FIELD = "requestBuckets";
 
-	private static final String GENERAL_BUCKETS_FIELD = "generalBuckets";
-
-	private static final String PASSWORD_BUCKETS_FIELD = "passwordBuckets";
+	private static final String BLOCK_BUCKETS_FIELD = "blockBuckets";
 
 	private RateLimitBucketCleaner() {
 	}
 
 	public static void clearAll(UserRateLimitConfig rateLimitConfig, MutableTimeMeter rateLimitTimeMeter) {
-		clearBucketMap(rateLimitConfig, LOGIN_BUCKETS_FIELD);
-		clearBucketMap(rateLimitConfig, GENERAL_BUCKETS_FIELD);
-		clearBucketMap(rateLimitConfig, PASSWORD_BUCKETS_FIELD);
+		clearBucketMap(rateLimitConfig, REQUEST_BUCKETS_FIELD);
+		clearBucketMap(rateLimitConfig, BLOCK_BUCKETS_FIELD);
 		rateLimitTimeMeter.reset();
 	}
 

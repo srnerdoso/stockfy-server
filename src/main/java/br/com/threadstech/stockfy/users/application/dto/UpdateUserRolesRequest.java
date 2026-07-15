@@ -22,15 +22,13 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import br.com.threadstech.stockfy.users.application.validation.ValidUserRole;
 import br.com.threadstech.stockfy.users.domain.model.UserRole;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
 
 public record UpdateUserRolesRequest(
-		List<@NotNull(message = ROLES_INVALID_MESSAGE) @Pattern(regexp = "ADMIN|USER",
-				message = ROLES_INVALID_MESSAGE) String> add,
-		List<@NotNull(message = ROLES_INVALID_MESSAGE) @Pattern(regexp = "ADMIN|USER",
-				message = ROLES_INVALID_MESSAGE) String> remove) {
+		List<@NotNull(message = ROLES_INVALID_MESSAGE) @ValidUserRole(message = ROLES_INVALID_MESSAGE) String> add,
+		List<@NotNull(message = ROLES_INVALID_MESSAGE) @ValidUserRole(message = ROLES_INVALID_MESSAGE) String> remove) {
 
 	private static final String ROLES_INVALID_MESSAGE = "{user.roles.invalid}";
 

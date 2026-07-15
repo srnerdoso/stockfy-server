@@ -16,6 +16,7 @@
 
 package br.com.threadstech.stockfy.users.presentation.controller;
 
+import br.com.threadstech.stockfy.config.SecurityProperties;
 import br.com.threadstech.stockfy.users.application.dto.AuthResponse;
 import br.com.threadstech.stockfy.users.application.dto.LoginRequest;
 import br.com.threadstech.stockfy.users.application.usecase.LoginUseCase;
@@ -49,6 +50,8 @@ public class AuthController {
 
 	private final LogoutUseCase logoutUseCase;
 
+	private final SecurityProperties securityProperties;
+
 	@PostMapping
 	public ResponseEntity<Void> login(@RequestBody @Valid LoginRequest request, HttpServletResponse response) {
 		AuthResponse authResponse = this.loginUseCase.execute(request.email(), request.password());
@@ -77,13 +80,13 @@ public class AuthController {
 		accessCookie.setHttpOnly(true);
 		accessCookie.setSecure(true); // Should be true in prod
 		accessCookie.setPath("/");
-		accessCookie.setMaxAge(900); // 15 min
+		accessCookie.setMaxAge(Math.toIntExact(this.securityProperties.cookies().accessTokenMaxAge().toSeconds()));
 
 		Cookie refreshCookie = new Cookie(REFRESH_TOKEN_COOKIE, authResponse.refreshToken());
 		refreshCookie.setHttpOnly(true);
 		refreshCookie.setSecure(true);
 		refreshCookie.setPath("/");
-		refreshCookie.setMaxAge(604800); // 7 days
+		refreshCookie.setMaxAge(Math.toIntExact(this.securityProperties.cookies().refreshTokenMaxAge().toSeconds()));
 
 		response.addCookie(accessCookie);
 		response.addCookie(refreshCookie);

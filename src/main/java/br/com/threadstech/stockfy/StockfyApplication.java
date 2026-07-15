@@ -18,8 +18,10 @@ package br.com.threadstech.stockfy;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 
 @SpringBootApplication
+@ConfigurationPropertiesScan
 public class StockfyApplication {
 
 	public static void main(String[] args) {

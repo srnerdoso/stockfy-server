@@ -29,6 +29,7 @@ import br.com.threadstech.stockfy.RateLimitBucketCleaner;
 import br.com.threadstech.stockfy.RateLimitTestConfiguration;
 import br.com.threadstech.stockfy.users.domain.model.UserRole;
 import br.com.threadstech.stockfy.users.infrastructure.config.UserRateLimitConfig;
+import br.com.threadstech.stockfy.users.infrastructure.security.HmacSha256Hasher;
 import br.com.threadstech.stockfy.users.infrastructure.security.JwtService;
 import br.com.threadstech.stockfy.users.infrastructure.security.TokenService;
 import jakarta.servlet.http.Cookie;
@@ -105,6 +106,9 @@ class LogoutUserIT {
 	@Autowired
 	private MutableTimeMeter rateLimitTimeMeter;
 
+	@Autowired
+	private HmacSha256Hasher hmacSha256Hasher;
+
 	@AfterEach
 	void tearDown() {
 		RateLimitBucketCleaner.clearAll(this.rateLimitConfig, this.rateLimitTimeMeter);
@@ -135,7 +139,7 @@ class LogoutUserIT {
 		MatcherAssert.assertThat(setCookieHeaders, everyItem(containsString("Path=/")));
 		MatcherAssert.assertThat(setCookieHeaders, everyItem(containsString("HttpOnly")));
 		MatcherAssert.assertThat(setCookieHeaders, everyItem(containsString("Secure")));
-		assertThat(Boolean.TRUE.equals(this.redisTemplate.hasKey(refreshTokenKey(refreshToken)))).isFalse();
+		assertThat(this.redisTemplate.hasKey(refreshTokenKey(refreshToken))).isFalse();
 		assertUserDataUnchanged(usersBeforeRequest, userBeforeRequest);
 	}
 
@@ -156,7 +160,7 @@ class LogoutUserIT {
 			.andExpect(status().isUnauthorized())
 			.andExpect(content().string(""));
 
-		assertThat(Boolean.TRUE.equals(this.redisTemplate.hasKey(refreshTokenKey(refreshToken)))).isFalse();
+		assertThat(this.redisTemplate.hasKey(refreshTokenKey(refreshToken))).isFalse();
 		assertUserDataUnchanged(usersBeforeRequest, userBeforeRequest);
 	}
 
@@ -200,7 +204,7 @@ class LogoutUserIT {
 			.andExpect(status().isUnauthorized())
 			.andExpect(content().string(""));
 
-		assertThat(Boolean.TRUE.equals(this.redisTemplate.hasKey(refreshTokenKey(refreshToken)))).isTrue();
+		assertThat(this.redisTemplate.hasKey(refreshTokenKey(refreshToken))).isTrue();
 		assertUserDataUnchanged(usersBeforeRequest, userBeforeRequest);
 	}
 
@@ -217,7 +221,7 @@ class LogoutUserIT {
 			.andExpect(status().isUnauthorized())
 			.andExpect(content().string(""));
 
-		assertThat(Boolean.TRUE.equals(this.redisTemplate.hasKey(refreshTokenKey(refreshToken)))).isTrue();
+		assertThat(this.redisTemplate.hasKey(refreshTokenKey(refreshToken))).isTrue();
 		assertUserDataUnchanged(usersBeforeRequest, userBeforeRequest);
 	}
 
@@ -235,7 +239,7 @@ class LogoutUserIT {
 			.andExpect(status().isUnauthorized())
 			.andExpect(content().string(""));
 
-		assertThat(Boolean.TRUE.equals(this.redisTemplate.hasKey(refreshTokenKey(refreshToken)))).isTrue();
+		assertThat(this.redisTemplate.hasKey(refreshTokenKey(refreshToken))).isTrue();
 		assertUserDataUnchanged(usersBeforeRequest, userBeforeRequest);
 	}
 
@@ -254,7 +258,7 @@ class LogoutUserIT {
 			.andExpect(status().isTooManyRequests())
 			.andExpect(content().string(""));
 
-		assertThat(Boolean.TRUE.equals(this.redisTemplate.hasKey(refreshTokenKey(blockedRefreshToken)))).isTrue();
+		assertThat(this.redisTemplate.hasKey(refreshTokenKey(blockedRefreshToken))).isTrue();
 		assertUserDataUnchanged(usersBeforeRequest, userBeforeRequest);
 	}
 
@@ -280,8 +284,8 @@ class LogoutUserIT {
 			.andExpect(status().isNoContent())
 			.andExpect(content().string(""));
 
-		assertThat(Boolean.TRUE.equals(this.redisTemplate.hasKey(refreshTokenKey(refreshToken)))).isFalse();
-		assertThat(Boolean.TRUE.equals(this.redisTemplate.hasKey(refreshTokenKey(blockedRefreshToken)))).isTrue();
+		assertThat(this.redisTemplate.hasKey(refreshTokenKey(refreshToken))).isFalse();
+		assertThat(this.redisTemplate.hasKey(refreshTokenKey(blockedRefreshToken))).isTrue();
 		assertUserDataUnchanged(usersBeforeRequest, userBeforeRequest);
 	}
 
@@ -336,7 +340,7 @@ class LogoutUserIT {
 	}
 
 	private String refreshTokenKey(String refreshToken) {
-		return REFRESH_TOKEN_COOKIE + ":" + refreshToken;
+		return REFRESH_TOKEN_COOKIE + ":" + this.hmacSha256Hasher.hash(refreshToken);
 	}
 
 	private record UserSnapshot(Map<String, Object> fields, List<String> roles) {

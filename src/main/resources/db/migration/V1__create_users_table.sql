@@ -5,7 +5,7 @@ CREATE TABLE users (
     password_hash VARCHAR(60) NOT NULL,
     status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
     active BOOLEAN NOT NULL DEFAULT TRUE,
-    reset_password_code_hash VARCHAR(64),
+    reset_password_code_hash VARCHAR(64) UNIQUE,
     reset_password_expires_at TIMESTAMP,
     created_at TIMESTAMP NOT NULL,
     created_by UUID,

@@ -45,10 +45,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class UserManagementTests {
+
+	private static final String HASHED_PASSWORD = "hashed_password";
 
 	@Mock
 	private UserRepository userRepository;
@@ -75,7 +79,7 @@ class UserManagementTests {
 			.id(this.userId)
 			.name("John Doe")
 			.email(new Email("john@example.com"))
-			.password(new Password("hashed_password"))
+			.password(new Password(HASHED_PASSWORD))
 			.roles(Set.of(UserRole.USER))
 			.status(UserStatus.ACTIVE)
 			.active(true)
@@ -85,8 +89,7 @@ class UserManagementTests {
 	@Test
 	@DisplayName("Should register new user")
 	void shouldRegisterNewUser() {
-		given(this.userRepository.findByEmail(any())).willReturn(Optional.empty());
-		given(this.passwordEncoder.encode(any())).willReturn("hashed_password");
+		given(this.passwordEncoder.encode(any())).willReturn(HASHED_PASSWORD);
 
 		var request = new RegisterUserRequest("New User", "new@example.com", "password123", null, UserRole.USER);
 		this.registerUserUseCase.execute(request);
@@ -95,13 +98,27 @@ class UserManagementTests {
 	}
 
 	@Test
-	@DisplayName("Should throw exception if email already exists")
-	void shouldThrowExceptionIfEmailExists() {
-		given(this.userRepository.findByEmail(any())).willReturn(Optional.of(this.user));
+	@DisplayName("Nao deve consultar email antes de cadastrar usuario")
+	void execute_whenRegisteringUser_thenDoesNotPreQueryEmail() {
+		given(this.passwordEncoder.encode(any())).willReturn(HASHED_PASSWORD);
 
-		var request = new RegisterUserRequest("John", "john@example.com", "pass", null, UserRole.USER);
+		var request = new RegisterUserRequest("New User", "new@example.com", "password123", null, UserRole.USER);
+		this.registerUserUseCase.execute(request);
+
+		verify(this.userRepository, never()).findByEmail(any());
+		verify(this.userRepository).save(any(User.class));
+	}
+
+	@Test
+	@DisplayName("Deve propagar conflito traduzido pelo repositorio quando email ja existir")
+	void execute_whenRepositoryDetectsDuplicateEmail_thenThrowsEmailAlreadyExistsException() {
+		given(this.passwordEncoder.encode(any())).willReturn(HASHED_PASSWORD);
+		willThrow(new EmailAlreadyExistsException()).given(this.userRepository).save(any(User.class));
+
+		var request = new RegisterUserRequest("John", "john@example.com", "password123", null, UserRole.USER);
 		assertThatExceptionOfType(EmailAlreadyExistsException.class)
 			.isThrownBy(() -> this.registerUserUseCase.execute(request));
+		verify(this.userRepository, never()).findByEmail(any());
 	}
 
 	@Test

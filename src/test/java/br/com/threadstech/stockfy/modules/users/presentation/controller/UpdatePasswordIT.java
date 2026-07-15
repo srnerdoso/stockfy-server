@@ -24,8 +24,8 @@ import br.com.threadstech.stockfy.ContainersConfiguration;
 import br.com.threadstech.stockfy.MutableTimeMeter;
 import br.com.threadstech.stockfy.RateLimitBucketCleaner;
 import br.com.threadstech.stockfy.RateLimitTestConfiguration;
-import br.com.threadstech.stockfy.users.application.port.ResetCodeHasher;
 import br.com.threadstech.stockfy.users.infrastructure.config.UserRateLimitConfig;
+import br.com.threadstech.stockfy.users.infrastructure.security.HmacSha256Hasher;
 import br.com.threadstech.stockfy.web.presentation.ApiErrorResponseAssertions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
@@ -53,6 +53,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Import({ ContainersConfiguration.class, RateLimitTestConfiguration.class })
 @Sql(scripts = "/sql/users/cleanup.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @Sql(scripts = "/sql/users/base-users.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
+@Sql(scripts = "/sql/users/endpoint-scenarios.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @Sql(scripts = "/sql/users/cleanup.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
 class UpdatePasswordIT {
 
@@ -60,7 +61,7 @@ class UpdatePasswordIT {
 
 	private static final String PASSWORD_ENDPOINT = "/api/v1/users/password";
 
-	private static final String OWNER_ID = "00000000-0000-0000-0000-000000000002";
+	private static final String OWNER_ID = "00000000-0000-0000-0000-000000000012";
 
 	private static final String DEFAULT_RESET_CODE = "123456";
 
@@ -106,7 +107,7 @@ class UpdatePasswordIT {
 	private PasswordEncoder passwordEncoder;
 
 	@Autowired
-	private ResetCodeHasher resetCodeHasher;
+	private HmacSha256Hasher resetCodeHasher;
 
 	@Autowired
 	private UserRateLimitConfig rateLimitConfig;

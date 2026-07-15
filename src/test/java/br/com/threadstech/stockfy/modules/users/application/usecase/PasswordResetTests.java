@@ -21,8 +21,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
+import br.com.threadstech.stockfy.users.application.config.PasswordResetProperties;
 import br.com.threadstech.stockfy.users.application.exception.UserNotFoundException;
-import br.com.threadstech.stockfy.users.application.port.ResetCodeHasher;
 import br.com.threadstech.stockfy.users.application.usecase.GenerateResetCodeUseCase;
 import br.com.threadstech.stockfy.users.domain.model.Email;
 import br.com.threadstech.stockfy.users.domain.model.Password;
@@ -30,11 +30,11 @@ import br.com.threadstech.stockfy.users.domain.model.User;
 import br.com.threadstech.stockfy.users.domain.model.UserRole;
 import br.com.threadstech.stockfy.users.domain.model.UserStatus;
 import br.com.threadstech.stockfy.users.domain.repository.UserRepository;
+import br.com.threadstech.stockfy.users.infrastructure.security.HmacSha256Hasher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -52,9 +52,8 @@ class PasswordResetTests {
 	private UserRepository userRepository;
 
 	@Mock
-	private ResetCodeHasher resetCodeHasher;
+	private HmacSha256Hasher resetCodeHasher;
 
-	@InjectMocks
 	private GenerateResetCodeUseCase generateResetCodeUseCase;
 
 	private User user;
@@ -63,6 +62,8 @@ class PasswordResetTests {
 
 	@BeforeEach
 	void setUp() {
+		this.generateResetCodeUseCase = new GenerateResetCodeUseCase(this.userRepository, this.resetCodeHasher,
+				new PasswordResetProperties(java.time.Duration.ofMinutes(30)));
 		this.user = this.user.builder()
 			.id(this.userId)
 			.name("John Doe")
@@ -77,6 +78,7 @@ class PasswordResetTests {
 	@Test
 	@DisplayName("Deve gerar codigo de seis digitos, persistir hash e expiracao")
 	void generateResetCode_whenUserExists_thenPersistsHashedCodeAndExpiration() {
+		LocalDateTime beforeExecution = LocalDateTime.now();
 		given(this.userRepository.findById(this.userId)).willReturn(Optional.of(this.user));
 		given(this.resetCodeHasher.hash(any())).willReturn("hashed_code");
 
@@ -85,7 +87,8 @@ class PasswordResetTests {
 		assertThat(code.matches("\\d{6}")).isTrue();
 		assertThat(this.user.getResetPasswordCodeHash()).isEqualTo("hashed_code");
 		assertThat(this.user.getResetPasswordExpiresAt()).isNotNull();
-		assertThat(this.user.getResetPasswordExpiresAt().isAfter(LocalDateTime.now())).isTrue();
+		assertThat(this.user.getResetPasswordExpiresAt()).isBetween(beforeExecution.plusMinutes(29),
+				beforeExecution.plusMinutes(31));
 		verify(this.userRepository).update(this.user);
 	}
 
@@ -96,6 +99,7 @@ class PasswordResetTests {
 
 		assertThatExceptionOfType(UserNotFoundException.class)
 			.isThrownBy(() -> this.generateResetCodeUseCase.execute(this.userId));
+		verify(this.resetCodeHasher, never()).hash(any());
 		verify(this.userRepository, never()).update(any());
 	}
 

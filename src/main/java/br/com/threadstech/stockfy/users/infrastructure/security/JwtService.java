@@ -27,22 +27,22 @@ import java.util.function.Function;
 
 import javax.crypto.SecretKey;
 
+import br.com.threadstech.stockfy.config.SecurityProperties;
 import br.com.threadstech.stockfy.users.domain.model.UserRole;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
 public class JwtService {
 
-	@Value("${jwt.secret}")
-	private String secret;
+	private final SecurityProperties securityProperties;
 
-	@Value("${jwt.access-token-expiration}")
-	private long expiration;
+	public JwtService(SecurityProperties securityProperties) {
+		this.securityProperties = securityProperties;
+	}
 
 	public String generateToken(UUID userId, Set<UserRole> roles) {
 		Map<String, Object> claims = new HashMap<>();
@@ -56,7 +56,7 @@ public class JwtService {
 			.claims(claims)
 			.subject(subject)
 			.issuedAt(java.util.Date.from(now))
-			.expiration(java.util.Date.from(now.plusMillis(this.expiration)))
+			.expiration(java.util.Date.from(now.plus(this.securityProperties.jwt().accessTokenExpiration())))
 			.signWith(getSigningKey())
 			.compact();
 	}
@@ -92,7 +92,7 @@ public class JwtService {
 	}
 
 	private SecretKey getSigningKey() {
-		return Keys.hmacShaKeyFor(this.secret.getBytes(StandardCharsets.UTF_8));
+		return Keys.hmacShaKeyFor(this.securityProperties.jwt().secret().getBytes(StandardCharsets.UTF_8));
 	}
 
 }
