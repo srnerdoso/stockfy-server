@@ -58,7 +58,7 @@ Observacoes de escopo:
   - Papel: gera `400` com `type`, `title`, `status`, `detail`, `instance`, `fieldErrors`.
   - Ponto critico: nao ha handler customizado para erro interno generico; `500` fica no mecanismo padrao do Spring Boot, com `server.error.include-stacktrace=never` apenas em prod e em testes especificos.
 
-- [x] Tratamento de erros do modulo users
+- [ ] Tratamento de erros do modulo users
   - Arquivo: `UserExceptionHandler.java`
   - Caminho completo: `C:\Projetos\stockfy\stockfy-server\src\main\java\br\com\threadstech\stockfy\users\presentation\UserExceptionHandler.java`
   - Metodos: `handlePasswordMismatchException`, `handleEmailAlreadyExistsException`, `handleInvalidPasswordException`, `handleInvalidPasswordResetCodeException`, `handleCurrentPasswordInvalidException`, `handleUserNotFoundException`, `handleInvalidCredentialsException`, `handleInvalidRefreshTokenException`, `handleInvalidUserRolesException`.
@@ -69,7 +69,7 @@ Observacoes de escopo:
 
 ### 2.1 POST /api/v1/auth/sessions
 
-- [x] Contrato
+- [ ] Contrato
   - Metodo HTTP: `POST`
   - Rota: `/api/v1/auth/sessions`
   - Controller: `AuthController.login()`
@@ -83,14 +83,14 @@ Observacoes de escopo:
   - Autenticacao/autorizacao: `permitAll` em `SecurityConfig.securityFilterChain()`
   - Rate limit: policy `login`, rota configurada em `application-dev.properties`, `application-prod.properties` e `src/test/resources/application.properties`
 
-- [x] Validacoes
+- [ ] Validacoes
   - `LoginRequest.email`: `@NotBlank`, `@Email`.
   - `LoginRequest.password`: `@NotBlank`.
   - `LoginUseCase.parseEmail()`: cria `new Email(email)` e converte `IllegalArgumentException` em `InvalidCredentialsException`.
   - `GlobalExceptionHandler`: `400` para DTO invalido.
   - `UserExceptionHandler.handleInvalidCredentialsException()`: `401` sem corpo.
 
-- [x] Regras de negocio executadas
+- [ ] Regras de negocio executadas
   - `LoginUseCase.execute(email, password)`
     - busca usuario por email
     - rejeita usuario inativo ou `LOCKED`
@@ -104,7 +104,7 @@ Observacoes de escopo:
   - `AuthController.addCookies()`
     - cria cookies `HttpOnly`, `Secure`, path `/`, max-age configurado.
 
-- [x] Fluxo completo
+- [ ] Fluxo completo
 
 ```text
 AuthController.login()
@@ -127,7 +127,7 @@ AuthController.login()
 `-- AuthController.addCookies()
 ```
 
-- [x] Arquivos participantes diretos e indiretos
+- [ ] Arquivos participantes diretos e indiretos
   - `AuthController.java`: controller, `login`, `addCookies`; risco: cookies sem `SameSite`.
   - `LoginRequest.java`: validacao de entrada; risco: formato de email tambem e validado depois pelo VO.
   - `AuthResponse.java`: transporte interno de tokens; risco: nao deve ser retornado no body, e hoje nao e retornado.
@@ -145,7 +145,7 @@ AuthController.login()
 
 ### 2.2 POST /api/v1/auth/sessions/refresh
 
-- [x] Contrato
+- [ ] Contrato
   - Metodo HTTP: `POST`
   - Rota: `/api/v1/auth/sessions/refresh`
   - Controller: `AuthController.refresh()`
@@ -156,13 +156,13 @@ AuthController.login()
   - Autenticacao/autorizacao: `permitAll` em `SecurityConfig.securityFilterChain()`
   - Rate limit: policy `refresh`, com bucket normal e `blockCapacity`.
 
-- [x] Validacoes e regras
+- [ ] Validacoes e regras
   - `RefreshTokenUseCase.execute()` rejeita `null`, blank ou token ausente no Redis.
   - `TokenService.consumeRefreshToken()` usa `Redis GETDEL` via `getAndDelete`, retornando `Optional<UUID>`.
   - Usuario precisa existir, estar `active = true` e status diferente de `LOCKED`.
   - Token antigo e consumido antes de emitir novo refresh token.
 
-- [x] Fluxo completo
+- [ ] Fluxo completo
 
 ```text
 AuthController.refresh()
@@ -177,7 +177,7 @@ AuthController.refresh()
 `-- AuthController.addCookies()
 ```
 
-- [x] Arquivos participantes
+- [ ] Arquivos participantes
   - `AuthController.java`: `refresh`, `addCookies`.
   - `RefreshTokenUseCase.java`: orquestra rotacao; ponto critico: anotado como `@Transactional(readOnly = true)` apesar de consumir/gerar estado em Redis.
   - `TokenService.java`: `validateRefreshToken`, `consumeRefreshToken`, `generateRefreshToken`.
@@ -190,7 +190,7 @@ AuthController.refresh()
 
 ### 2.3 DELETE /api/v1/auth/sessions/current
 
-- [x] Contrato
+- [ ] Contrato
   - Metodo HTTP: `DELETE`
   - Rota: `/api/v1/auth/sessions/current`
   - Controller: `AuthController.logout()`
@@ -200,12 +200,12 @@ AuthController.refresh()
   - Autenticacao/autorizacao: autenticado por `/api/v1/**` em `SecurityConfig`; nao ha `@PreAuthorize` no metodo.
   - Rate limit: policy `logout`, `write-body=false`.
 
-- [x] Regras
+- [ ] Regras
   - `JwtAuthenticationFilter` autentica somente se access e refresh cookies forem validos e pertencem ao mesmo usuario.
   - `LogoutUseCase.execute()` revoga o refresh token atual no Redis.
   - `AuthController.clearCookies()` expira `access_token` e `refresh_token`.
 
-- [x] Fluxo completo
+- [ ] Fluxo completo
 
 ```text
 RateLimitFilter.doFilterInternal()
@@ -216,7 +216,7 @@ RateLimitFilter.doFilterInternal()
         `-- AuthController.clearCookies()
 ```
 
-- [x] Arquivos participantes
+- [ ] Arquivos participantes
   - `AuthController.java`: `logout`, `clearCookies`, `expiredCookie`.
   - `LogoutUseCase.java`: revoga refresh token.
   - `TokenService.java`: remove chave Redis.
@@ -227,7 +227,7 @@ RateLimitFilter.doFilterInternal()
 
 ### 2.4 POST /api/v1/users
 
-- [x] Contrato
+- [ ] Contrato
   - Metodo HTTP: `POST`
   - Rota: `/api/v1/users`
   - Controller: `UserController.register()`
@@ -237,7 +237,7 @@ RateLimitFilter.doFilterInternal()
   - Autenticacao/autorizacao: `@PreAuthorize("hasRole('ADMIN')")`
   - Rate limit: policy default `general`.
 
-- [x] Validacoes
+- [ ] Validacoes
   - `name`: `@NotBlank`, `@Pattern("^[\\p{L}\\p{M}0-9 .'-]+$")`
   - `email`: `@NotBlank`, `@Email`
   - `password`: `@NotBlank`
@@ -245,12 +245,12 @@ RateLimitFilter.doFilterInternal()
   - `confirmPassword`: validacao manual em `RegisterUserUseCase.execute()`.
   - `Password` VO exige minimo 8 caracteres.
 
-- [x] Regras
+- [ ] Regras
   - Cria `User` com `UUID.randomUUID()`, email VO, senha BCrypt, role unica vinda da request.
   - Persiste por `UserRepository.save()`.
   - Duplicidade de email e traduzida por `JpaUserRepositoryAdapter.translateConstraintViolation()`.
 
-- [x] Fluxo completo
+- [ ] Fluxo completo
 
 ```text
 UserController.register()
@@ -264,7 +264,7 @@ UserController.register()
             `-- SpringDataUserRepository.saveAndFlush()
 ```
 
-- [x] Arquivos participantes
+- [ ] Arquivos participantes
   - `UserController.java`: `register`.
   - `RegisterUserRequest.java`: DTO e validacoes.
   - `RegisterUserUseCase.java`: criacao do usuario.
@@ -276,7 +276,7 @@ UserController.register()
 
 ### 2.5 PATCH /api/v1/users/{id}/roles
 
-- [x] Contrato
+- [ ] Contrato
   - Metodo HTTP: `PATCH`
   - Rota: `/api/v1/users/{id}/roles`
   - Controller: `UserController.updateUserRoles()`
@@ -286,18 +286,18 @@ UserController.register()
   - Autenticacao/autorizacao: `@PreAuthorize("hasRole('ADMIN')")`
   - Rate limit: policy default `general`.
 
-- [x] Validacoes
+- [ ] Validacoes
   - `id`: conversao Spring para `UUID`; erro vira `400`.
   - `add` e `remove`: lista de strings com `@NotNull` e `@ValidUserRole`.
   - `ValidUserRoleValidator.isValid()`: aceita null para delegar ao `@NotNull`, rejeita blank e valores fora de `UserRole`.
 
-- [x] Regras
+- [ ] Regras
   - Busca usuario.
   - Converte strings para `UserRole`.
   - `User.updateRoles()` adiciona/remove e impede usuario sem nenhuma role.
   - Persiste alteracao.
 
-- [x] Fluxo completo
+- [ ] Fluxo completo
 
 ```text
 UserController.updateUserRoles()
@@ -309,7 +309,7 @@ UserController.updateUserRoles()
     `-- UserRepository.update()
 ```
 
-- [x] Arquivos participantes
+- [ ] Arquivos participantes
   - `UserController.java`: `updateUserRoles`.
   - `UpdateUserRolesRequest.java`: DTO, copia defensiva e conversao de roles.
   - `ValidUserRole.java`, `ValidUserRoleValidator.java`: validacao customizada.
@@ -321,7 +321,7 @@ UserController.updateUserRoles()
 
 ### 2.6 POST /api/v1/users/{id}/password-reset-codes
 
-- [x] Contrato
+- [ ] Contrato
   - Metodo HTTP: `POST`
   - Rota: `/api/v1/users/{id}/password-reset-codes`
   - Controller: `UserController.generateResetCode()`
@@ -331,14 +331,14 @@ UserController.updateUserRoles()
   - Autenticacao/autorizacao: `@PreAuthorize("hasRole('ADMIN')")`
   - Rate limit: policy default `general`.
 
-- [x] Regras
+- [ ] Regras
   - Busca usuario por ID.
   - Gera codigo numerico de 6 digitos com `SecureRandom`.
   - Armazena apenas HMAC SHA-256 do codigo.
   - Define expiracao por `PasswordResetProperties.codeExpiration()`.
   - Retorna o codigo em resposta.
 
-- [x] Fluxo completo
+- [ ] Fluxo completo
 
 ```text
 UserController.generateResetCode()
@@ -351,7 +351,7 @@ UserController.generateResetCode()
     `-- UserRepository.update()
 ```
 
-- [x] Arquivos participantes
+- [ ] Arquivos participantes
   - `UserController.java`: `generateResetCode`, `ResetCodeResponse`.
   - `GenerateResetCodeUseCase.java`: geracao/hash/expiracao.
   - `PasswordResetProperties.java`: duracao configuravel.
@@ -362,7 +362,7 @@ UserController.generateResetCode()
 
 ### 2.7 PATCH /api/v1/users/password
 
-- [x] Contrato
+- [ ] Contrato
   - Metodo HTTP: `PATCH`
   - Rota: `/api/v1/users/password`
   - Controller: `UserController.updatePassword()`
@@ -372,18 +372,18 @@ UserController.generateResetCode()
   - Autenticacao/autorizacao: HTTP `permitAll`, metodo com `@PreAuthorize("#request.code() != null or !isAnonymous()")`
   - Rate limit: policy `password`.
 
-- [x] Validacoes
+- [ ] Validacoes
   - `code`: `@Pattern("^\\d{6}$")` quando informado.
   - `newPassword`: `@NotBlank`, `@Size(min = 8)`.
   - `confirmPassword`: `@NotBlank`, `@Size(min = 8)`.
   - `currentPassword`: validacao no use case quando fluxo autenticado.
 
-- [x] Regras
+- [ ] Regras
   - Com `code`: valida confirmacao, busca usuario por hash do codigo, valida expiracao, troca senha, remove codigo e expiracao.
   - Sem `code`: exige autenticacao, valida senha atual, conta tentativa invalida em Redis, bloqueia usuario apos 15 erros em 5 minutos, troca senha.
   - Nao revoga refresh tokens ja emitidos apos troca de senha.
 
-- [x] Fluxo completo
+- [ ] Fluxo completo
 
 ```text
 UserController.updatePassword()
@@ -409,7 +409,7 @@ UserController.updatePassword()
         `-- UserRepository.update()
 ```
 
-- [x] Arquivos participantes
+- [ ] Arquivos participantes
   - `UserController.java`: `updatePassword`.
   - `UpdatePasswordRequest.java`: DTO.
   - `UpdatePasswordUseCase.java`: regras de reset e troca autenticada.
@@ -420,7 +420,7 @@ UserController.updatePassword()
 
 ### 2.8 GET /api/v1/users/me
 
-- [x] Contrato
+- [ ] Contrato
   - Metodo HTTP: `GET`
   - Rota: `/api/v1/users/me`
   - Controller: `UserController.me()`
@@ -430,12 +430,12 @@ UserController.updatePassword()
   - Autenticacao/autorizacao: autenticado por `/api/v1/**`; ownership implicito pelo principal autenticado.
   - Rate limit: policy default `general`.
 
-- [x] Regras
+- [ ] Regras
   - Extrai `UUID` de `Authentication.getPrincipal()`.
   - Busca diretamente no `UserRepository` dentro do controller.
   - `UserResponseMapperFactory.toResponse()` escolhe resposta completa para ADMIN, owner para dono, publica para terceiro.
 
-- [x] Fluxo completo
+- [ ] Fluxo completo
 
 ```text
 UserController.me()
@@ -448,7 +448,7 @@ UserController.me()
     `-- UserResponseMapper.toPublicResponse()
 ```
 
-- [x] Arquivos participantes
+- [ ] Arquivos participantes
   - `UserController.java`: `me`.
   - `UserResponse.java`, `UserResponseMapperFactory.java`, `UserResponseMapper.java`.
   - Repositorios/mappers/persistencia comuns.
@@ -457,7 +457,7 @@ UserController.me()
 
 ### 2.9 GET /api/v1/users/{id}
 
-- [x] Contrato
+- [ ] Contrato
   - Metodo HTTP: `GET`
   - Rota: `/api/v1/users/{id}`
   - Controller: `UserController.getById()`
@@ -468,12 +468,12 @@ UserController.me()
   - Ownership: usuario so acessa o proprio ID; ADMIN acessa qualquer ID.
   - Rate limit: policy default `general`.
 
-- [x] Regras
+- [ ] Regras
   - Busca usuario por ID.
   - Responde sempre com `UserListType.DETAILED`.
   - `UserListItemResponse` nao inclui `id`.
 
-- [x] Fluxo completo
+- [ ] Fluxo completo
 
 ```text
 UserController.getById()
@@ -482,7 +482,7 @@ UserController.getById()
     `-- UserListItemResponse.from(user, DETAILED)
 ```
 
-- [x] Arquivos participantes
+- [ ] Arquivos participantes
   - `UserController.java`: `getById`.
   - `FindUserByIdUseCase.java`, `UserListItemResponse.java`, `UserListType.java`.
   - Repositorios/mappers/persistencia comuns.
@@ -491,7 +491,7 @@ UserController.getById()
 
 ### 2.10 GET /api/v1/users
 
-- [x] Contrato
+- [ ] Contrato
   - Metodo HTTP: `GET`
   - Rota: `/api/v1/users`
   - Controller: `UserController.findAll()`
@@ -501,18 +501,18 @@ UserController.getById()
   - Autenticacao/autorizacao: `@PreAuthorize("hasRole('ADMIN')")`
   - Rate limit: policy default `general`.
 
-- [x] Validacoes
+- [ ] Validacoes
   - `name`: `@Size(max = 255)`, `@Pattern("^[\\p{L}\\p{M}0-9 .'-]+$")`.
   - `type`: obrigatorio; enum `SUMMARY` ou `DETAILED`.
   - `Pageable`: `@PageableDefault(size = 20)`.
 
-- [x] Regras
+- [ ] Regras
   - Normaliza nome com `trim`, transforma blank em `null`.
   - Busca pagina ativa no repositorio.
   - `SUMMARY`: nome, email, roles.
   - `DETAILED`: inclui status e auditoria.
 
-- [x] Fluxo completo
+- [ ] Fluxo completo
 
 ```text
 UserController.findAll()
@@ -526,7 +526,7 @@ UserController.findAll()
     `-- new FindAllUsersResponse<>()
 ```
 
-- [x] Arquivos participantes
+- [ ] Arquivos participantes
   - `UserController.java`: `findAll`.
   - `FindAllUsersUseCase.java`, `FindAllUsersResponse.java`, `UserListItemResponse.java`, `UserListType.java`.
   - Repositorios/mappers/persistencia comuns.
@@ -535,7 +535,7 @@ UserController.findAll()
 
 ### 2.11 PATCH /api/v1/users/me
 
-- [x] Contrato
+- [ ] Contrato
   - Metodo HTTP: `PATCH`
   - Rota: `/api/v1/users/me`
   - Controller: `UserController.updateProfile()`
@@ -546,19 +546,19 @@ UserController.findAll()
   - Ownership: sempre usa `authentication.principal`, nao aceita ID externo.
   - Rate limit: policy default `general`.
 
-- [x] Validacoes
+- [ ] Validacoes
   - `name`: `@Size(max = 255)`, regex contra caracteres fora da allowlist.
   - `email`: `@Email`.
   - `@JsonIgnoreProperties(ignoreUnknown = true)` ignora campos protegidos no payload.
 
-- [x] Regras
+- [ ] Regras
   - Busca usuario autenticado.
   - Atualiza nome se informado.
   - Atualiza email se informado e diferente.
   - Nao faz update se nome e email forem omitidos.
   - Duplicidade de email e detectada pelo banco e traduzida para `409`.
 
-- [x] Fluxo completo
+- [ ] Fluxo completo
 
 ```text
 UserController.updateProfile()
@@ -571,7 +571,7 @@ UserController.updateProfile()
     `-- UserRepository.update()
 ```
 
-- [x] Arquivos participantes
+- [ ] Arquivos participantes
   - `UserController.java`: `updateProfile`.
   - `UpdateCurrentUserRequest.java`, `UpdateProfileUseCase.java`, `Email.java`.
   - Repositorios/mappers/persistencia comuns.
@@ -579,7 +579,7 @@ UserController.updateProfile()
 
 ### 2.12 DELETE /api/v1/users/{id}
 
-- [x] Contrato
+- [ ] Contrato
   - Metodo HTTP: `DELETE`
   - Rota: `/api/v1/users/{id}`
   - Controller: `UserController.delete()`
@@ -589,12 +589,12 @@ UserController.updateProfile()
   - Autenticacao/autorizacao: `@PreAuthorize("hasRole('ADMIN')")`
   - Rate limit: policy default `general`.
 
-- [x] Regras
+- [ ] Regras
   - `DeleteUserUseCase.execute()` delega para `UserRepository.deleteById()`.
   - `UserJpaEntity` tem `@SQLDelete`: soft delete via `active=false` e anonimiza email para `id::text || '@deleted.local'`.
   - `@SQLRestriction("active = true")` remove usuarios inativos de consultas JPA padrao.
 
-- [x] Fluxo completo
+- [ ] Fluxo completo
 
 ```text
 UserController.delete()
@@ -606,7 +606,7 @@ UserController.delete()
                 `-- @SQLDelete on UserJpaEntity
 ```
 
-- [x] Arquivos participantes
+- [ ] Arquivos participantes
   - `UserController.java`, `DeleteUserUseCase.java`.
   - `UserJpaEntity.java`: soft delete.
   - Repositorios/mappers/persistencia comuns.
@@ -615,7 +615,7 @@ UserController.delete()
 
 ### 2.13 PATCH /api/v1/users/{id}/unlock
 
-- [x] Contrato
+- [ ] Contrato
   - Metodo HTTP: `PATCH`
   - Rota: `/api/v1/users/{id}/unlock`
   - Controller: `UserController.unlock()`
@@ -625,13 +625,13 @@ UserController.delete()
   - Autenticacao/autorizacao: `@PreAuthorize("hasRole('ADMIN')")`
   - Rate limit: policy default `general`.
 
-- [x] Regras
+- [ ] Regras
   - Busca usuario por ID.
   - Executa `User.unlock()`.
   - Remove contador Redis `login_attempts:<email>`.
   - Persiste status.
 
-- [x] Fluxo completo
+- [ ] Fluxo completo
 
 ```text
 UserController.unlock()
@@ -642,7 +642,7 @@ UserController.unlock()
     `-- UserRepository.update()
 ```
 
-- [x] Arquivos participantes
+- [ ] Arquivos participantes
   - `UserController.java`, `UnlockUserUseCase.java`, `User.java`.
   - Repositorios/mappers/persistencia comuns.
   - `StringRedisTemplate` como dependencia externa.
@@ -650,39 +650,39 @@ UserController.unlock()
 
 ## 3. Fluxos internos que nao sao endpoints
 
-- [x] Filtro de autenticacao JWT
+- [ ] Filtro de autenticacao JWT
   - Arquivo: `JwtAuthenticationFilter.java`
   - Caminho completo: `C:\Projetos\stockfy\stockfy-server\src\main\java\br\com\threadstech\stockfy\users\infrastructure\security\JwtAuthenticationFilter.java`
   - Classe/metodo: `JwtAuthenticationFilter.doFilterInternal()`
   - Arquivos relacionados: `JwtService.java`, `TokenService.java`, `SecurityConfig.java`.
   - Papel: traduz cookies em `SecurityContext`.
 
-- [x] Filtro de rate limit
+- [ ] Filtro de rate limit
   - Arquivo: `RateLimitFilter.java`
   - Classe/metodo: `RateLimitFilter.doFilterInternal()`
   - Arquivos relacionados: `UserRateLimitConfig.java`, `UserRateLimitProperties.java`, `RateLimitDecision.java`, `RateLimitTimeConfig.java`, properties.
   - Papel: limita requests por IP e policy.
 
-- [x] Cache/estado Redis de refresh tokens
+- [ ] Cache/estado Redis de refresh tokens
   - Arquivo: `TokenService.java`
   - Metodos: `generateRefreshToken`, `validateRefreshToken`, `getUserIdFromRefreshToken`, `consumeRefreshToken`, `revokeRefreshToken`.
   - Chaves: `refresh_token:<hmac-do-token>`.
   - Dados armazenados: `userId.toString()`, com TTL configurado por `stockfy.security.jwt.refresh-token-expiration`.
   - Ponto critico: apenas o refresh token atual e revogado no logout; nao ha invalidacao global por usuario.
 
-- [x] Cache/estado Redis de tentativas de login
+- [ ] Cache/estado Redis de tentativas de login
   - Arquivo: `LoginUseCase.java`
   - Metodos: `handleFailedLogin`, `resetFailedAttempts`.
   - Chave: `login_attempts:<email>`, TTL 1 dia.
   - Side effects: bloqueio de usuario e publish RabbitMQ.
 
-- [x] Cache/estado Redis de tentativas de senha atual
+- [ ] Cache/estado Redis de tentativas de senha atual
   - Arquivo: `UpdatePasswordUseCase.java`
   - Metodo: `countInvalidAttempt`.
   - Chave: `password_update_attempts:<userId>`, TTL 5 minutos.
   - Side effects: bloqueio de usuario apos 15 falhas.
 
-- [x] Evento publicado em RabbitMQ
+- [ ] Evento publicado em RabbitMQ
   - Evento: `AccountLockedEvent`
   - Arquivo: `C:\Projetos\stockfy\stockfy-server\src\main\java\br\com\threadstech\stockfy\users\domain\event\AccountLockedEvent.java`
   - Publisher: `RabbitMqEventPublisher.publish()`
@@ -691,19 +691,19 @@ UserController.unlock()
   - Config relacionada: `RabbitMqConfig.jsonMessageConverter()`
   - Ponto critico: nao ha declaracao de exchange, queue ou binding no codigo; tambem nao ha consumer.
 
-- [x] Auditoria JPA/Envers
+- [ ] Auditoria JPA/Envers
   - Arquivo: `UserJpaEntity.java`
   - Classe/metodo: anotacoes de classe e campos auditados.
   - Arquivos relacionados: `JpaConfig.java`, `AuditorAwareImpl.java`, migrations `V1__create_users_table.sql`.
   - Tabelas: `users_aud`, `users_roles_aud`, `revinfo`.
   - Papel: historico de mutacoes de usuario e roles.
 
-- [x] Soft delete
+- [ ] Soft delete
   - Arquivo: `UserJpaEntity.java`
   - Trecho responsavel: `@SQLDelete(sql = "UPDATE users SET active = false, email = id::text || '@deleted.local' WHERE id = ?")`, `@SQLRestriction("active = true")`.
   - Ponto critico: soft delete nao revoga tokens existentes no Redis.
 
-- [x] Mensageria, schedulers, listeners, jobs, uploads, webhooks
+- [ ] Mensageria, schedulers, listeners, jobs, uploads, webhooks
   - Consumers/listeners: nao encontrados em `src/main/java` via busca por `@RabbitListener`, `@EventListener`.
   - Schedulers/jobs async: nao encontrados via `@Scheduled`, `@Async`.
   - Uploads/webhooks: nao encontrados via `Multipart`, `upload`, `Webhook`.
@@ -711,33 +711,33 @@ UserController.unlock()
 
 ## 4. Autenticacao e autorizacao
 
-- [x] Roles existentes
+- [ ] Roles existentes
   - Arquivo: `UserRole.java`
   - Caminho completo: `C:\Projetos\stockfy\stockfy-server\src\main\java\br\com\threadstech\stockfy\users\domain\model\UserRole.java`
   - Classe: `UserRole`
   - Valores: `ADMIN`, `USER`
   - Ponto critico: nao ha modelo de permissoes granulares alem de roles.
 
-- [x] Permissoes por endpoint
+- [ ] Permissoes por endpoint
   - Publico: `POST /api/v1/auth/sessions`, `POST /api/v1/auth/sessions/refresh`, `PATCH /api/v1/users/password` com regra de metodo.
   - Autenticado: `DELETE /api/v1/auth/sessions/current`, `GET /api/v1/users/me`, `PATCH /api/v1/users/me`.
   - ADMIN: `POST /api/v1/users`, `PATCH /api/v1/users/{id}/roles`, `POST /api/v1/users/{id}/password-reset-codes`, `GET /api/v1/users`, `DELETE /api/v1/users/{id}`, `PATCH /api/v1/users/{id}/unlock`.
   - ADMIN ou owner: `GET /api/v1/users/{id}`.
 
-- [x] Validacoes de ownership
+- [ ] Validacoes de ownership
   - `UserController.getById()`: `@PreAuthorize("hasRole('ADMIN') or #id == authentication.principal")`.
   - `UserController.me()`: usa `authentication.principal` como ID.
   - `UserController.updateProfile()`: usa `authentication.principal` como ID.
   - `UserController.updatePassword()`: fluxo autenticado usa `authentication.principal`; fluxo com reset code nao exige ownership.
 
-- [x] Verificacoes de sessao/token
+- [ ] Verificacoes de sessao/token
   - `JwtAuthenticationFilter.doFilterInternal()`: access token precisa ser valido, refresh token precisa existir no Redis, e ambos precisam apontar para o mesmo UUID.
   - `RefreshTokenUseCase.execute()`: refresh token precisa existir, ser consumido atomicamente, e usuario precisa existir/estar ativo/desbloqueado.
   - `LogoutUseCase.execute()`: remove refresh token atual.
 
 ## 5. Persistencia
 
-- [x] Tabelas principais
+- [ ] Tabelas principais
   - `users`
     - Migration: `C:\Projetos\stockfy\stockfy-server\src\main\resources\db\migration\V1__create_users_table.sql`
     - Entidade: `UserJpaEntity`
@@ -753,23 +753,23 @@ UserController.unlock()
     - `users_aud` referencia `revinfo`.
     - `users_roles_aud` referencia `revinfo`.
 
-- [x] Entidades e relacionamentos
+- [ ] Entidades e relacionamentos
   - Dominio: `User`, `Email`, `Password`, `UserRole`, `UserStatus`.
   - Persistencia: `UserJpaEntity`.
   - Relacionamento roles: `@ElementCollection(fetch = FetchType.EAGER)` em `users_roles`.
   - Mapper: `UserPersistenceMapper.toEntity()` e `toDomain()`.
 
-- [x] Transacoes
+- [ ] Transacoes
   - Mutacao: `RegisterUserUseCase.execute`, `UpdateProfileUseCase.execute`, `UpdatePasswordUseCase.executeWithCode`, `UpdatePasswordUseCase.executeAuthenticated`, `GenerateResetCodeUseCase.execute`, `DeleteUserUseCase.execute`, `UnlockUserUseCase.execute`, `UpdateUserRolesUseCase.execute`, `LoginUseCase.execute`.
   - Leitura: `FindAllUsersUseCase.execute`, `FindUserByIdUseCase.execute`, `RefreshTokenUseCase.execute`.
   - Ponto critico: `RefreshTokenUseCase.execute` e read-only, mas executa efeitos Redis.
 
-- [x] Soft delete
+- [ ] Soft delete
   - `UserJpaEntity.@SQLDelete`: atualiza `active=false` e anonimiza email.
   - `UserJpaEntity.@SQLRestriction`: filtra `active=true`.
   - Teste relacionado: `UserRepositoryIT.deleteById_whenCalled_thenAnonymizesEmailAndSoftDeletesUser`.
 
-- [x] Auditoria
+- [ ] Auditoria
   - `UserJpaEntity.@Audited`, campos `@CreatedDate`, `@CreatedBy`, `@LastModifiedDate`, `@LastModifiedBy`.
   - `JpaConfig.@EnableJpaAuditing`.
   - `AuditorAwareImpl.getCurrentAuditor()` usa principal UUID do `SecurityContext`.
@@ -777,7 +777,7 @@ UserController.unlock()
 
 ## 6. Fluxos criticos de seguranca
 
-- [x] Entrada e validacao
+- [ ] Entrada e validacao
   - Evidencia:
     - DTOs: `LoginRequest`, `RegisterUserRequest`, `UpdatePasswordRequest`, `UpdateCurrentUserRequest`, `UpdateUserRolesRequest`.
     - Query param: `UserController.findAll()` valida `name` com size e pattern.
@@ -785,7 +785,7 @@ UserController.unlock()
   - Justificativa tecnica: validacao ocorre antes do use case com Jakarta Validation e, em erro, gera `ApiErrorResponse` com `fieldErrors`.
   - Ponto critico: `RegisterUserRequest.password` so tem `@NotBlank`; minimo 8 vem do VO `Password` e vira `422`, nao `400`.
 
-- [x] Rate limit
+- [ ] Rate limit
   - Evidencia:
     - `SecurityConfig.securityFilterChain()` registra `RateLimitFilter` antes do filtro de autenticacao.
     - `UserRateLimitConfig.consume()` usa Bucket4j com `ConcurrentHashMap`.
@@ -796,14 +796,14 @@ UserController.unlock()
     - Baseado em IP remoto bruto.
     - `refresh.blockCapacity` e consumido em toda requisicao refresh, nao apenas em refresh rejeitado.
 
-- [x] Protecao contra enumeracao
+- [ ] Protecao contra enumeracao
   - Evidencia:
     - `LoginUseCase.execute()` converte email inexistente, usuario bloqueado/inativo e senha errada em `InvalidCredentialsException`.
     - `UserExceptionHandler.handleInvalidCredentialsException()` retorna `401` sem corpo.
   - Justificativa tecnica: login nao diferencia usuario inexistente, bloqueado/inativo ou senha errada na resposta HTTP.
   - Ponto critico: endpoint admin de reset code e endpoints autenticados podem revelar existencia de ID para usuarios autorizados via `404`.
 
-- [x] Exposicao de dados sensiveis
+- [ ] Exposicao de dados sensiveis
   - Evidencia:
     - `UserResponse` nao tem campo de senha.
     - `UserListItemResponse` nao tem campo de senha.
@@ -815,7 +815,7 @@ UserController.unlock()
     - `AccountLockedEvent` carrega email em RabbitMQ.
     - `POST /password-reset-codes` retorna o codigo no body para ADMIN.
 
-- [x] Fluxo de tokens
+- [ ] Fluxo de tokens
   - Evidencia:
     - `JwtService.generateToken()` assina JWT com subject userId e claim `roles`.
     - `TokenService.generateRefreshToken()` gera UUID aleatorio, armazena HMAC no Redis com TTL.
@@ -826,7 +826,7 @@ UserController.unlock()
     - Troca de senha e soft delete nao revogam tokens ja existentes.
     - Access token nao e persistido, entao so expira por tempo.
 
-- [x] Criptografia/hash
+- [ ] Criptografia/hash
   - Senha: `SecurityConfig.passwordEncoder()` retorna `BCryptPasswordEncoder`.
   - Reset/refresh token key: `HmacSha256Hasher.hash()` usa `HmacSHA256` com `stockfy.security.hmac.secret`.
   - JWT: `JwtService.getSigningKey()` usa `stockfy.security.jwt.secret`.
@@ -834,23 +834,23 @@ UserController.unlock()
 
 ## 7. Dependencias externas
 
-- [x] PostgreSQL
+- [ ] PostgreSQL
   - Usado por Spring Data JPA/Flyway.
   - Arquivos: `build.gradle`, `application-*.properties`, `V1__create_users_table.sql`, `V2__insert_initial_admin.sql`, `UserJpaEntity.java`, repositories.
   - Testes: Testcontainers em `ContainersConfiguration.postgresContainer()`.
 
-- [x] Redis
+- [ ] Redis
   - Usado por refresh tokens e contadores de tentativas.
   - Arquivos: `TokenService.java`, `LoginUseCase.java`, `UpdatePasswordUseCase.java`, `UnlockUserUseCase.java`, `application-*.properties`.
   - Testes: Testcontainers em `ContainersConfiguration.redisContainer()`.
 
-- [x] RabbitMQ
+- [ ] RabbitMQ
   - Usado apenas como publisher de evento `AccountLockedEvent`.
   - Arquivos: `RabbitMqEventPublisher.java`, `RabbitMqConfig.java`, `build.gradle`, `compose.yaml`.
   - Testes: `RabbitMqConfigTests.java`, Testcontainers em `ContainersConfiguration.rabbitContainer()`.
   - Ponto critico: nao ha consumer, exchange, queue ou binding declarados no codigo.
 
-- [x] Bibliotecas externas relevantes
+- [ ] Bibliotecas externas relevantes
   - Spring Security: filtros, roles, method security.
   - JJWT: assinatura e parsing de JWT.
   - Bucket4j: rate limit.
@@ -858,7 +858,7 @@ UserController.unlock()
   - MapStruct: mapeamento DTO.
   - BCrypt: hash de senha.
 
-- [x] Ausentes no modulo
+- [ ] Ausentes no modulo
   - APIs externas de terceiros: nao encontradas.
   - Email/SMS: nao encontrado; reset code e retornado via HTTP.
   - Arquivos/uploads: nao encontrados.
@@ -916,7 +916,7 @@ UserController.unlock()
 
 ### 9.1 Controllers e presentation
 
-- [x] `AuthController.java`
+- [ ] `AuthController.java`
   - Caminho: `C:\Projetos\stockfy\stockfy-server\src\main\java\br\com\threadstech\stockfy\users\presentation\controller\AuthController.java`
   - Classe: `AuthController`
   - Metodos: `login`, `refresh`, `logout`, `addCookies`, `clearCookies`, `expiredCookie`
@@ -924,7 +924,7 @@ UserController.unlock()
   - Papel no fluxo: entrada HTTP para login, refresh e logout.
   - Riscos: cookies sem `SameSite`; tokens nunca retornam no body, apenas cookies.
 
-- [x] `UserController.java`
+- [ ] `UserController.java`
   - Caminho: `C:\Projetos\stockfy\stockfy-server\src\main\java\br\com\threadstech\stockfy\users\presentation\controller\UserController.java`
   - Classe: `UserController`
   - Metodos: `register`, `updateUserRoles`, `generateResetCode`, `updatePassword`, `me`, `getById`, `findAll`, `updateProfile`, `delete`, `unlock`
@@ -932,21 +932,21 @@ UserController.unlock()
   - Papel no fluxo: recebe DTOs/path/query/authentication e chama use cases.
   - Riscos: `me()` usa repository direto; `PATCH /password` mistura fluxo publico por codigo e autenticado.
 
-- [x] `UserExceptionHandler.java`
+- [ ] `UserExceptionHandler.java`
   - Caminho: `C:\Projetos\stockfy\stockfy-server\src\main\java\br\com\threadstech\stockfy\users\presentation\UserExceptionHandler.java`
   - Classe: `UserExceptionHandler`
   - Metodos: handlers de excecoes users.
   - Responsabilidade: traduz excecoes do modulo para HTTP.
   - Riscos: 401 sem corpo esta correto pelo contrato atual; demais erros usam body `ApiErrorResponse`.
 
-- [x] `UserResponseMapper.java`
+- [ ] `UserResponseMapper.java`
   - Caminho: `C:\Projetos\stockfy\stockfy-server\src\main\java\br\com\threadstech\stockfy\users\presentation\mapper\UserResponseMapper.java`
   - Classe: `UserResponseMapper`
   - Metodos: `toFullResponse`, `toOwnerResponse`, `toPublicResponse`, `emptyRoles`
   - Responsabilidade: MapStruct para resposta de perfil.
   - Riscos: mapeamento publico ainda retorna `id` e `name`, roles vazio; email oculto.
 
-- [x] `UserResponseMapperFactory.java`
+- [ ] `UserResponseMapperFactory.java`
   - Caminho: `C:\Projetos\stockfy\stockfy-server\src\main\java\br\com\threadstech\stockfy\users\presentation\mapper\UserResponseMapperFactory.java`
   - Classe: `UserResponseMapperFactory`
   - Metodo: `toResponse`
@@ -955,83 +955,83 @@ UserController.unlock()
 
 ### 9.2 DTOs e validadores
 
-- [x] `LoginRequest.java`
+- [ ] `LoginRequest.java`
   - Caminho: `C:\Projetos\stockfy\stockfy-server\src\main\java\br\com\threadstech\stockfy\users\application\dto\LoginRequest.java`
   - Classe: `LoginRequest`
   - Metodos: record accessors `email`, `password`
   - Responsabilidade: entrada de login.
   - Riscos: nenhum campo extra por ser record.
 
-- [x] `AuthResponse.java`
+- [ ] `AuthResponse.java`
   - Caminho: `C:\Projetos\stockfy\stockfy-server\src\main\java\br\com\threadstech\stockfy\users\application\dto\AuthResponse.java`
   - Classe: `AuthResponse`
   - Metodos: record accessors `accessToken`, `refreshToken`
   - Responsabilidade: transporte interno de tokens ate controller.
   - Riscos: se retornado no body em mudanca futura exporia tokens; hoje controllers retornam `Void`.
 
-- [x] `RegisterUserRequest.java`
+- [ ] `RegisterUserRequest.java`
   - Caminho: `C:\Projetos\stockfy\stockfy-server\src\main\java\br\com\threadstech\stockfy\users\application\dto\RegisterUserRequest.java`
   - Classe: `RegisterUserRequest`
   - Metodos: record accessors.
   - Responsabilidade: entrada de cadastro admin.
   - Riscos: `confirmPassword` sem annotation; regra fica no use case.
 
-- [x] `UpdatePasswordRequest.java`
+- [ ] `UpdatePasswordRequest.java`
   - Caminho: `C:\Projetos\stockfy\stockfy-server\src\main\java\br\com\threadstech\stockfy\users\application\dto\UpdatePasswordRequest.java`
   - Classe: `UpdatePasswordRequest`
   - Metodos: record accessors.
   - Responsabilidade: entrada de reset/troca de senha.
   - Riscos: `currentPassword` opcional permite dois fluxos no mesmo DTO.
 
-- [x] `UpdateCurrentUserRequest.java`
+- [ ] `UpdateCurrentUserRequest.java`
   - Caminho: `C:\Projetos\stockfy\stockfy-server\src\main\java\br\com\threadstech\stockfy\users\application\dto\UpdateCurrentUserRequest.java`
   - Classe: `UpdateCurrentUserRequest`
   - Metodos: record accessors.
   - Responsabilidade: entrada para atualizar perfil proprio.
   - Riscos: campos desconhecidos sao ignorados; isso evita protected-field mass assignment, mas pode ocultar erro de cliente.
 
-- [x] `UpdateUserRolesRequest.java`
+- [ ] `UpdateUserRolesRequest.java`
   - Caminho: `C:\Projetos\stockfy\stockfy-server\src\main\java\br\com\threadstech\stockfy\users\application\dto\UpdateUserRolesRequest.java`
   - Classe: `UpdateUserRolesRequest`
   - Metodos: compact constructor, `add`, `remove`, `rolesToAdd`, `rolesToRemove`, `toRoles`, `copyNullableList`
   - Responsabilidade: entrada de alteracao de roles.
   - Riscos: `UserRole.valueOf` e chamado apos validacao; se bypassado por uso direto com valor invalido, pode lancar `IllegalArgumentException`.
 
-- [x] `UserResponse.java`
+- [ ] `UserResponse.java`
   - Caminho: `C:\Projetos\stockfy\stockfy-server\src\main\java\br\com\threadstech\stockfy\users\application\dto\UserResponse.java`
   - Classe: `UserResponse`
   - Metodos: compact constructor, `roles`
   - Responsabilidade: resposta de perfil.
   - Riscos: inclui auditoria para resposta full.
 
-- [x] `UserListItemResponse.java`
+- [ ] `UserListItemResponse.java`
   - Caminho: `C:\Projetos\stockfy\stockfy-server\src\main\java\br\com\threadstech\stockfy\users\application\dto\UserListItemResponse.java`
   - Classe: `UserListItemResponse`
   - Metodos: compact constructor, `roles`, `from`, `summary`, `detailed`
   - Responsabilidade: item de lista/detalhe por tipo.
   - Riscos: `DETAILED` inclui auditoria; nao inclui `id`.
 
-- [x] `FindAllUsersResponse.java`
+- [ ] `FindAllUsersResponse.java`
   - Caminho: `C:\Projetos\stockfy\stockfy-server\src\main\java\br\com\threadstech\stockfy\users\application\dto\FindAllUsersResponse.java`
   - Classe: `FindAllUsersResponse`
   - Metodos: compact constructor, `content`
   - Responsabilidade: envelope de pagina.
   - Riscos: nenhum relevante.
 
-- [x] `UserListType.java`
+- [ ] `UserListType.java`
   - Caminho: `C:\Projetos\stockfy\stockfy-server\src\main\java\br\com\threadstech\stockfy\users\application\dto\UserListType.java`
   - Classe: `UserListType`
   - Valores: `SUMMARY`, `DETAILED`
   - Responsabilidade: seleciona formato de item.
   - Riscos: query param invalido vira `400`.
 
-- [x] `ValidUserRole.java`
+- [ ] `ValidUserRole.java`
   - Caminho: `C:\Projetos\stockfy\stockfy-server\src\main\java\br\com\threadstech\stockfy\users\application\validation\ValidUserRole.java`
   - Classe: annotation `ValidUserRole`
   - Responsabilidade: constraint de role.
   - Riscos: depende do validator abaixo.
 
-- [x] `ValidUserRoleValidator.java`
+- [ ] `ValidUserRoleValidator.java`
   - Caminho: `C:\Projetos\stockfy\stockfy-server\src\main\java\br\com\threadstech\stockfy\users\application\validation\ValidUserRoleValidator.java`
   - Classe: `ValidUserRoleValidator`
   - Metodo: `isValid`
@@ -1040,84 +1040,84 @@ UserController.unlock()
 
 ### 9.3 Use cases
 
-- [x] `LoginUseCase.java`
+- [ ] `LoginUseCase.java`
   - Caminho: `C:\Projetos\stockfy\stockfy-server\src\main\java\br\com\threadstech\stockfy\users\application\usecase\LoginUseCase.java`
   - Classe: `LoginUseCase`
   - Metodos: `execute`, `handleFailedLogin`, `resetFailedAttempts`, `parseEmail`
   - Responsabilidade: autenticacao, lock e tokens.
   - Riscos: RabbitMQ no fluxo de erro; contador Redis por email.
 
-- [x] `RefreshTokenUseCase.java`
+- [ ] `RefreshTokenUseCase.java`
   - Caminho: `C:\Projetos\stockfy\stockfy-server\src\main\java\br\com\threadstech\stockfy\users\application\usecase\RefreshTokenUseCase.java`
   - Classe: `RefreshTokenUseCase`
   - Metodos: `execute`, `consumeRefreshToken`
   - Responsabilidade: rotacao de refresh token.
   - Riscos: `@Transactional(readOnly = true)` com Redis mutation.
 
-- [x] `LogoutUseCase.java`
+- [ ] `LogoutUseCase.java`
   - Caminho: `C:\Projetos\stockfy\stockfy-server\src\main\java\br\com\threadstech\stockfy\users\application\usecase\LogoutUseCase.java`
   - Classe: `LogoutUseCase`
   - Metodo: `execute`
   - Responsabilidade: revogar refresh token atual.
   - Riscos: nao revoga todos os tokens do usuario.
 
-- [x] `RegisterUserUseCase.java`
+- [ ] `RegisterUserUseCase.java`
   - Caminho: `C:\Projetos\stockfy\stockfy-server\src\main\java\br\com\threadstech\stockfy\users\application\usecase\RegisterUserUseCase.java`
   - Classe: `RegisterUserUseCase`
   - Metodo: `execute`
   - Responsabilidade: cadastro admin.
   - Riscos: nao preconsulta email por design; conflito vem do banco.
 
-- [x] `FindAllUsersUseCase.java`
+- [ ] `FindAllUsersUseCase.java`
   - Caminho: `C:\Projetos\stockfy\stockfy-server\src\main\java\br\com\threadstech\stockfy\users\application\usecase\FindAllUsersUseCase.java`
   - Classe: `FindAllUsersUseCase`
   - Metodos: `execute`, `normalizeName`
   - Responsabilidade: listagem paginada.
   - Riscos: filtro depende de query derivada JPA.
 
-- [x] `FindUserByIdUseCase.java`
+- [ ] `FindUserByIdUseCase.java`
   - Caminho: `C:\Projetos\stockfy\stockfy-server\src\main\java\br\com\threadstech\stockfy\users\application\usecase\FindUserByIdUseCase.java`
   - Classe: `FindUserByIdUseCase`
   - Metodo: `execute`
   - Responsabilidade: detalhe por ID.
   - Riscos: retorna `UserListItemResponse`, nao `UserResponse`.
 
-- [x] `UpdateProfileUseCase.java`
+- [ ] `UpdateProfileUseCase.java`
   - Caminho: `C:\Projetos\stockfy\stockfy-server\src\main\java\br\com\threadstech\stockfy\users\application\usecase\UpdateProfileUseCase.java`
   - Classe: `UpdateProfileUseCase`
   - Metodos: `execute`, `resolveNewEmail`
   - Responsabilidade: atualizar nome/email proprio.
   - Riscos: conflito de email detectado so no flush.
 
-- [x] `UpdatePasswordUseCase.java`
+- [ ] `UpdatePasswordUseCase.java`
   - Caminho: `C:\Projetos\stockfy\stockfy-server\src\main\java\br\com\threadstech\stockfy\users\application\usecase\UpdatePasswordUseCase.java`
   - Classe: `UpdatePasswordUseCase`
   - Metodos: `executeWithCode`, `executeAuthenticated`, `validatePasswordConfirmation`, `findUserByResetCode`, `resetCodeNotExpired`, `updatePassword`, `countInvalidAttempt`
   - Responsabilidade: reset por codigo e troca autenticada.
   - Riscos: nao revoga tokens depois da troca.
 
-- [x] `GenerateResetCodeUseCase.java`
+- [ ] `GenerateResetCodeUseCase.java`
   - Caminho: `C:\Projetos\stockfy\stockfy-server\src\main\java\br\com\threadstech\stockfy\users\application\usecase\GenerateResetCodeUseCase.java`
   - Classe: `GenerateResetCodeUseCase`
   - Metodo: `execute`
   - Responsabilidade: gerar codigo de recuperacao.
   - Riscos: retorna codigo no HTTP; colisao de 6 digitos possivel.
 
-- [x] `DeleteUserUseCase.java`
+- [ ] `DeleteUserUseCase.java`
   - Caminho: `C:\Projetos\stockfy\stockfy-server\src\main\java\br\com\threadstech\stockfy\users\application\usecase\DeleteUserUseCase.java`
   - Classe: `DeleteUserUseCase`
   - Metodo: `execute`
   - Responsabilidade: soft delete por ID.
   - Riscos: nao revoga tokens e nao valida existencia explicitamente.
 
-- [x] `UnlockUserUseCase.java`
+- [ ] `UnlockUserUseCase.java`
   - Caminho: `C:\Projetos\stockfy\stockfy-server\src\main\java\br\com\threadstech\stockfy\users\application\usecase\UnlockUserUseCase.java`
   - Classe: `UnlockUserUseCase`
   - Metodo: `execute`
   - Responsabilidade: desbloquear conta e limpar tentativas de login.
   - Riscos: limpa por email atual; se email mudou, tentativas antigas podem permanecer.
 
-- [x] `UpdateUserRolesUseCase.java`
+- [ ] `UpdateUserRolesUseCase.java`
   - Caminho: `C:\Projetos\stockfy\stockfy-server\src\main\java\br\com\threadstech\stockfy\users\application\usecase\UpdateUserRolesUseCase.java`
   - Classe: `UpdateUserRolesUseCase`
   - Metodo: `execute`
@@ -1126,53 +1126,53 @@ UserController.unlock()
 
 ### 9.4 Dominio
 
-- [x] `User.java`
+- [ ] `User.java`
   - Caminho: `C:\Projetos\stockfy\stockfy-server\src\main\java\br\com\threadstech\stockfy\users\domain\model\User.java`
   - Classe: `User`
   - Metodos: `lock`, `unlock`, `deactivate`, `activate`, `updateRoles`
   - Responsabilidade: agregado de usuario.
   - Riscos: setters publicos permitem mutacao fora de metodos ricos.
 
-- [x] `Email.java`
+- [ ] `Email.java`
   - Caminho: `C:\Projetos\stockfy\stockfy-server\src\main\java\br\com\threadstech\stockfy\users\domain\model\Email.java`
   - Classe: `Email`
   - Metodo: canonical constructor.
   - Responsabilidade: VO de email.
   - Riscos: regex rejeita TLDs maiores que 6 caracteres.
 
-- [x] `Password.java`
+- [ ] `Password.java`
   - Caminho: `C:\Projetos\stockfy\stockfy-server\src\main\java\br\com\threadstech\stockfy\users\domain\model\Password.java`
   - Classe: `Password`
   - Metodo: canonical constructor.
   - Responsabilidade: VO de senha/hash.
   - Riscos: usado tambem para hash; comentario no mapper indica acoplamento conceitual.
 
-- [x] `UserRole.java`
+- [ ] `UserRole.java`
   - Caminho: `C:\Projetos\stockfy\stockfy-server\src\main\java\br\com\threadstech\stockfy\users\domain\model\UserRole.java`
   - Classe: enum `UserRole`
   - Responsabilidade: roles RBAC.
   - Riscos: sem permissoes granulares.
 
-- [x] `UserStatus.java`
+- [ ] `UserStatus.java`
   - Caminho: `C:\Projetos\stockfy\stockfy-server\src\main\java\br\com\threadstech\stockfy\users\domain\model\UserStatus.java`
   - Classe: enum `UserStatus`
   - Responsabilidade: status `ACTIVE`/`LOCKED`.
   - Riscos: nao ha status intermediario para reset/revogado.
 
-- [x] `AccountLockedEvent.java`
+- [ ] `AccountLockedEvent.java`
   - Caminho: `C:\Projetos\stockfy\stockfy-server\src\main\java\br\com\threadstech\stockfy\users\domain\event\AccountLockedEvent.java`
   - Classe: `AccountLockedEvent`
   - Responsabilidade: evento de conta bloqueada.
   - Riscos: carrega email em evento externo.
 
-- [x] `UserRepository.java`
+- [ ] `UserRepository.java`
   - Caminho: `C:\Projetos\stockfy\stockfy-server\src\main\java\br\com\threadstech\stockfy\users\domain\repository\UserRepository.java`
   - Classe: interface `UserRepository`
   - Metodos: `save`, `findById`, `findByEmail`, `findByResetPasswordCodeHash`, `findAll`, `update`, `deleteById`
   - Responsabilidade: porta de persistencia.
   - Riscos: contrato `deleteById` nao declara comportamento para ID ausente.
 
-- [x] `InvalidUserRolesException.java`
+- [ ] `InvalidUserRolesException.java`
   - Caminho: `C:\Projetos\stockfy\stockfy-server\src\main\java\br\com\threadstech\stockfy\users\domain\exception\InvalidUserRolesException.java`
   - Classe: `InvalidUserRolesException`
   - Responsabilidade: regra de roles vazias.
@@ -1180,28 +1180,28 @@ UserController.unlock()
 
 ### 9.5 Infraestrutura de persistencia
 
-- [x] `UserJpaEntity.java`
+- [ ] `UserJpaEntity.java`
   - Caminho: `C:\Projetos\stockfy\stockfy-server\src\main\java\br\com\threadstech\stockfy\users\infrastructure\persistence\UserJpaEntity.java`
   - Classe: `UserJpaEntity`
   - Responsabilidade: entidade JPA `users`.
   - Metodos: Lombok accessors/builders.
   - Riscos: soft delete nao apaga roles; apenas oculta usuario ativo via restriction.
 
-- [x] `SpringDataUserRepository.java`
+- [ ] `SpringDataUserRepository.java`
   - Caminho: `C:\Projetos\stockfy\stockfy-server\src\main\java\br\com\threadstech\stockfy\users\infrastructure\persistence\SpringDataUserRepository.java`
   - Classe: `SpringDataUserRepository`
   - Metodos: `findByEmail`, `findByResetPasswordCodeHash`, `findAllByName`, `findByNameContainingIgnoreCase`
   - Responsabilidade: adapter Spring Data.
   - Riscos: query derivada depende de escaping do provider; validacao de `name` reduz risco de entrada maliciosa.
 
-- [x] `JpaUserRepositoryAdapter.java`
+- [ ] `JpaUserRepositoryAdapter.java`
   - Caminho: `C:\Projetos\stockfy\stockfy-server\src\main\java\br\com\threadstech\stockfy\users\infrastructure\persistence\JpaUserRepositoryAdapter.java`
   - Classe: `JpaUserRepositoryAdapter`
   - Metodos: todos os metodos da porta, `translateConstraintViolation`
   - Responsabilidade: implementa `UserRepository`.
   - Riscos: traduz apenas constraints de email; reset code duplicado pode vazar como erro interno.
 
-- [x] `UserPersistenceMapper.java`
+- [ ] `UserPersistenceMapper.java`
   - Caminho: `C:\Projetos\stockfy\stockfy-server\src\main\java\br\com\threadstech\stockfy\users\infrastructure\persistence\UserPersistenceMapper.java`
   - Classe: `UserPersistenceMapper`
   - Metodos: `toEntity`, `toDomain`, `toEmail`, `toPassword`
@@ -1210,95 +1210,95 @@ UserController.unlock()
 
 ### 9.6 Infraestrutura de seguranca, config e messaging
 
-- [x] `TokenService.java`
+- [ ] `TokenService.java`
   - Caminho: `C:\Projetos\stockfy\stockfy-server\src\main\java\br\com\threadstech\stockfy\users\infrastructure\security\TokenService.java`
   - Classe: `TokenService`
   - Metodos: `generateRefreshToken`, `validateRefreshToken`, `getUserIdFromRefreshToken`, `consumeRefreshToken`, `revokeRefreshToken`
   - Responsabilidade: refresh tokens em Redis.
   - Riscos: comentario e indentacao do metodo `validateRefreshToken` estao desalinhados; funcionalmente usa `Boolean.TRUE.equals` para Boolean nullable.
 
-- [x] `JwtService.java`
+- [ ] `JwtService.java`
   - Caminho: `C:\Projetos\stockfy\stockfy-server\src\main\java\br\com\threadstech\stockfy\users\infrastructure\security\JwtService.java`
   - Classe: `JwtService`
   - Metodos: `generateToken`, `isTokenValid`, `extractUserId`, `extractRoles`, privados de claim/key.
   - Responsabilidade: JWT access token.
   - Riscos: sem token version/session id para invalidacao seletiva.
 
-- [x] `HmacSha256Hasher.java`
+- [ ] `HmacSha256Hasher.java`
   - Caminho: `C:\Projetos\stockfy\stockfy-server\src\main\java\br\com\threadstech\stockfy\users\infrastructure\security\HmacSha256Hasher.java`
   - Classe: `HmacSha256Hasher`
   - Metodo: `hash`
   - Responsabilidade: HMAC para refresh/reset code.
   - Riscos: falha de algoritmo/chave vira `IllegalStateException`.
 
-- [x] `RateLimitFilter.java`, `JwtAuthenticationFilter.java`, `UserRateLimitConfig.java`, `UserRateLimitProperties.java`, `RateLimitDecision.java`, `RateLimitTimeConfig.java`
+- [ ] `RateLimitFilter.java`, `JwtAuthenticationFilter.java`, `UserRateLimitConfig.java`, `UserRateLimitProperties.java`, `RateLimitDecision.java`, `RateLimitTimeConfig.java`
   - Caminhos: sob `C:\Projetos\stockfy\stockfy-server\src\main\java\br\com\threadstech\stockfy\users\infrastructure\security` e `...\users\infrastructure\config`.
   - Responsabilidade: rate limit, autenticacao por cookie/token e configuracao Bucket4j.
   - Riscos: ja listados em seguranca.
 
-- [x] `RabbitMqConfig.java`
+- [ ] `RabbitMqConfig.java`
   - Caminho: `C:\Projetos\stockfy\stockfy-server\src\main\java\br\com\threadstech\stockfy\users\infrastructure\messaging\RabbitMqConfig.java`
   - Classe: `RabbitMqConfig`
   - Metodo: `jsonMessageConverter`
   - Responsabilidade: conversor JSON.
   - Riscos: nao declara exchange/queue/binding.
 
-- [x] `RabbitMqEventPublisher.java`
+- [ ] `RabbitMqEventPublisher.java`
   - Caminho: `C:\Projetos\stockfy\stockfy-server\src\main\java\br\com\threadstech\stockfy\users\infrastructure\messaging\RabbitMqEventPublisher.java`
   - Classe: `RabbitMqEventPublisher`
   - Metodo: `publish`
   - Responsabilidade: publica `AccountLockedEvent`.
   - Riscos: publish sincrono no fluxo de login.
 
-- [x] `PasswordResetProperties.java`
+- [ ] `PasswordResetProperties.java`
   - Caminho: `C:\Projetos\stockfy\stockfy-server\src\main\java\br\com\threadstech\stockfy\users\application\config\PasswordResetProperties.java`
   - Classe: `PasswordResetProperties`
   - Responsabilidade: config de expiracao de codigo.
 
-- [x] `SecurityConfig.java`, `SecurityProperties.java`, `UnauthorizedAuthenticationEntryPoint.java`, `ForbiddenAccessDeniedResponder.java`, `JpaConfig.java`, `AuditorAwareImpl.java`, `LocaleConfig.java`
+- [ ] `SecurityConfig.java`, `SecurityProperties.java`, `UnauthorizedAuthenticationEntryPoint.java`, `ForbiddenAccessDeniedResponder.java`, `JpaConfig.java`, `AuditorAwareImpl.java`, `LocaleConfig.java`
   - Caminhos: `C:\Projetos\stockfy\stockfy-server\src\main\java\br\com\threadstech\stockfy\config\*.java`
   - Responsabilidade: cross-cutting security, auth errors, auditing, locale.
   - Riscos: CSRF desabilitado; auditor depende de principal UUID.
 
-- [x] `GlobalExceptionHandler.java`, `ApiErrorResponse.java`, `HttpMessageNotReadableError.java`, `HttpMessageNotReadableErrorFactory.java`
+- [ ] `GlobalExceptionHandler.java`, `ApiErrorResponse.java`, `HttpMessageNotReadableError.java`, `HttpMessageNotReadableErrorFactory.java`
   - Caminhos: `C:\Projetos\stockfy\stockfy-server\src\main\java\br\com\threadstech\stockfy\shared\exception\*.java`
   - Responsabilidade: erros globais.
   - Riscos: sem handler custom generico para 500.
 
 ### 9.7 Resources e migrations
 
-- [x] `application.properties`
+- [ ] `application.properties`
   - Caminho: `C:\Projetos\stockfy\stockfy-server\src\main\resources\application.properties`
   - Papel: profile default `prod`, exclui auto-config default de user details, alias de secret reset.
 
-- [x] `application-dev.properties`
+- [ ] `application-dev.properties`
   - Caminho: `C:\Projetos\stockfy\stockfy-server\src\main\resources\application-dev.properties`
   - Papel: segredos dev, rate limit, Redis e PostgreSQL local.
   - Riscos: segredos hardcoded em dev.
 
-- [x] `application-prod.properties`
+- [ ] `application-prod.properties`
   - Caminho: `C:\Projetos\stockfy\stockfy-server\src\main\resources\application-prod.properties`
   - Papel: env vars prod, `server.error.include-stacktrace=never`.
   - Riscos: app falha se env vars obrigatorias ausentes.
 
-- [x] `messages.properties`
+- [ ] `messages.properties`
   - Caminho: `C:\Projetos\stockfy\stockfy-server\src\main\resources\messages.properties`
   - Papel: i18n de validacao/excecoes.
   - Riscos: algumas mensagens estao sem acentos por encoding atual.
 
-- [x] `V1__create_users_table.sql`
+- [ ] `V1__create_users_table.sql`
   - Caminho: `C:\Projetos\stockfy\stockfy-server\src\main\resources\db\migration\V1__create_users_table.sql`
   - Papel: cria users, roles e auditoria.
   - Riscos: sem indices explicitos alem de PK/unique.
 
-- [x] `V2__insert_initial_admin.sql`
+- [ ] `V2__insert_initial_admin.sql`
   - Caminho: `C:\Projetos\stockfy\stockfy-server\src\main\resources\db\migration\V2__insert_initial_admin.sql`
   - Papel: seed de admin inicial.
   - Riscos: email e hash fixos no seed.
 
 ## 10. Testes relacionados
 
-- [x] Testes de endpoint/controller
+- [ ] Testes de endpoint/controller
   - `C:\Projetos\stockfy\stockfy-server\src\test\java\br\com\threadstech\stockfy\modules\users\presentation\controller\LoginUserIT.java`: sucesso, validacao, 401, lock, 429, IP separado.
   - `...\LoginUserInternalErrorIT.java`: 500 sem stacktrace.
   - `...\RefreshTokenIT.java`: rotacao, missing/invalid/blank/revoked/nonexistent/malformed/locked/inactive, rate limit.
@@ -1317,7 +1317,7 @@ UserController.unlock()
   - `...\UserControllerTests.java`, `...\AuthControllerTests.java`: testes MVC focados.
   - `...\*InternalErrorIT.java`: cobrem erro inesperado por endpoint principal.
 
-- [x] Testes de use case/dominio/infra
+- [ ] Testes de use case/dominio/infra
   - `AuthenticationTests.java`: login, refresh, logout, invalid credentials, inactive/locked.
   - `UserManagementTests.java`: register/update/delete basicos e duplicidade por repositorio.
   - `UpdateProfileUseCaseTests.java`, `UpdatePasswordUseCaseTests.java`, `UpdateUserRolesUseCaseTests.java`, `UnlockUserUseCaseTests.java`, `PasswordResetTests.java`, `FindUserByIdUseCaseTests.java`, `DeleteUserUseCaseTests.java`.
@@ -1328,7 +1328,7 @@ UserController.unlock()
   - `UserResponseMapperTests.java`, `UserResponseMapperFactoryTests.java`, `UserResponseTests.java`.
   - `ValidUserRoleValidatorTests.java`, `UserExceptionMessageKeyTests.java`.
 
-- [x] Test support e fixtures
+- [ ] Test support e fixtures
   - `C:\Projetos\stockfy\stockfy-server\src\test\java\br\com\threadstech\stockfy\ContainersConfiguration.java`: Testcontainers PostgreSQL, RabbitMQ, Redis.
   - `C:\Projetos\stockfy\stockfy-server\src\test\java\br\com\threadstech\stockfy\MutableTimeMeter.java`: fake time Bucket4j.
   - `C:\Projetos\stockfy\stockfy-server\src\test\java\br\com\threadstech\stockfy\RateLimitTestConfiguration.java`: bean test `@Primary`.
@@ -1344,18 +1344,18 @@ UserController.unlock()
 
 ## 11. Checklist final de cobertura de fluxos internos
 
-- [x] Endpoints HTTP listados com metodo, rota, DTOs, status, authz, validacoes e regras.
-- [x] Services/use cases rastreados.
-- [x] Handlers globais e do modulo rastreados.
-- [x] Eventos e publisher rastreados.
-- [x] Listeners/consumers: nao encontrados.
-- [x] Filters: `RateLimitFilter`, `JwtAuthenticationFilter`.
-- [x] Interceptors: nao encontrados.
-- [x] Schedulers/jobs async: nao encontrados.
-- [x] Adapters/repositories/mappers rastreados.
-- [x] Configs de security, JWT, cookies, HMAC, rate limit, password reset, JPA auditing, locale rastreadas.
-- [x] Migrations e tabelas rastreadas.
-- [x] Cache/Redis/manual Bucket4j rastreados.
-- [x] Mensageria RabbitMQ rastreada.
-- [x] Uploads/webhooks/arquivos: nao encontrados.
-- [x] Testes e fixtures relacionados listados.
+- [ ] Endpoints HTTP listados com metodo, rota, DTOs, status, authz, validacoes e regras.
+- [ ] Services/use cases rastreados.
+- [ ] Handlers globais e do modulo rastreados.
+- [ ] Eventos e publisher rastreados.
+- [ ] Listeners/consumers: nao encontrados.
+- [ ] Filters: `RateLimitFilter`, `JwtAuthenticationFilter`.
+- [ ] Interceptors: nao encontrados.
+- [ ] Schedulers/jobs async: nao encontrados.
+- [ ] Adapters/repositories/mappers rastreados.
+- [ ] Configs de security, JWT, cookies, HMAC, rate limit, password reset, JPA auditing, locale rastreadas.
+- [ ] Migrations e tabelas rastreadas.
+- [ ] Cache/Redis/manual Bucket4j rastreados.
+- [ ] Mensageria RabbitMQ rastreada.
+- [ ] Uploads/webhooks/arquivos: nao encontrados.
+- [ ] Testes e fixtures relacionados listados.
