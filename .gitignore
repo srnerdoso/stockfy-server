@@ -45,3 +45,7 @@ out/
 /docs/superpowers/**
 /docs/tasks/**
 /specs/**
+
+### Obsidian ###
+.obsidian/workspace.json
+.obsidian/graph.json
