@@ -58,7 +58,7 @@ Observacoes de escopo:
   - Papel: gera `400` com `type`, `title`, `status`, `detail`, `instance`, `fieldErrors`.
   - Ponto critico: nao ha handler customizado para erro interno generico; `500` fica no mecanismo padrao do Spring Boot, com `server.error.include-stacktrace=never` apenas em prod e em testes especificos.
 
-- [ ] Tratamento de erros do modulo users
+- [x] Tratamento de erros do modulo users
   - Arquivo: `UserExceptionHandler.java`
   - Caminho completo: `C:\Projetos\stockfy\stockfy-server\src\main\java\br\com\threadstech\stockfy\users\presentation\UserExceptionHandler.java`
   - Metodos: `handlePasswordMismatchException`, `handleEmailAlreadyExistsException`, `handleInvalidPasswordException`, `handleInvalidPasswordResetCodeException`, `handleCurrentPasswordInvalidException`, `handleUserNotFoundException`, `handleInvalidCredentialsException`, `handleInvalidRefreshTokenException`, `handleInvalidUserRolesException`.
@@ -69,7 +69,7 @@ Observacoes de escopo:
 
 ### 2.1 POST /api/v1/auth/sessions
 
-- [ ] Contrato
+- [x] Contrato
   - Metodo HTTP: `POST`
   - Rota: `/api/v1/auth/sessions`
   - Controller: `AuthController.login()`
@@ -83,14 +83,14 @@ Observacoes de escopo:
   - Autenticacao/autorizacao: `permitAll` em `SecurityConfig.securityFilterChain()`
   - Rate limit: policy `login`, rota configurada em `application-dev.properties`, `application-prod.properties` e `src/test/resources/application.properties`
 
-- [ ] Validacoes
+- [x] Validacoes
   - `LoginRequest.email`: `@NotBlank`, `@Email`.
   - `LoginRequest.password`: `@NotBlank`.
   - `LoginUseCase.parseEmail()`: cria `new Email(email)` e converte `IllegalArgumentException` em `InvalidCredentialsException`.
   - `GlobalExceptionHandler`: `400` para DTO invalido.
   - `UserExceptionHandler.handleInvalidCredentialsException()`: `401` sem corpo.
 
-- [ ] Regras de negocio executadas
+- [x] Regras de negocio executadas
   - `LoginUseCase.execute(email, password)`
     - busca usuario por email
     - rejeita usuario inativo ou `LOCKED`
@@ -104,7 +104,7 @@ Observacoes de escopo:
   - `AuthController.addCookies()`
     - cria cookies `HttpOnly`, `Secure`, path `/`, max-age configurado.
 
-- [ ] Fluxo completo
+- [x] Fluxo completo
 
 ```text
 AuthController.login()
@@ -127,7 +127,7 @@ AuthController.login()
 `-- AuthController.addCookies()
 ```
 
-- [ ] Arquivos participantes diretos e indiretos
+- [x] Arquivos participantes diretos e indiretos
   - `AuthController.java`: controller, `login`, `addCookies`; risco: cookies sem `SameSite`.
   - `LoginRequest.java`: validacao de entrada; risco: formato de email tambem e validado depois pelo VO.
   - `AuthResponse.java`: transporte interno de tokens; risco: nao deve ser retornado no body, e hoje nao e retornado.
@@ -145,7 +145,7 @@ AuthController.login()
 
 ### 2.2 POST /api/v1/auth/sessions/refresh
 
-- [ ] Contrato
+- [x] Contrato
   - Metodo HTTP: `POST`
   - Rota: `/api/v1/auth/sessions/refresh`
   - Controller: `AuthController.refresh()`
@@ -156,13 +156,13 @@ AuthController.login()
   - Autenticacao/autorizacao: `permitAll` em `SecurityConfig.securityFilterChain()`
   - Rate limit: policy `refresh`, com bucket normal e `blockCapacity`.
 
-- [ ] Validacoes e regras
+- [x] Validacoes e regras
   - `RefreshTokenUseCase.execute()` rejeita `null`, blank ou token ausente no Redis.
   - `TokenService.consumeRefreshToken()` usa `Redis GETDEL` via `getAndDelete`, retornando `Optional<UUID>`.
   - Usuario precisa existir, estar `active = true` e status diferente de `LOCKED`.
   - Token antigo e consumido antes de emitir novo refresh token.
 
-- [ ] Fluxo completo
+- [x] Fluxo completo
 
 ```text
 AuthController.refresh()
@@ -177,7 +177,7 @@ AuthController.refresh()
 `-- AuthController.addCookies()
 ```
 
-- [ ] Arquivos participantes
+- [x] Arquivos participantes
   - `AuthController.java`: `refresh`, `addCookies`.
   - `RefreshTokenUseCase.java`: orquestra rotacao; ponto critico: anotado como `@Transactional(readOnly = true)` apesar de consumir/gerar estado em Redis.
   - `TokenService.java`: `validateRefreshToken`, `consumeRefreshToken`, `generateRefreshToken`.
@@ -190,7 +190,7 @@ AuthController.refresh()
 
 ### 2.3 DELETE /api/v1/auth/sessions/current
 
-- [ ] Contrato
+- [x] Contrato
   - Metodo HTTP: `DELETE`
   - Rota: `/api/v1/auth/sessions/current`
   - Controller: `AuthController.logout()`
@@ -200,12 +200,12 @@ AuthController.refresh()
   - Autenticacao/autorizacao: autenticado por `/api/v1/**` em `SecurityConfig`; nao ha `@PreAuthorize` no metodo.
   - Rate limit: policy `logout`, `write-body=false`.
 
-- [ ] Regras
+- [x] Regras
   - `JwtAuthenticationFilter` autentica somente se access e refresh cookies forem validos e pertencem ao mesmo usuario.
   - `LogoutUseCase.execute()` revoga o refresh token atual no Redis.
   - `AuthController.clearCookies()` expira `access_token` e `refresh_token`.
 
-- [ ] Fluxo completo
+- [x] Fluxo completo
 
 ```text
 RateLimitFilter.doFilterInternal()
@@ -216,7 +216,7 @@ RateLimitFilter.doFilterInternal()
         `-- AuthController.clearCookies()
 ```
 
-- [ ] Arquivos participantes
+- [x] Arquivos participantes
   - `AuthController.java`: `logout`, `clearCookies`, `expiredCookie`.
   - `LogoutUseCase.java`: revoga refresh token.
   - `TokenService.java`: remove chave Redis.
@@ -227,7 +227,7 @@ RateLimitFilter.doFilterInternal()
 
 ### 2.4 POST /api/v1/users
 
-- [ ] Contrato
+- [x] Contrato
   - Metodo HTTP: `POST`
   - Rota: `/api/v1/users`
   - Controller: `UserController.register()`
@@ -237,7 +237,7 @@ RateLimitFilter.doFilterInternal()
   - Autenticacao/autorizacao: `@PreAuthorize("hasRole('ADMIN')")`
   - Rate limit: policy default `general`.
 
-- [ ] Validacoes
+- [x] Validacoes
   - `name`: `@NotBlank`, `@Pattern("^[\\p{L}\\p{M}0-9 .'-]+$")`
   - `email`: `@NotBlank`, `@Email`
   - `password`: `@NotBlank`
@@ -245,12 +245,12 @@ RateLimitFilter.doFilterInternal()
   - `confirmPassword`: validacao manual em `RegisterUserUseCase.execute()`.
   - `Password` VO exige minimo 8 caracteres.
 
-- [ ] Regras
+- [x] Regras
   - Cria `User` com `UUID.randomUUID()`, email VO, senha BCrypt, role unica vinda da request.
   - Persiste por `UserRepository.save()`.
   - Duplicidade de email e traduzida por `JpaUserRepositoryAdapter.translateConstraintViolation()`.
 
-- [ ] Fluxo completo
+- [x] Fluxo completo
 
 ```text
 UserController.register()
@@ -264,7 +264,7 @@ UserController.register()
             `-- SpringDataUserRepository.saveAndFlush()
 ```
 
-- [ ] Arquivos participantes
+- [x] Arquivos participantes
   - `UserController.java`: `register`.
   - `RegisterUserRequest.java`: DTO e validacoes.
   - `RegisterUserUseCase.java`: criacao do usuario.
