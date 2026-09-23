@@ -29,6 +29,21 @@ Development (TDD)** as the standard practice for continuous validation of implem
 Prevent unintended coupling, centralize business rules in the domain, and reduce inconsistent design decisions
 throughout development.
 
+## Documentation & Modeling (Obsidian)
+
+The repository is configured as an **Obsidian Vault** (local settings under `.obsidian/`). The entire requirements gathering lifecycle, feature specifications, and system modeling must be centralized and maintained exclusively under the `docs/` directory.
+
+### Standard Directories
+- `docs/requirements/`: Functional requirements, business rules, and acceptance criteria.
+- `docs/specs/`: Detailed technical specifications, architecture contracts, and solution design.
+- `docs/modeling/`: Conceptual modeling, aggregate maps, and flow diagrams.
+
+### Standards & Conventions
+- **WikiLinks:** Use Obsidian internal link syntax (`[[NoteName]]` or `[[path/note|Title]]`) to establish connections across requirements, models, and specifications.
+- **Obsidian Canvas (`.canvas`):** Standard adopted for visual domain modeling, flow diagrams, and relationships between modules and entities.
+- **Language:** Documentation and notes in Portuguese (as specified in *General Instructions*).
+- **Consistency:** Before implementing new features, agents and developers must consult requirements and models in `docs/`, keeping documents and `.canvas` boards updated whenever rules change.
+
 ## Project Structure
 
 ```txt
@@ -41,17 +56,20 @@ stockfy-server
 │   gradlew.bat
 │   HELP.md
 │   settings.gradle
+├───.obsidian                                   # Obsidian Vault configuration
 ├───config
 │   └───checkstyle
 │           checkstyle.xml
-├───docs
-│   ├───superpowers
-│   │   └───plans
+├───docs                                        # Documentation and specifications (Obsidian)
+│   ├───modeling                                # Visual modeling (.canvas and diagrams)
+│   ├───requirements                            # Functional and non-functional requirements
+│   ├───specs                                   # Technical specs for epics and stories
+│   └───superpowers
+│       └───plans                               # Agent execution plans
 ├───gradle
 │   └───wrapper
 │           gradle-wrapper.jar
 │           gradle-wrapper.properties
-├───specs
 ├───src
 │   ├───main
 │   │   ├───generated
@@ -97,9 +115,9 @@ stockfy-server
 - Naming (Methods/DTOs): Verb + Entity + `UseCase` (Use Cases); Past tense + `Event` (Events); `Request`/`Response` (DTOs).
 
 ## Workflow
-- **Development:** Write tests first → minimal implementation → refactor.
+- **Development:** Check specifications and models in `docs/` → write tests first (TDD) → minimal implementation → refactor.
 - **Pre-finalization:** Run all tests → validate Checkstyle.
-- **Review:** Architecture (DDD + Hexagonal) check; No cross-module coupling.
+- **Review:** Architecture (DDD + Hexagonal) check; No cross-module coupling; Documentation maintenance.
 
 ## Validation & Quality Gates
 - Do not modify existing configurations only to make tests or validations pass.
