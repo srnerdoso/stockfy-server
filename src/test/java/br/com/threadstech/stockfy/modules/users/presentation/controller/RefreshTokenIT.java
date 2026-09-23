@@ -133,6 +133,10 @@ class RefreshTokenIT {
 			.andExpect(cookie().exists(REFRESH_TOKEN_COOKIE))
 			.andExpect(cookie().httpOnly(ACCESS_TOKEN_COOKIE, true))
 			.andExpect(cookie().httpOnly(REFRESH_TOKEN_COOKIE, true))
+			.andExpect(cookie().secure(ACCESS_TOKEN_COOKIE, true))
+			.andExpect(cookie().secure(REFRESH_TOKEN_COOKIE, true))
+			.andExpect(cookie().attribute(ACCESS_TOKEN_COOKIE, "SameSite", "Strict"))
+			.andExpect(cookie().attribute(REFRESH_TOKEN_COOKIE, "SameSite", "Strict"))
 			.andReturn();
 
 		Cookie newRefreshCookie = result.getResponse().getCookie(REFRESH_TOKEN_COOKIE);
@@ -140,7 +144,6 @@ class RefreshTokenIT {
 		assertThat(newRefreshCookie.getValue()).isNotEqualTo(oldRefreshToken);
 		assertThat(this.redisTemplate.hasKey(refreshTokenKey(oldRefreshToken))).isFalse();
 		assertThat(this.redisTemplate.hasKey(refreshTokenKey(newRefreshCookie.getValue()))).isTrue();
-		MatcherAssert.assertThat(result.getResponse().getHeaders("Set-Cookie"), everyItem(containsString("Secure")));
 		assertNoSensitiveData(result);
 		assertUserDataUnchanged(usersBeforeRequest, userBeforeRequest);
 	}

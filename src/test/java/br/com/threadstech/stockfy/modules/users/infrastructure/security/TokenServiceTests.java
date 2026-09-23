@@ -61,7 +61,7 @@ class TokenServiceTests {
 		UUID userId = UUID.randomUUID();
 		SecurityProperties properties = new SecurityProperties(
 				new SecurityProperties.Jwt(JWT_SECRET, Duration.ofMinutes(15), Duration.ofDays(7)),
-				new SecurityProperties.Cookies(Duration.ofMinutes(15), Duration.ofDays(7)),
+				new SecurityProperties.Cookies(Duration.ofMinutes(15), Duration.ofDays(7), "Strict", true),
 				new SecurityProperties.Hmac(HMAC_SECRET));
 		long refreshTokenExpiration = Duration.ofDays(7).toMillis();
 		TokenService tokenService = new TokenService(this.redisTemplate, properties, this.hmacSha256Hasher);
@@ -83,7 +83,7 @@ class TokenServiceTests {
 		UUID userId = UUID.randomUUID();
 		SecurityProperties properties = new SecurityProperties(
 				new SecurityProperties.Jwt(JWT_SECRET, Duration.ofMinutes(15), Duration.ofDays(7)),
-				new SecurityProperties.Cookies(Duration.ofMinutes(15), Duration.ofDays(7)),
+				new SecurityProperties.Cookies(Duration.ofMinutes(15), Duration.ofDays(7), "Strict", true),
 				new SecurityProperties.Hmac(HMAC_SECRET));
 		TokenService tokenService = new TokenService(this.redisTemplate, properties, this.hmacSha256Hasher);
 		given(this.redisTemplate.opsForValue()).willReturn(this.valueOperations);
@@ -100,7 +100,7 @@ class TokenServiceTests {
 	void consumeRefreshToken_whenTokenDoesNotExist_thenReturnsEmpty() {
 		SecurityProperties properties = new SecurityProperties(
 				new SecurityProperties.Jwt(JWT_SECRET, Duration.ofMinutes(15), Duration.ofDays(7)),
-				new SecurityProperties.Cookies(Duration.ofMinutes(15), Duration.ofDays(7)),
+				new SecurityProperties.Cookies(Duration.ofMinutes(15), Duration.ofDays(7), "Strict", true),
 				new SecurityProperties.Hmac(HMAC_SECRET));
 		TokenService tokenService = new TokenService(this.redisTemplate, properties, this.hmacSha256Hasher);
 		given(this.redisTemplate.opsForValue()).willReturn(this.valueOperations);
@@ -117,7 +117,7 @@ class TokenServiceTests {
 	void consumeRefreshToken_whenRedisValueIsMalformed_thenReturnsEmpty() {
 		SecurityProperties properties = new SecurityProperties(
 				new SecurityProperties.Jwt(JWT_SECRET, Duration.ofMinutes(15), Duration.ofDays(7)),
-				new SecurityProperties.Cookies(Duration.ofMinutes(15), Duration.ofDays(7)),
+				new SecurityProperties.Cookies(Duration.ofMinutes(15), Duration.ofDays(7), "Strict", true),
 				new SecurityProperties.Hmac(HMAC_SECRET));
 		TokenService tokenService = new TokenService(this.redisTemplate, properties, this.hmacSha256Hasher);
 		given(this.redisTemplate.opsForValue()).willReturn(this.valueOperations);

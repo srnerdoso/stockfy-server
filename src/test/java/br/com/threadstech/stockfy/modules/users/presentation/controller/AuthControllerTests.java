@@ -66,7 +66,11 @@ class AuthControllerTests {
 			.andExpect(cookie().exists("access_token"))
 			.andExpect(cookie().exists("refresh_token"))
 			.andExpect(cookie().httpOnly("access_token", true))
-			.andExpect(cookie().httpOnly("refresh_token", true));
+			.andExpect(cookie().httpOnly("refresh_token", true))
+			.andExpect(cookie().secure("access_token", true))
+			.andExpect(cookie().secure("refresh_token", true))
+			.andExpect(cookie().attribute("access_token", "SameSite", "Strict"))
+			.andExpect(cookie().attribute("refresh_token", "SameSite", "Strict"));
 	}
 
 }

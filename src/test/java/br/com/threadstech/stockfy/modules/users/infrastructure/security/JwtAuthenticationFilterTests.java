@@ -44,7 +44,7 @@ class JwtAuthenticationFilterTests {
 	private final JwtService jwtService = new JwtService(new SecurityProperties(
 			new SecurityProperties.Jwt("9a4f2c8d3b7a1e5f8g9h0i1j2k3l4m5n6o7p8q9r0s1t2u3v4w5x6y7z8a9b0c1d",
 					java.time.Duration.ofMinutes(15), java.time.Duration.ofDays(7)),
-			new SecurityProperties.Cookies(java.time.Duration.ofMinutes(15), java.time.Duration.ofDays(7)),
+			new SecurityProperties.Cookies(java.time.Duration.ofMinutes(15), java.time.Duration.ofDays(7), "Strict", true),
 			new SecurityProperties.Hmac("test-hmac-secret")));
 
 	private final JwtAuthenticationFilter filter = new JwtAuthenticationFilter(this.jwtService, this.tokenService);

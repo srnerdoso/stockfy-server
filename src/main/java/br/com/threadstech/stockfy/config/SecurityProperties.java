@@ -26,7 +26,14 @@ public record SecurityProperties(Jwt jwt, Cookies cookies, Hmac hmac) {
 	public record Jwt(String secret, Duration accessTokenExpiration, Duration refreshTokenExpiration) {
 	}
 
-	public record Cookies(Duration accessTokenMaxAge, Duration refreshTokenMaxAge) {
+	public record Cookies(Duration accessTokenMaxAge, Duration refreshTokenMaxAge, String sameSite, boolean secure) {
+
+		public Cookies {
+			if (sameSite == null || sameSite.isBlank()) {
+				sameSite = "Strict";
+			}
+		}
+
 	}
 
 	public record Hmac(String secret) {

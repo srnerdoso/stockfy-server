@@ -22,7 +22,8 @@ import br.com.threadstech.stockfy.users.application.dto.LoginRequest;
 import br.com.threadstech.stockfy.users.application.usecase.LoginUseCase;
 import br.com.threadstech.stockfy.users.application.usecase.LogoutUseCase;
 import br.com.threadstech.stockfy.users.application.usecase.RefreshTokenUseCase;
-import jakarta.servlet.http.Cookie;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -76,36 +77,39 @@ public class AuthController {
 	}
 
 	private void addCookies(HttpServletResponse response, AuthResponse authResponse) {
-		Cookie accessCookie = new Cookie(ACCESS_TOKEN_COOKIE, authResponse.accessToken());
-		accessCookie.setHttpOnly(true);
-		accessCookie.setSecure(true); // Should be true in prod
-		accessCookie.setPath("/");
-		accessCookie.setMaxAge(Math.toIntExact(this.securityProperties.cookies().accessTokenMaxAge().toSeconds()));
+		ResponseCookie accessCookie = ResponseCookie.from(ACCESS_TOKEN_COOKIE, authResponse.accessToken())
+				.httpOnly(true)
+				.secure(this.securityProperties.cookies().secure())
+				.path("/")
+				.maxAge(this.securityProperties.cookies().accessTokenMaxAge())
+				.sameSite(this.securityProperties.cookies().sameSite())
+				.build();
 
-		Cookie refreshCookie = new Cookie(REFRESH_TOKEN_COOKIE, authResponse.refreshToken());
-		refreshCookie.setHttpOnly(true);
-		refreshCookie.setSecure(true);
-		refreshCookie.setPath("/");
-		refreshCookie.setMaxAge(Math.toIntExact(this.securityProperties.cookies().refreshTokenMaxAge().toSeconds()));
+		ResponseCookie refreshCookie = ResponseCookie.from(REFRESH_TOKEN_COOKIE, authResponse.refreshToken())
+				.httpOnly(true)
+				.secure(this.securityProperties.cookies().secure())
+				.path("/")
+				.maxAge(this.securityProperties.cookies().refreshTokenMaxAge())
+				.sameSite(this.securityProperties.cookies().sameSite())
+				.build();
 
-		response.addCookie(accessCookie);
-		response.addCookie(refreshCookie);
+		response.addHeader(HttpHeaders.SET_COOKIE, accessCookie.toString());
+		response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
 	}
 
 	private void clearCookies(HttpServletResponse response) {
-		Cookie accessCookie = expiredCookie(ACCESS_TOKEN_COOKIE);
-		Cookie refreshCookie = expiredCookie(REFRESH_TOKEN_COOKIE);
-		response.addCookie(accessCookie);
-		response.addCookie(refreshCookie);
+		response.addHeader(HttpHeaders.SET_COOKIE, expiredCookie(ACCESS_TOKEN_COOKIE).toString());
+		response.addHeader(HttpHeaders.SET_COOKIE, expiredCookie(REFRESH_TOKEN_COOKIE).toString());
 	}
 
-	private Cookie expiredCookie(String name) {
-		Cookie cookie = new Cookie(name, null);
-		cookie.setHttpOnly(true);
-		cookie.setSecure(true);
-		cookie.setPath("/");
-		cookie.setMaxAge(0);
-		return cookie;
+	private ResponseCookie expiredCookie(String name) {
+		return ResponseCookie.from(name, "")
+				.httpOnly(true)
+				.secure(this.securityProperties.cookies().secure())
+				.path("/")
+				.maxAge(0)
+				.sameSite(this.securityProperties.cookies().sameSite())
+				.build();
 	}
 
 }
