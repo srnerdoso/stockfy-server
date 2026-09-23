@@ -49,6 +49,9 @@ public class SecurityConfig {
 
 	@Bean
 	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+		// A protecao CSRF esta desabilitada pois a aplicacao e stateless (JWT)
+		// e emite cookies com a diretiva SameSite=Strict, que atua como mitigacao
+		// primaria ao impedir o envio dos cookies de autenticacao em requisicoes cross-origin.
 		http.csrf(AbstractHttpConfigurer::disable)
 			.httpBasic(AbstractHttpConfigurer::disable)
 			.formLogin(AbstractHttpConfigurer::disable)

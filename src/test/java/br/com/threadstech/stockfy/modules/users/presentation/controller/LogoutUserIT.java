@@ -129,16 +129,14 @@ class LogoutUserIT {
 			.andExpect(content().string(""))
 			.andExpect(cookie().maxAge(ACCESS_TOKEN_COOKIE, 0))
 			.andExpect(cookie().maxAge(REFRESH_TOKEN_COOKIE, 0))
+			.andExpect(cookie().httpOnly(ACCESS_TOKEN_COOKIE, true))
+			.andExpect(cookie().httpOnly(REFRESH_TOKEN_COOKIE, true))
+			.andExpect(cookie().secure(ACCESS_TOKEN_COOKIE, true))
+			.andExpect(cookie().secure(REFRESH_TOKEN_COOKIE, true))
+			.andExpect(cookie().attribute(ACCESS_TOKEN_COOKIE, "SameSite", "Strict"))
+			.andExpect(cookie().attribute(REFRESH_TOKEN_COOKIE, "SameSite", "Strict"))
 			.andReturn();
 
-		List<String> setCookieHeaders = result.getResponse().getHeaders("Set-Cookie");
-		MatcherAssert.assertThat(setCookieHeaders,
-				hasItem(allOf(containsString(ACCESS_TOKEN_COOKIE + "="), containsString("Max-Age=0"))));
-		MatcherAssert.assertThat(setCookieHeaders,
-				hasItem(allOf(containsString(REFRESH_TOKEN_COOKIE + "="), containsString("Max-Age=0"))));
-		MatcherAssert.assertThat(setCookieHeaders, everyItem(containsString("Path=/")));
-		MatcherAssert.assertThat(setCookieHeaders, everyItem(containsString("HttpOnly")));
-		MatcherAssert.assertThat(setCookieHeaders, everyItem(containsString("Secure")));
 		assertThat(this.redisTemplate.hasKey(refreshTokenKey(refreshToken))).isFalse();
 		assertUserDataUnchanged(usersBeforeRequest, userBeforeRequest);
 	}

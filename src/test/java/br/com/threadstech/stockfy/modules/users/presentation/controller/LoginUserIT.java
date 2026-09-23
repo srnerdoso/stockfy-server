@@ -140,12 +140,14 @@ class LoginUserIT {
 			.andExpect(cookie().exists(REFRESH_TOKEN_COOKIE))
 			.andExpect(cookie().httpOnly(ACCESS_TOKEN_COOKIE, true))
 			.andExpect(cookie().httpOnly(REFRESH_TOKEN_COOKIE, true))
+			.andExpect(cookie().secure(ACCESS_TOKEN_COOKIE, true))
+			.andExpect(cookie().secure(REFRESH_TOKEN_COOKIE, true))
+			.andExpect(cookie().attribute(ACCESS_TOKEN_COOKIE, "SameSite", "Strict"))
+			.andExpect(cookie().attribute(REFRESH_TOKEN_COOKIE, "SameSite", "Strict"))
 			.andReturn();
 
 		assertThat(countUsers()).isEqualTo(usersBeforeRequest);
 		assertThat(userStatus()).isEqualTo(ACTIVE_STATUS);
-		MatcherAssert.assertThat(result.getResponse().getHeaders("Set-Cookie").get(0), containsString("Secure"));
-		MatcherAssert.assertThat(result.getResponse().getHeaders("Set-Cookie").get(1), containsString("Secure"));
 		Cookie refreshToken = result.getResponse().getCookie(REFRESH_TOKEN_COOKIE);
 		assertThat(refreshToken).isNotNull();
 		assertThat(this.redisTemplate.hasKey(refreshTokenKey(refreshToken.getValue()))).isTrue();
