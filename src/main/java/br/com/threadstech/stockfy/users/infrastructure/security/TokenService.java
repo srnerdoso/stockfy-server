@@ -32,6 +32,8 @@ public class TokenService {
 
 	private static final String REFRESH_TOKEN_PREFIX = "refresh_token:";
 
+	private static final String USER_TOKENS_PREFIX = "user_tokens:";
+
 	private final StringRedisTemplate redisTemplate;
 
 	private final SecurityProperties securityProperties;
@@ -40,9 +42,15 @@ public class TokenService {
 
 	public String generateRefreshToken(UUID userId) {
 		String refreshToken = UUID.randomUUID().toString();
+		String hashed = this.hasher.hash(refreshToken);
 		this.redisTemplate.opsForValue()
-			.set(REFRESH_TOKEN_PREFIX + this.hasher.hash(refreshToken), userId.toString(),
+			.set(REFRESH_TOKEN_PREFIX + hashed, userId.toString(),
 					this.securityProperties.jwt().refreshTokenExpiration().toMillis(), TimeUnit.MILLISECONDS);
+		
+		String userKey = USER_TOKENS_PREFIX + userId;
+		this.redisTemplate.opsForSet().add(userKey, hashed);
+		this.redisTemplate.expire(userKey, this.securityProperties.jwt().refreshTokenExpiration().toMillis(), TimeUnit.MILLISECONDS);
+		
 		return refreshToken;
 	}
 
@@ -59,11 +67,14 @@ public class TokenService {
 	}
 
 	public Optional<UUID> consumeRefreshToken(String refreshToken) {
+		String hashed = this.hasher.hash(refreshToken);
 		String userId = this.redisTemplate.opsForValue()
-			.getAndDelete(REFRESH_TOKEN_PREFIX + this.hasher.hash(refreshToken));
+			.getAndDelete(REFRESH_TOKEN_PREFIX + hashed);
 		if (userId == null) {
 			return Optional.empty();
 		}
+
+		this.redisTemplate.opsForSet().remove(USER_TOKENS_PREFIX + userId, hashed);
 
 		try {
 			return Optional.of(UUID.fromString(userId));
@@ -74,7 +85,23 @@ public class TokenService {
 	}
 
 	public void revokeRefreshToken(String refreshToken) {
-		this.redisTemplate.delete(REFRESH_TOKEN_PREFIX + this.hasher.hash(refreshToken));
+		String hashed = this.hasher.hash(refreshToken);
+		String userId = this.redisTemplate.opsForValue().get(REFRESH_TOKEN_PREFIX + hashed);
+		this.redisTemplate.delete(REFRESH_TOKEN_PREFIX + hashed);
+		if (userId != null) {
+			this.redisTemplate.opsForSet().remove(USER_TOKENS_PREFIX + userId, hashed);
+		}
+	}
+
+	public void revokeAllUserTokens(UUID userId) {
+		String userKey = USER_TOKENS_PREFIX + userId;
+		java.util.Set<String> hashedTokens = this.redisTemplate.opsForSet().members(userKey);
+		if (hashedTokens != null && !hashedTokens.isEmpty()) {
+			for (String hash : hashedTokens) {
+				this.redisTemplate.delete(REFRESH_TOKEN_PREFIX + hash);
+			}
+			this.redisTemplate.delete(userKey);
+		}
 	}
 
 }

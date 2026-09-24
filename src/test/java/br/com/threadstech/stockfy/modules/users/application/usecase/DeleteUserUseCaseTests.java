@@ -20,6 +20,7 @@ import java.util.UUID;
 
 import br.com.threadstech.stockfy.users.application.usecase.DeleteUserUseCase;
 import br.com.threadstech.stockfy.users.domain.repository.UserRepository;
+import br.com.threadstech.stockfy.users.infrastructure.security.TokenService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -29,7 +30,9 @@ class DeleteUserUseCaseTests {
 
 	private final UserRepository userRepository = org.mockito.Mockito.mock(UserRepository.class);
 
-	private final DeleteUserUseCase useCase = new DeleteUserUseCase(this.userRepository);
+	private final TokenService tokenService = org.mockito.Mockito.mock(TokenService.class);
+
+	private final DeleteUserUseCase useCase = new DeleteUserUseCase(this.userRepository, this.tokenService);
 
 	@Test
 	@DisplayName("Deve delegar exclusao para o repositorio quando ID for informado")
@@ -39,6 +42,7 @@ class DeleteUserUseCaseTests {
 		this.useCase.execute(userId);
 
 		verify(this.userRepository).deleteById(userId);
+		verify(this.tokenService).revokeAllUserTokens(userId);
 	}
 
 }

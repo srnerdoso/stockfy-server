@@ -17,6 +17,7 @@
 package br.com.threadstech.stockfy.modules.users.infrastructure.security;
 
 import java.time.Duration;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -30,6 +31,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import org.springframework.data.redis.core.SetOperations;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 
@@ -53,6 +55,9 @@ class TokenServiceTests {
 	private ValueOperations<String, String> valueOperations;
 
 	@Mock
+	private SetOperations<String, String> setOperations;
+
+	@Mock
 	private HmacSha256Hasher hmacSha256Hasher;
 
 	@Test
@@ -69,10 +74,14 @@ class TokenServiceTests {
 		given(this.hmacSha256Hasher.hash(anyString())).willReturn("hashed-refresh-token");
 		ArgumentCaptor<String> keyCaptor = ArgumentCaptor.forClass(String.class);
 
+		given(this.redisTemplate.opsForSet()).willReturn(this.setOperations);
+
 		String refreshToken = tokenService.generateRefreshToken(userId);
 
 		verify(this.valueOperations).set(keyCaptor.capture(), eq(userId.toString()), eq(refreshTokenExpiration),
 				eq(TimeUnit.MILLISECONDS));
+		verify(this.setOperations).add(eq("user_tokens:" + userId), eq("hashed-refresh-token"));
+		verify(this.redisTemplate).expire(eq("user_tokens:" + userId), eq(refreshTokenExpiration), eq(TimeUnit.MILLISECONDS));
 		assertThat(keyCaptor.getValue()).isEqualTo("refresh_token:hashed-refresh-token");
 		assertThat(UUID.fromString(refreshToken).toString().equals(refreshToken)).isTrue();
 	}
@@ -90,8 +99,11 @@ class TokenServiceTests {
 		given(this.hmacSha256Hasher.hash("refresh-token")).willReturn("hashed-token");
 		given(this.valueOperations.getAndDelete("refresh_token:hashed-token")).willReturn(userId.toString());
 
+		given(this.redisTemplate.opsForSet()).willReturn(this.setOperations);
+
 		var result = tokenService.consumeRefreshToken("refresh-token");
 
+		verify(this.setOperations).remove(eq("user_tokens:" + userId), eq("hashed-token"));
 		assertThat(result.orElseThrow()).isEqualTo(userId);
 	}
 
@@ -126,7 +138,47 @@ class TokenServiceTests {
 
 		var result = tokenService.consumeRefreshToken("malformed-token");
 
+		verify(this.setOperations).remove(eq("user_tokens:not-a-uuid"), eq("hashed-malformed-token"));
 		assertThat(result.isEmpty()).isTrue();
+	}
+
+	@Test
+	@DisplayName("Deve revogar um refresh token e removê-lo do set do usuário")
+	void revokeRefreshToken_whenCalled_thenDeletesFromRedisAndSet() {
+		UUID userId = UUID.randomUUID();
+		SecurityProperties properties = new SecurityProperties(
+				new SecurityProperties.Jwt(JWT_SECRET, Duration.ofMinutes(15), Duration.ofDays(7)),
+				new SecurityProperties.Cookies(Duration.ofMinutes(15), Duration.ofDays(7), "Strict", true),
+				new SecurityProperties.Hmac(HMAC_SECRET));
+		TokenService tokenService = new TokenService(this.redisTemplate, properties, this.hmacSha256Hasher);
+		given(this.redisTemplate.opsForValue()).willReturn(this.valueOperations);
+		given(this.redisTemplate.opsForSet()).willReturn(this.setOperations);
+		given(this.hmacSha256Hasher.hash("refresh-token")).willReturn("hashed-token");
+		given(this.valueOperations.get("refresh_token:hashed-token")).willReturn(userId.toString());
+
+		tokenService.revokeRefreshToken("refresh-token");
+
+		verify(this.redisTemplate).delete("refresh_token:hashed-token");
+		verify(this.setOperations).remove("user_tokens:" + userId, "hashed-token");
+	}
+
+	@Test
+	@DisplayName("Deve revogar todos os refresh tokens de um usuário")
+	void revokeAllUserTokens_whenCalled_thenDeletesAllTokensAndSet() {
+		UUID userId = UUID.randomUUID();
+		SecurityProperties properties = new SecurityProperties(
+				new SecurityProperties.Jwt(JWT_SECRET, Duration.ofMinutes(15), Duration.ofDays(7)),
+				new SecurityProperties.Cookies(Duration.ofMinutes(15), Duration.ofDays(7), "Strict", true),
+				new SecurityProperties.Hmac(HMAC_SECRET));
+		TokenService tokenService = new TokenService(this.redisTemplate, properties, this.hmacSha256Hasher);
+		given(this.redisTemplate.opsForSet()).willReturn(this.setOperations);
+		given(this.setOperations.members("user_tokens:" + userId)).willReturn(Set.of("hash1", "hash2"));
+
+		tokenService.revokeAllUserTokens(userId);
+
+		verify(this.redisTemplate).delete("refresh_token:hash1");
+		verify(this.redisTemplate).delete("refresh_token:hash2");
+		verify(this.redisTemplate).delete("user_tokens:" + userId);
 	}
 
 }

@@ -33,6 +33,7 @@ import br.com.threadstech.stockfy.users.domain.model.UserRole;
 import br.com.threadstech.stockfy.users.domain.model.UserStatus;
 import br.com.threadstech.stockfy.users.domain.repository.UserRepository;
 import br.com.threadstech.stockfy.users.infrastructure.security.HmacSha256Hasher;
+import br.com.threadstech.stockfy.users.infrastructure.security.TokenService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -84,11 +85,13 @@ class UpdatePasswordUseCaseTests {
 
 	private final StringRedisTemplate redisTemplate = org.mockito.Mockito.mock(StringRedisTemplate.class);
 
+	private final TokenService tokenService = org.mockito.Mockito.mock(TokenService.class);
+
 	@Mock
 	private ValueOperations<String, String> valueOperations;
 
 	private final UpdatePasswordUseCase useCase = new UpdatePasswordUseCase(this.userRepository, this.passwordEncoder,
-			this.resetCodeHasher, this.redisTemplate);
+			this.resetCodeHasher, this.redisTemplate, this.tokenService);
 
 	@Test
 	@DisplayName("Deve atualizar senha e revogar codigo quando codigo for valido")
@@ -106,6 +109,7 @@ class UpdatePasswordUseCaseTests {
 		assertThat(user.getResetPasswordCodeHash()).isNull();
 		assertThat(user.getResetPasswordExpiresAt()).isNull();
 		verify(this.userRepository).update(user);
+		verify(this.tokenService).revokeAllUserTokens(user.getId());
 	}
 
 	@Test
@@ -165,6 +169,7 @@ class UpdatePasswordUseCaseTests {
 		assertThat(user.getPassword().value()).isEqualTo(NEW_PASSWORD_HASH);
 		verify(this.redisTemplate).delete(INVALID_ATTEMPT_KEY_PREFIX + userId);
 		verify(this.userRepository).update(user);
+		verify(this.tokenService).revokeAllUserTokens(userId);
 	}
 
 	@Test

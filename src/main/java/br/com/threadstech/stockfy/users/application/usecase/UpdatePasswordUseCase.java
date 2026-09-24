@@ -28,6 +28,7 @@ import br.com.threadstech.stockfy.users.domain.model.Password;
 import br.com.threadstech.stockfy.users.domain.model.User;
 import br.com.threadstech.stockfy.users.domain.repository.UserRepository;
 import br.com.threadstech.stockfy.users.infrastructure.security.HmacSha256Hasher;
+import br.com.threadstech.stockfy.users.infrastructure.security.TokenService;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -51,6 +52,8 @@ public class UpdatePasswordUseCase {
 
 	private final StringRedisTemplate redisTemplate;
 
+	private final TokenService tokenService;
+
 	@Transactional
 	public void executeWithCode(String code, String newPassword, String confirmPassword) {
 		validatePasswordConfirmation(newPassword, confirmPassword);
@@ -59,6 +62,7 @@ public class UpdatePasswordUseCase {
 		user.setResetPasswordCodeHash(null);
 		user.setResetPasswordExpiresAt(null);
 		this.userRepository.update(user);
+		this.tokenService.revokeAllUserTokens(user.getId());
 	}
 
 	@Transactional(noRollbackFor = CurrentPasswordInvalidException.class)
@@ -75,6 +79,7 @@ public class UpdatePasswordUseCase {
 		this.redisTemplate.delete(INVALID_ATTEMPTS_KEY + user.getId());
 		updatePassword(user, newPassword);
 		this.userRepository.update(user);
+		this.tokenService.revokeAllUserTokens(user.getId());
 	}
 
 	private void validatePasswordConfirmation(String newPassword, String confirmPassword) {

@@ -19,6 +19,7 @@ package br.com.threadstech.stockfy.users.application.usecase;
 import java.util.UUID;
 
 import br.com.threadstech.stockfy.users.domain.repository.UserRepository;
+import br.com.threadstech.stockfy.users.infrastructure.security.TokenService;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.stereotype.Component;
@@ -30,9 +31,12 @@ public class DeleteUserUseCase {
 
 	private final UserRepository userRepository;
 
+	private final TokenService tokenService;
+
 	@Transactional
 	public void execute(UUID userId) {
 		this.userRepository.deleteById(userId);
+		this.tokenService.revokeAllUserTokens(userId);
 	}
 
 }
