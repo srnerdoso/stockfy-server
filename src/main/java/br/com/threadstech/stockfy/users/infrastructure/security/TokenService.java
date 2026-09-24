@@ -50,7 +50,7 @@ public class TokenService {
   // redisTemplate.hasKey(...) retorna Boolean nullable.
   // Remover isso pode causar NullPointerException.
 	public boolean validateRefreshToken(String refreshToken) {
-    return Boolean.TRUE.equals(this.redisTemplate.hasKey(REFRESH_TOKEN_PREFIX + this.hasher.hash(refreshToken)));
+		return Boolean.TRUE.equals(this.redisTemplate.hasKey(REFRESH_TOKEN_PREFIX + this.hasher.hash(refreshToken)));
 	}
 
 	public UUID getUserIdFromRefreshToken(String refreshToken) {

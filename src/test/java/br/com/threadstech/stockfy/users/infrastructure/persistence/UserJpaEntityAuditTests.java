@@ -19,6 +19,8 @@ package br.com.threadstech.stockfy.users.infrastructure.persistence;
 import java.util.List;
 import java.util.UUID;
 
+import br.com.threadstech.stockfy.ContainersConfiguration;
+import br.com.threadstech.stockfy.users.domain.model.UserStatus;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.hibernate.envers.AuditReaderFactory;
@@ -33,9 +35,6 @@ import org.springframework.test.context.jdbc.Sql;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import br.com.threadstech.stockfy.ContainersConfiguration;
-import br.com.threadstech.stockfy.users.domain.model.UserStatus;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
@@ -43,7 +42,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Sql(scripts = "/sql/users/cleanup.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @Sql(scripts = "/sql/users/audit-test-data.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @Sql(scripts = "/sql/users/cleanup.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
-class UserJpaEntityAuditTest {
+class UserJpaEntityAuditTests {
 
 	private static final UUID AUDIT_USER_ID = UUID.fromString("a0000000-0000-0000-0000-000000000001");
 
@@ -63,7 +62,7 @@ class UserJpaEntityAuditTest {
 
 		// Envers grava auditoria no commit — precisa de transação real
 		TransactionTemplate tx = new TransactionTemplate(this.transactionManager);
-		tx.executeWithoutResult(status -> {
+		tx.executeWithoutResult((status) -> {
 			UserJpaEntity user = UserJpaEntity.builder()
 				.id(userId)
 				.name("New User")
@@ -76,7 +75,7 @@ class UserJpaEntityAuditTest {
 		});
 
 		// Leitura da auditoria em transação separada
-		tx.executeWithoutResult(status -> {
+		tx.executeWithoutResult((status) -> {
 			List<?> revisions = AuditReaderFactory.get(this.entityManager)
 				.createQuery()
 				.forRevisionsOfEntity(UserJpaEntity.class, true, true)
@@ -101,7 +100,7 @@ class UserJpaEntityAuditTest {
 		TransactionTemplate tx = new TransactionTemplate(this.transactionManager);
 
 		// Atualização com commit real para Envers registrar
-		tx.executeWithoutResult(status -> {
+		tx.executeWithoutResult((status) -> {
 			UserJpaEntity user = this.userRepository.findById(AUDIT_USER_ID).orElseThrow();
 			user.setName("Updated Name");
 			user.setEmail("updated.email@example.com");
@@ -110,7 +109,7 @@ class UserJpaEntityAuditTest {
 		});
 
 		// Leitura da auditoria em transação separada
-		tx.executeWithoutResult(status -> {
+		tx.executeWithoutResult((status) -> {
 			List<?> revisions = AuditReaderFactory.get(this.entityManager)
 				.createQuery()
 				.forRevisionsOfEntity(UserJpaEntity.class, true, true)
@@ -135,13 +134,13 @@ class UserJpaEntityAuditTest {
 		TransactionTemplate tx = new TransactionTemplate(this.transactionManager);
 
 		// Soft delete com commit real para Envers registrar
-		tx.executeWithoutResult(status -> {
+		tx.executeWithoutResult((status) -> {
 			this.userRepository.deleteById(AUDIT_USER_ID);
 			this.userRepository.flush();
 		});
 
 		// Leitura da auditoria em transação separada
-		tx.executeWithoutResult(status -> {
+		tx.executeWithoutResult((status) -> {
 			List<?> revisions = AuditReaderFactory.get(this.entityManager)
 				.createQuery()
 				.forRevisionsOfEntity(UserJpaEntity.class, true, true)
@@ -167,7 +166,7 @@ class UserJpaEntityAuditTest {
 		TransactionTemplate tx = new TransactionTemplate(this.transactionManager);
 
 		// Criação com commit real para Envers registrar
-		tx.executeWithoutResult(status -> {
+		tx.executeWithoutResult((status) -> {
 			UserJpaEntity user = UserJpaEntity.builder()
 				.id(userId)
 				.name("Audit Check User")
@@ -180,7 +179,7 @@ class UserJpaEntityAuditTest {
 		});
 
 		// Leitura da auditoria em transação separada
-		tx.executeWithoutResult(status -> {
+		tx.executeWithoutResult((status) -> {
 			List<?> revisions = AuditReaderFactory.get(this.entityManager)
 				.createQuery()
 				.forRevisionsOfEntity(UserJpaEntity.class, true, true)
