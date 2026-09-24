@@ -98,8 +98,9 @@ stockfy-server
 - **Transactional:** Method-level only.
 - **Security:** Never include passwords in response DTOs.
 - **Git:**
-    - Branch: `ddmmaa-feature-name`.
+    - Branch: Must match the issue name. If the issue name is too long, summarize it but keep the issue ID (e.g., `123-short-summary`).
     - Commit: `type: description` (feat, fix, refactor, test, chore).
+    - Pull Requests: Must be created targeting the `dev` branch upon completion.
     - Do not execute git commands not documented here.
 
 ## Coding Style
@@ -118,6 +119,34 @@ stockfy-server
 - **Development:** Check specifications and models in `docs/` → write tests first (TDD) → minimal implementation → refactor.
 - **Pre-finalization:** Run all tests → validate Checkstyle.
 - **Review:** Architecture (DDD + Hexagonal) check; No cross-module coupling; Documentation maintenance.
+- **Completion:** Create a Pull Request against the `dev` branch upon finishing the implementation.
+
+### Pull Request Structure
+When creating a PR, the description must follow this standard format (in Portuguese):
+
+```markdown
+## Resumo
+[Breve descrição do que foi feito e referência da Issue]
+
+## Principais mudanças
+- [Mudança 1]
+- [Mudança 2]
+
+## Impacto esperado
+- [Impacto 1]
+
+## Validação sugerida
+- [Passos para testar/validar localmente]
+
+## Pontos de atenção
+- [Avisos, dependências ou possíveis quebras (breaking changes)]
+
+## Checklist de revisão
+- [ ] O código segue os padrões do projeto (Checkstyle / Spotless).
+- [ ] Testes TDD implementados.
+- [ ] Documentação em `docs/` atualizada, se aplicável.
+- [ ] Issue referenciada corretamente.
+```
 
 ## Validation & Quality Gates
 - Do not modify existing configurations only to make tests or validations pass.
