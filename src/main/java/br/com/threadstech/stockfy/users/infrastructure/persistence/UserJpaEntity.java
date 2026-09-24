@@ -42,6 +42,7 @@ import lombok.Setter;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.envers.Audited;
+import org.hibernate.envers.NotAudited;
 
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
@@ -68,9 +69,11 @@ public class UserJpaEntity {
 	@Column(nullable = false)
 	private String name;
 
+	@NotAudited
 	@Column(nullable = false, unique = true)
 	private String email;
 
+	@NotAudited
 	@Column(name = "password_hash", nullable = false)
 	private String passwordHash;
 
@@ -88,9 +91,11 @@ public class UserJpaEntity {
 	@Column(nullable = false)
 	private boolean active;
 
+	@NotAudited
 	@Column(name = "reset_password_code_hash", unique = true)
 	private String resetPasswordCodeHash;
 
+	@NotAudited
 	@Column(name = "reset_password_expires_at")
 	private LocalDateTime resetPasswordExpiresAt;
 
