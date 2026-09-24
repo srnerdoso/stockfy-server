@@ -22,12 +22,12 @@ import br.com.threadstech.stockfy.users.application.dto.LoginRequest;
 import br.com.threadstech.stockfy.users.application.usecase.LoginUseCase;
 import br.com.threadstech.stockfy.users.application.usecase.LogoutUseCase;
 import br.com.threadstech.stockfy.users.application.usecase.RefreshTokenUseCase;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.ResponseCookie;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.DeleteMapping;
